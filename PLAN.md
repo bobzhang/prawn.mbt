@@ -37,10 +37,13 @@ Codex's review of it are in git history and `docs/plan-review-codex.md`.
   boxes, text, graphics, fonts, images, navigation) on top of and around the existing `Flow`, and
   move asciidoctor-pdf onto it over time. `Flow` and friends stay until asciidoctor-pdf no longer
   needs them.
-* **Output.** Layout produces pagelayout page items where pagelayout's IR fits; content it can't
-  express goes to pdflite's object and content-stream API directly. Where neither can express
-  something Prawn does (a graphics state, an annotation type, an image kind), add it upstream as a
-  general feature.
+* **Output.** Layout produces pagelayout page items, rendered by pagelayout's `render_pdf`, which
+  owns painter order, resource allocation and graphics-state scoping. Content that `PageItem`
+  can't express today must not be appended after rendering (that loses interleaving). Instead, add
+  it to pagelayout as a general item kind (e.g. a graphics-state group, a soft mask, a shading), or
+  as a general extension item carrying content operators plus the resources they need. Either way
+  `render_pdf` keeps allocating resources and ordering paint. Designing this is milestone 1's
+  first task, before any graphics work.
 * **One root package for Prawn.** `Document` mixes in ~15 Ruby modules that call each other freely,
   and `Font`/`BoundingBox`/`Text::Box` hold document back-pointers, so splitting creates cycles.
   Many cohesive files, not necessarily Ruby's file boundaries. `svg/`, `table/`, `icon/`,
@@ -68,49 +71,72 @@ Codex's review of it are in git history and `docs/plan-review-codex.md`.
 * **Strings.** Unicode text is scanned by scalar; AFM fonts measure on Windows-1252 bytes as Prawn
   does (`fonts/afm.rb:141`, `:301`); binary data is `Bytes`.
 
-## 2. Upstream work in office.mbt (candidates, to verify against current APIs)
+## 2. Upstream work in office.mbt
 
-Each is a general pdflite/pagelayout feature, proposed as its own PR with tests:
+Each is a general pdflite/pagelayout feature, proposed as its own PR with tests. Where office.mbt
+already has the capability, the work is to **qualify it against Prawn** and fix only the gaps
+that come up.
 
-| Capability | Why Prawn needs it | General value |
+**Gaps (verified 2026-10-02):**
+
+| Capability | Today | General value |
 |---|---|---|
-| AFM glyph-name kerning (incl. `C -1` glyphs) and glyph bboxes | kerned std-14 text | correct std-14 kerning for everyone |
-| PNG: transparency info, translucent palettes, all bit depths/colour types | Prawn's image support | PNG coverage |
-| JPEG: bits per component, CMYK/grey, Adobe inversion | `image` with any JPEG | JPEG coverage |
-| TrueType/OpenType subsetting quality (composites, CFF, TTC, dfont) | Prawn's font support | smaller, more correct embedded fonts |
-| Graphics state: soft masks, blend modes, transparency groups, dash/cap/join, patterns/shadings | Prawn graphics | richer drawing API |
-| Annotations, destinations, outlines, page labels, name trees | Prawn navigation | navigation for every document |
-| Security (RC4/AES, permissions) | `encrypt_document` | encryption for everyone |
-| Reader: text positions, font decoding, form recursion | the test comparator (§3); prawn-templates | PDF inspection and import |
+| AFM glyph-name kerning and glyph bboxes | the parser drops kern pairs of `C -1` glyphs (`pdflite/font/afm/pdf_afm.mbt:178`); kerning is by code | correct std-14 kerning |
+| PNG palette transparency, translucent palettes | rejected (`pdflite/pdf_png.mbt:155`) | PNG coverage |
+| JPEG bits/colour space (grey, CMYK, Adobe inversion) | builder hardcodes 8-bit DeviceRGB (`pdflite/pdf_image_object_builders.mbt:35`) | correct JPEG embedding |
+| Extension item / missing graphics in `PageItem` (§1) | no raw-content or custom-emitter variant (`pagelayout/page_model.mbt:162`) | richer drawing API |
+| Reader: character/word spacing, text rise, render mode, fill/stroke colour, alpha and ExtGState in glyph and path entries; glyph identity from the font program | `PdfContentGlyphState` omits them (`pdflite/pdf_content_state.mbt:39`); glyph boxes use ascent/descent and advance (`pdflite/pdf_content_text_layout.mbt:60`) | precise PDF inspection |
+
+**Exists; qualify against Prawn:** stroke styles (`pagelayout/graphic.mbt:113`), outline and page
+labels (`pagelayout/pdf/options.mbt:67`), RC4/AES encryption with permissions
+(`pdflite/pdf_writer_encryption_entrypoints.mbt:29`), decoded glyph entries
+(`pdflite/pdf_content_operator_state_text.mbt:45`), recursive page-content inspection
+(`pdflite/pdf_content_page_json.mbt:8`), TrueType subsetting (composites, CFF, TTC, dfont still to
+check), soft masks, blend modes, patterns/shadings, annotations and destinations.
 
 ## 3. Fidelity and testing
 
 * **Oracle.** Ruby Prawn from `.repos` (pinned Ruby and gems, frozen clock/TZ/RNG).
-* **Comparator.** Read both PDFs with pdflite's reader and compare decisions: pages and sizes; text
-  runs (string, font, size, position to a small tolerance, character spacing); graphics operators
-  after normalizing serialization (number formatting, resource names, operator grouping); images
-  (decoded); annotations, destinations, outline, page labels. Exact bytes are never required.
+* **Comparator.** Read both PDFs with pdflite's reader (extended as in §2) and compare Prawn's
+  decisions. Exact bytes are never required.
+  - *Exact:* page count, page sizes, which page and line each glyph is on, the glyph sequence
+    (canonicalized: `Tj`/`TJ` grouping ignored, subset tags stripped, glyphs identified by Unicode
+    plus a hash of their outline in the embedded font program), font family and size, text render
+    mode, colours, alpha/blend state, annotations, destinations, outline, page labels.
+  - *Within 0.01 pt in final page coordinates:* glyph origins, path coordinates, image placement,
+    character/word spacing, rise. Ruby rounds content operands to 5 decimals
+    (`pdf-core/pdf_object.rb:11`); the bound leaves room for that and for accumulated advances.
+    Tighter where a test needs it.
+  - *Images:* PNG and other Flate images compared decoded; JPEG compared on the DCT payload plus
+    the image dictionary (`/ColorSpace`, `/BitsPerComponent`, `/Decode`, `/SMask`, `/Mask`),
+    since pdflite doesn't decode DCT.
+  - *Negative controls:* the harness checks itself on mutated outputs (a glyph displaced by
+    0.02 pt, a changed font, a moved page break, a changed colour), which must all fail.
 * **Operation scripts.** A JSON op language with nested scopes (bounding_box, float, column_box,
-  repeat, stamp), explicit assets and **queries** (cursor, bounds, `width_of`, `height_of`, text box
-  remainder, page count). It is run by a Ruby driver and by `cmd/oracle` and compared as above.
-  Translate representative RSpec examples and every manual example once.
+  repeat, stamp), explicit assets, typed numbers, **queries** (cursor, bounds, `width_of`,
+  `height_of`, text box remainder, line metrics, page count), **callback traces** (fragment and
+  draw-text callbacks with their arguments, including dry-run suppression), and **expected
+  errors** plus the state after them. It is run by a Ruby driver and by `cmd/oracle` and compared
+  as above. Translate representative RSpec examples and every manual example once. Examples that
+  need mocks or extension subclasses are hand-ported as MoonBit tests.
 * **Generators** for boundaries (widths within ε of measured values, Unicode scalars, fallback
   switches, page breaks), with shrinking; minimized failures kept as regression scripts.
 * **asciidoctor-pdf** remains an end-to-end check: its comparison failures that trace to Prawn
   become prawn.mbt issues with an op-script reproduction.
 * Gates exit non-zero on unexpected differences; known failures are categorized; record counts
-  guarded; `scripts/check.mbtx` runs everything; tests on native, wasm-gc, js.
+  guarded; `scripts/check.mbtx` runs everything; tests on native, wasm-gc, js (js needs enabling,
+  milestone 0).
 
 ## 4. Milestones
 
 | # | Milestone | Exit criterion |
 |---|---|---|
-| 0 | Oracle harness: Ruby driver, comparator on pdflite's reader, `scripts/check.mbtx` | seed scripts compare clean twice in a row |
-| 1 | `Document` core: page setup, margins, cursor, bounding/column boxes, `move_down`/`pad`/`float`, page navigation | bounding_box/column_box/document specs as op scripts |
-| 2 | Text: `text`, `text_box`, `formatted_text`, inline format, `draw_text`, overflow modes (truncate, shrink_to_fit, expand), alignment/valign, leading, spacing, rotation; std-14 AFM with kerning | text specs and manual text section |
+| 0 | Oracle harness: Ruby driver, op language, comparator (with the reader extensions it needs), negative controls, `scripts/check.mbtx`; enable the js target (packages declare `native+wasm` today) or record why not | seed scripts compare clean twice in a row; every negative control fails |
+| 1 | Output integration (§1) designed and upstreamed; `Document` core: page setup, margins, cursor, bounding/column boxes, `move_down`/`pad`/`float`, page navigation | bounding_box/column_box/document specs as op scripts |
+| 2 | Text: `text`, `text_box`, `formatted_text`, inline format, `draw_text`, overflow modes (truncate, shrink_to_fit, expand), alignment/valign, leading, spacing, rotation, fragment and draw-text callbacks; std-14 AFM with kerning; TTF fonts and fallback fonts as the text specs use them | text specs (incl. the mixed AFM/TTF fallback ones) and manual text section |
 | 3 | Graphics: paths, shapes, colours (RGB/CMYK), stroke styles, transformations, transparency, soft masks, gradients | graphics specs and manual |
-| 4 | Fonts: TTF/OTF/TTC/dfont, subsetting, fallback fonts, kerning | font specs |
-| 5 | Images: PNG (all types, transparency), JPEG; inline images via fragment callbacks | images specs |
+| 4 | Fonts in full: OTF/CFF, TTC, dfont, subsetting quality, kerning; rerun the whole text suite | font specs; text suite still clean |
+| 5 | Images: PNG (all types, transparency), JPEG; inline images | images specs |
 | 6 | Navigation and repeated content: outline, links, destinations, annotations, page labels, `number_pages`, repeaters, stamps, grid, `View` | remaining specs; manual outline/repeatable_content |
 | 7 | Security; prawn-templates on pdflite's reader | specs |
 | 8 | prawn-table (full), prawn-svg upgrade, prawn-icon | their specs and manuals |
