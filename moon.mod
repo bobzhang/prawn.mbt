@@ -15,7 +15,7 @@ description = "Prawn's layout behaviour for MoonBit on moonbitlang/pagelayout: t
 import {
   "moonbitlang/async@0.22.4",
   "moonbitlang/pagelayout@0.7.1",
-  "moonbitlang/pdflite@0.3.2",
+  "moonbitlang/pdflite@0.3.3",
 }
 
 preferred_target = "native"

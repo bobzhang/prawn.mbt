@@ -788,32 +788,7 @@ fn Walk::ops(
       }
       _ => ()
     }
-    let result = match op {
-      // pdflite 0.3.2 applies the whole /ExtGState resource dictionary
-      // instead of the named entry: hand it a dictionary holding only that
-      Op_gs(name) => {
-        let named = lookup(doc, resources, "ExtGState").bind(d => {
-          lookup(doc, d, name_text(name))
-        })
-        guard named is Some(extgstate) else {
-          fail("no ExtGState \{name_text(name)}")
-        }
-        let only = @syntax.pdf_dictionary([(pdf_name("/ExtGState"), extgstate)])
-        let applied = doc.content_apply_resource_op(state, only, op)
-        // nor does it take the soft mask (/SMask, /None to clear it)
-        match lookup(doc, extgstate, "SMask") {
-          Some(PdfNameObject(_)) =>
-            {
-              ..applied,
-              state: { ..applied.state, soft_mask: @syntax.PdfNull, },
-            }
-          Some(mask) =>
-            { ..applied, state: { ..applied.state, soft_mask: mask, }, }
-          None => applied
-        }
-      }
-      _ => doc.content_apply_resource_op(state, resources, op)
-    }
+    let result = doc.content_apply_resource_op(state, resources, op)
     for entry in result.entries {
       match entry.object {
         PdfContentPathObject(path) => self.path(result.state, path, path_ctm)
@@ -913,22 +888,12 @@ fn inspect_page(
 ) -> PageView raise {
   let box = doc.parse_rectangle(page.mediabox)
   let ops = doc.parse_content_ops_with_resources(page.resources, page.content)
-  let initial = @pdflite.pdf_content_initial_operator_state(
+  let state = @pdflite.pdf_content_initial_operator_state(
     box.min_x,
     box.min_y,
     box.max_x,
     box.max_y,
   )
-  // The initial colour is black (PDF 32000-1:2008, 8.4.1); pdflite 0.3.2
-  // starts from gray 1.0, which is white.
-  let state = {
-    ..initial,
-    path_state: {
-      ..initial.path_state,
-      colour_stroke: PdfContentColourFloats([0.0]),
-      colour_non_stroke: PdfContentColourFloats([0.0]),
-    },
-  }
   let walk : Walk = {
     doc,
     glyphs: [],
