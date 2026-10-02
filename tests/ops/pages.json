@@ -1,0 +1,15 @@
+{
+  "document": { "page_size": "LETTER", "margin": [72, 54] },
+  "ops": [
+    ["text", "First page"],
+    ["start_new_page", { "layout": ":landscape" }],
+    ["?bounds"],
+    ["text", "Landscape page"],
+    ["start_new_page", { "size": "A5", "margin": 20 }],
+    ["?bounds"],
+    ["go_to_page", 1],
+    ["?page_number"],
+    ["text", "Back on page one"],
+    ["?page_count"]
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "ops": [
+    ["text", "Hello, Prawn."],
+    ["?cursor"],
+    ["?page_number"]
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "ops": [
+    ["move_down", 20],
+    ["bounding_box", [50, 600], { "width": 200, "height": 150 }, { "block": [
+      ["stroke_bounds"],
+      ["?bounds"],
+      ["text", "Inside a fixed box, long enough to wrap onto several lines within the box."],
+      ["?cursor"],
+      ["bounding_box", [20, 80], { "width": 100 }, { "block": [
+        ["text", "Nested, stretchy."],
+        ["?bounds"]
+      ] }],
+      ["?cursor"]
+    ] }],
+    ["?cursor"],
+    ["float", { "block": [["move_down", 100], ["text", "floated"]] }],
+    ["?cursor"],
+    ["indent", 30, 10, { "block": [["text", "Indented on both sides by an amount that makes it wrap at least once here."], ["?bounds"]] }]
+  ]
+}

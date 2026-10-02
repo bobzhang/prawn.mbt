@@ -1,0 +1,16 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "Bold ", "styles": [":bold"] },
+      { "text": "italic ", "styles": [":italic"], "callback": { "trace": "italic" } },
+      { "text": "coloured ", "color": "FF0000" },
+      { "text": "underlined ", "styles": [":underline"] },
+      { "text": "big", "size": 20 },
+      { "text": " and a link", "link": "https://example.com", "callback": { "trace": "link", "phase": "behind" } }
+    ]],
+    ["?cursor"],
+    ["text", "Inline <b>bold</b> and <i>italic</i> and <color rgb='0000FF'>blue</color>.", { "inline_format": true }],
+    ["?cursor"],
+    ["text", "Drawn by a callback", { "draw_text_callback": { "trace": "draw" } }]
+  ]
+}

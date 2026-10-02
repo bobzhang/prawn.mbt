@@ -1,0 +1,178 @@
+// Run operation scripts (docs/op-scripts.md) through Ruby Prawn.
+//
+// Usage: moon run --target native scripts/oracle.mbtx -- [options] [NAME...]
+//   --ops DIR     the scripts to run (default tests/ops); NAME selects
+//                 scripts by file name without `.json`
+//   --out DIR     where to write NAME.pdf and NAME.jsonl (default
+//                 _build/oracle/ruby)
+//   --ruby RUBY   the Ruby to use (default $PRAWN_RUBY, else Homebrew's Ruby
+//                 when installed, else `ruby` on PATH)
+//   --determinism run every script twice and fail unless both runs write the
+//                 same PDF and log bytes
+//
+// Exits non-zero when a script fails to run (or, with --determinism, is not
+// deterministic).
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+/// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
+/// Apple silicon and Intel).
+let ruby_candidates : Array[String] = [
+  "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+]
+
+///|
+let driver : String = "scripts/oracle/driver.rb"
+
+///|
+struct Options {
+  mut ops : String
+  mut out : String
+  mut ruby : String?
+  mut determinism : Bool
+  names : Array[String]
+}
+
+///|
+fn parse_args(args : Array[String]) -> Options raise {
+  let opts = {
+    ops: "tests/ops",
+    out: "_build/oracle/ruby",
+    ruby: None,
+    determinism: false,
+    names: [],
+  }
+  let mut i = 0
+  while i < args.length() {
+    let arg = args[i]
+    let value = () => {
+      i = i + 1
+      if i >= args.length() {
+        fail("\{arg} needs a value")
+      }
+      args[i]
+    }
+    match arg {
+      "--" => ()
+      "--ops" => opts.ops = value()
+      "--out" => opts.out = value()
+      "--ruby" => opts.ruby = Some(value())
+      "--determinism" => opts.determinism = true
+      _ => opts.names.push(arg)
+    }
+    i = i + 1
+  }
+  opts
+}
+
+///|
+async fn exists(path : String) -> Bool {
+  @fs.exists(path) catch {
+    _ => false
+  }
+}
+
+///|
+async fn find_ruby(flag : String?) -> String {
+  match flag {
+    Some(ruby) => return ruby
+    None => ()
+  }
+  match @env.get_env_var("PRAWN_RUBY") {
+    Some(ruby) if ruby != "" => return ruby
+    _ => ()
+  }
+  for candidate in ruby_candidates {
+    if exists(candidate) {
+      return candidate
+    }
+  }
+  "ruby"
+}
+
+///|
+/// Runs one script; the error message on failure.
+async fn run_one(
+  ruby : String,
+  script : String,
+  pdf : String,
+  log : String,
+) -> String? {
+  let (code, out) = @process.collect_output_merged(ruby, [
+    driver, script, pdf, log,
+  ])
+  if code == 0 {
+    None
+  } else {
+    Some(out.text())
+  }
+}
+
+///|
+async fn read_bytes(path : String) -> Bytes {
+  @fs.read_file(path).binary()
+}
+
+///|
+async fn main {
+  let opts = parse_args(@env.args()[1:].to_owned())
+  let ruby = find_ruby(opts.ruby)
+  if !exists("\{@fs.realpath(".")}/.repos/prawn/lib/prawn.rb") {
+    fail("Prawn is expected in .repos/prawn (see PLAN.md)")
+  }
+  let scripts = @fs.readdir(opts.ops, sort=true).filter(f => f.has_suffix(
+    ".json",
+  ))
+  let selected = scripts.filter(f => {
+    opts.names.is_empty() || opts.names.contains(f[:f.length() - 5].to_owned())
+  })
+  if selected.is_empty() {
+    fail("no scripts selected in \{opts.ops}")
+  }
+  ignore(@process.run("mkdir", ["-p", opts.out]))
+  let mut failures = 0
+  for file in selected {
+    let name = file[:file.length() - 5].to_owned()
+    let script = "\{opts.ops}/\{file}"
+    let pdf = "\{opts.out}/\{name}.pdf"
+    let log = "\{opts.out}/\{name}.jsonl"
+    match run_one(ruby, script, pdf, log) {
+      Some(err) => {
+        failures = failures + 1
+        println("FAIL \{name}\n\{err}")
+        continue
+      }
+      None => ()
+    }
+    if opts.determinism {
+      let pdf2 = "\{opts.out}/\{name}.again.pdf"
+      let log2 = "\{opts.out}/\{name}.again.jsonl"
+      match run_one(ruby, script, pdf2, log2) {
+        Some(err) => {
+          failures = failures + 1
+          println("FAIL \{name} (second run)\n\{err}")
+          continue
+        }
+        None => ()
+      }
+      let same = read_bytes(pdf) == read_bytes(pdf2) &&
+        read_bytes(log) == read_bytes(log2)
+      ignore(@process.run("rm", ["-f", pdf2, log2]))
+      if !same {
+        failures = failures + 1
+        println("FAIL \{name}: two runs differ")
+        continue
+      }
+    }
+    println("ok   \{name}")
+  }
+  println("\{selected.length() - failures}/\{selected.length()} scripts ran")
+  if failures > 0 {
+    fail("\{failures} script(s) failed")
+  }
+}
