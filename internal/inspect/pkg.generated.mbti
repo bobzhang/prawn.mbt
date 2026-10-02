@@ -24,18 +24,29 @@ pub(all) struct Glyph {
   text : String
   font : String
   size : Double
+  matrix : Array[Double]
   x : Double
   y : Double
   mode : Int
-  space : String
-  colour : Array[Double]
-  alpha : Double
+  fill : Paint?
+  stroke : Paint?
+  line_width : Double?
+  clip : Rect?
+  blend : String
+  extent : Rect
+  order : Int
 }
 
 pub(all) struct Mark {
   kind : String
-  shape : Json
-  style : Json
+  points : Array[Double]
+  lengths : Array[Double]
+  paints : Array[Paint]
+  exact : Json
+  clip : Rect?
+  blend : String
+  extent : Rect
+  order : Int
 }
 
 pub(all) struct PageView {
@@ -45,10 +56,25 @@ pub(all) struct PageView {
   glyphs : Array[Glyph]
   marks : Array[Mark]
 }
+pub fn PageView::to_json(Self) -> Json
+
+pub(all) struct Paint {
+  space : String
+  values : Array[Double]
+  alpha : Double
+}
+
+pub(all) struct Rect {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+}
 
 pub(all) struct Tolerance {
   position : Double
   colour : Double
+  exact : Double
 }
 
 // Type aliases

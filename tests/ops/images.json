@@ -1,0 +1,9 @@
+{
+  "ops": [
+    ["image", "$PRAWN/data/images/pigs.jpg", { "at": [36, 750], "width": 150 }],
+    ["image", "$PRAWN/data/images/dice.png", { "at": [220, 750], "width": 120 }],
+    ["image", "$PRAWN/data/images/indexed_transparency.png", { "at": [360, 750], "width": 100 }],
+    ["image", "$PRAWN/data/images/16bit.png", { "at": [36, 550], "width": 80 }],
+    ["?cursor"]
+  ]
+}

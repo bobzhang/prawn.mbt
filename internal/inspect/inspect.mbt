@@ -1,6 +1,7 @@
 ///|
 /// What a page shows, in the terms the comparison judges (PLAN.md §3): its
-/// size, every glyph and every mark (path, image, shading) in paint order.
+/// size, every glyph and every mark (path, image, shading), each with its
+/// place in the page's paint order.
 pub(all) struct PageView {
   width : Double
   height : Double
@@ -10,28 +11,74 @@ pub(all) struct PageView {
 }
 
 ///|
-/// One shown glyph. `x`/`y` are its origin on the baseline in page
-/// coordinates (PDF points, y up), `size` the effective font size.
-pub(all) struct Glyph {
-  text : String
-  font : String
-  size : Double
-  x : Double
-  y : Double
-  mode : Int
+/// A colour as painted: its colour space, components and constant alpha.
+pub(all) struct Paint {
   space : String
-  colour : Array[Double]
+  values : Array[Double]
   alpha : Double
 }
 
 ///|
-/// A non-text mark: `kind` is "path", "image", "inline-image" or "shading";
-/// `shape` its geometry (a path's segments, an image's placement), `style`
-/// how it is painted (colours, line style, alpha, the image's properties).
+/// An axis-aligned rectangle in page space.
+pub(all) struct Rect {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+}
+
+///|
+/// One shown glyph. `x`/`y` is its baseline origin in page space (PDF
+/// points, y up); `size` the font size it was shown at (`Tf`); `matrix` the
+/// linear part `[a, b, c, d]` of its render matrix (size, horizontal
+/// scaling and rotation in page space). `fill` and `stroke` are the paints
+/// its render mode uses.
+pub(all) struct Glyph {
+  text : String
+  font : String
+  size : Double
+  matrix : Array[Double]
+  x : Double
+  y : Double
+  mode : Int
+  fill : Paint?
+  stroke : Paint?
+  line_width : Double?
+  clip : Rect?
+  blend : String
+  /// Where it is drawn (its font's ascent to descent, its advance), for
+  /// paint-order checks; not compared itself.
+  extent : Rect
+  /// Its position in the page's paint order (glyphs and marks together).
+  order : Int
+}
+
+///|
+/// A non-text mark: `kind` is "path", "image", "inline-image" or "shading".
+/// `points` are its geometry in page space (a path's segment points, an
+/// image's corners); `lengths` its stroke's line width and dash in page
+/// units; `paints` its stroke and fill; `exact` the properties that must
+/// match exactly (segment kinds and closure, winding rule, line cap and
+/// join, an image's dictionary and data hash, …).
 pub(all) struct Mark {
   kind : String
-  shape : Json
-  style : Json
+  points : Array[Double]
+  lengths : Array[Double]
+  paints : Array[Paint]
+  exact : Json
+  clip : Rect?
+  blend : String
+  extent : Rect
+  order : Int
+}
+
+///|
+fn pdf_name(text : String) -> @core.PdfName {
+  let bytes = Array::make(text.length(), b'\x00')
+  for i in 0..<text.length() {
+    bytes[i] = text[i].to_int().to_byte()
+  }
+  @core.pdf_name_of_bytes(Bytes::from_array(bytes))
 }
 
 ///|
@@ -46,15 +93,6 @@ fn name_text(n : @core.PdfName) -> String {
   } else {
     text
   }
-}
-
-///|
-fn pdf_name(text : String) -> @core.PdfName {
-  let bytes = Array::make(text.length(), b'\x00')
-  for i in 0..<text.length() {
-    bytes[i] = text[i].to_int().to_byte()
-  }
-  @core.pdf_name_of_bytes(Bytes::from_array(bytes))
 }
 
 ///|
@@ -100,82 +138,118 @@ fn colour_values(values : @pdflite.PdfContentColourValues) -> Array[Double] {
 }
 
 ///|
-fn point_json(m : @geometry.TransformMatrix, x : Double, y : Double) -> Json {
-  let p = m.apply(@geometry.point2(x, y))
-  [p.x, p.y]
-}
-
-///|
-fn colour_json(
-  space : @pdflite.PdfColourSpace,
-  values : @pdflite.PdfContentColourValues,
-) -> Json {
+fn fill_paint(state : @pdflite.PdfContentOperatorState) -> Paint {
   {
-    "space": space_name(space).to_json(),
-    "values": colour_values(values).to_json(),
+    space: space_name(state.path_state.colourspace_non_stroke),
+    values: colour_values(state.path_state.colour_non_stroke),
+    alpha: state.alpha_constant_non_stroke,
   }
 }
 
 ///|
-/// The properties of an image XObject the comparison checks: its
-/// dictionary entries that change how it looks, and a hash of its data
-/// (decoded where pdflite decodes it; a DCT stream's own bytes otherwise).
-fn image_style(
-  doc : @pdflite.PdfDocument,
-  resources : @syntax.PdfObject,
-  name : String,
-) -> Json {
-  let xobjects = doc.lookup_direct(pdf_name("/XObject"), resources)
-  guard xobjects is Some(dict) else { return { "missing": true } }
-  guard doc.lookup_direct(pdf_name("/" + name), dict) is Some(image) else {
-    return { "missing": true }
+fn stroke_paint(state : @pdflite.PdfContentOperatorState) -> Paint {
+  {
+    space: space_name(state.path_state.colourspace_stroke),
+    values: colour_values(state.path_state.colour_stroke),
+    alpha: state.alpha_constant_stroke,
   }
-  let entry = fn(key : String) -> Json {
-    match doc.lookup_direct(pdf_name(key), image) {
-      Some(obj) => object_json(doc, obj)
-      None => Json::null()
+}
+
+///|
+fn blend_name(doc : @pdflite.PdfDocument, mode : @syntax.PdfObject) -> String {
+  match mode {
+    PdfNameObject(n) => name_text(n)
+    PdfArray(items) if items.length() > 0 => blend_name(doc, items[0])
+    PdfIndirect(n) => blend_name(doc, doc.lookup_object_or_null(n))
+    _ => "Normal"
+  }
+}
+
+///|
+/// How far `m` stretches lengths, on average over directions.
+fn scale_of(m : @geometry.TransformMatrix) -> Double {
+  (m.a * m.d - m.b * m.c).abs().sqrt()
+}
+
+///|
+fn bounds_of(points : Array[Double]) -> Rect {
+  let mut x0 = @double.infinity
+  let mut y0 = @double.infinity
+  let mut x1 = @double.neg_infinity
+  let mut y1 = @double.neg_infinity
+  let mut i = 0
+  while i + 1 < points.length() {
+    let x = points[i]
+    let y = points[i + 1]
+    if x < x0 {
+      x0 = x
     }
+    if x > x1 {
+      x1 = x
+    }
+    if y < y0 {
+      y0 = y
+    }
+    if y > y1 {
+      y1 = y
+    }
+    i = i + 2
   }
-  let data = match image {
-    PdfStreamObject(_) => image.stream_bytes() catch { _ => b"" }
-    _ => b""
+  { x0, y0, x1, y1, }
+}
+
+///|
+fn corners(
+  m : @geometry.TransformMatrix,
+  r : @geometry.PdfRectangle,
+) -> Array[Double] {
+  let out : Array[Double] = []
+  for
+    p in [
+      (r.min_x, r.min_y),
+      (r.max_x, r.min_y),
+      (r.max_x, r.max_y),
+      (r.min_x, r.max_y),
+    ] {
+    let q = m.apply(@geometry.point2(p.0, p.1))
+    out.push(q.x)
+    out.push(q.y)
   }
-  {
-    "width": entry("/Width"),
-    "height": entry("/Height"),
-    "bits": entry("/BitsPerComponent"),
-    "colour_space": entry("/ColorSpace"),
-    "decode": entry("/Decode"),
-    "filter": entry("/Filter"),
-    "mask": entry("/Mask"),
-    "soft_mask": doc.lookup_direct(pdf_name("/SMask"), image) is Some(_),
-    "data": fnv(data).to_json(),
+  out
+}
+
+///|
+fn intersect(a : Rect?, b : Rect) -> Rect {
+  match a {
+    None => b
+    Some(a) =>
+      {
+        x0: if a.x0 > b.x0 {
+          a.x0
+        } else {
+          b.x0
+        },
+        y0: if a.y0 > b.y0 {
+          a.y0
+        } else {
+          b.y0
+        },
+        x1: if a.x1 < b.x1 {
+          a.x1
+        } else {
+          b.x1
+        },
+        y1: if a.y1 < b.y1 {
+          a.y1
+        } else {
+          b.y1
+        },
+      }
   }
 }
 
 ///|
-/// A PDF object as JSON, following references (with a depth limit) and
-/// leaving streams as their dictionaries.
-fn object_json(
-  doc : @pdflite.PdfDocument,
-  obj : @syntax.PdfObject,
-  depth? : Int = 0,
-) -> Json {
-  if depth > 8 {
-    return "…"
-  }
-  match obj {
-    PdfIndirect(n) =>
-      object_json(doc, doc.lookup_object_or_null(n), depth=depth + 1)
-    PdfNameObject(n) => ("/" + name_text(n)).to_json()
-    PdfArray(items) =>
-      Json::array(items.map(x => object_json(doc, x, depth=depth + 1)))
-    _ => ToJson::to_json(obj)
-  }
-}
-
-///|
-/// FNV-1a, 64-bit, as a hex string: enough to tell image data apart.
+/// FNV-1a, 64-bit, as a hex string: enough to tell data apart.
 fn fnv(data : Bytes) -> String {
   let mut h = 0xcbf29ce484222325UL
   for b in data {
@@ -190,8 +264,71 @@ fn fnv(data : Bytes) -> String {
 }
 
 ///|
-/// The render matrix of a glyph shown with text matrix `tm`: its origin is
-/// the glyph's baseline origin in page space.
+/// A PDF object as JSON: references followed (to a depth limit), streams as
+/// their dictionary plus a hash of their (decoded) data.
+fn object_json(
+  doc : @pdflite.PdfDocument,
+  obj : @syntax.PdfObject,
+  depth? : Int = 0,
+) -> Json {
+  if depth > 8 {
+    return "…"
+  }
+  match obj {
+    PdfIndirect(n) =>
+      object_json(doc, doc.lookup_object_or_null(n), depth=depth + 1)
+    PdfNameObject(n) => ("/" + name_text(n)).to_json()
+    PdfArray(items) =>
+      Json::array(items.map(x => object_json(doc, x, depth=depth + 1)))
+    PdfDictionary(entries) => {
+      let out : Map[String, Json] = Map([])
+      for entry in entries {
+        out[name_text(entry.0)] = object_json(doc, entry.1, depth=depth + 1)
+      }
+      Json::object(out)
+    }
+    PdfStreamObject(stream) => {
+      let out : Map[String, Json] = Map([])
+      match stream.dictionary {
+        PdfDictionary(entries) =>
+          for entry in entries {
+            let key = name_text(entry.0)
+            // how the data is stored, not what it is
+            if key != "Length" && key != "Filter" && key != "DecodeParms" {
+              out[key] = object_json(doc, entry.1, depth=depth + 1)
+            }
+          }
+        _ => ()
+      }
+      let data = obj.stream_bytes() catch { _ => b"" }
+      out["data"] = fnv(data).to_json()
+      Json::object(out)
+    }
+    _ => ToJson::to_json(obj)
+  }
+}
+
+///|
+/// What a page's content shows, collected while walking its operators.
+priv struct Walk {
+  doc : @pdflite.PdfDocument
+  glyphs : Array[Glyph]
+  marks : Array[Mark]
+  mut order : Int
+  /// The clip in effect (page space; `None` is the whole page), with the
+  /// clips saved by `q`.
+  mut clip : Rect?
+  clips : Array[Rect?]
+}
+
+///|
+fn Walk::next_order(self : Walk) -> Int {
+  self.order = self.order + 1
+  self.order
+}
+
+///|
+/// The render matrix of a glyph shown with text matrix `tm`.
 fn render_matrix(
   state : @pdflite.PdfContentOperatorState,
   tm : @geometry.TransformMatrix,
@@ -211,29 +348,20 @@ fn render_matrix(
 }
 
 ///|
-fn glyphs_of_show(
+fn Walk::show(
+  self : Walk,
   state : @pdflite.PdfContentOperatorState,
   op : @content.PdfContentOp,
-  out : Array[Glyph],
 ) -> Unit raise {
   let ts = state.text_state
   let font = ts.current_font
+  // ' and " move to the next line themselves
   let placed = ts.content_apply_text_op(font, state.ctm, op)
   let name = font_name(font)
-  let stroking = ts.rendering_mode == 1 || ts.rendering_mode == 2
-  let (space, values, alpha) = if stroking {
-    (
-      state.path_state.colourspace_stroke,
-      state.path_state.colour_stroke,
-      state.alpha_constant_stroke,
-    )
-  } else {
-    (
-      state.path_state.colourspace_non_stroke,
-      state.path_state.colour_non_stroke,
-      state.alpha_constant_non_stroke,
-    )
-  }
+  let mode = ts.rendering_mode
+  let fills = mode == 0 || mode == 2 || mode == 4 || mode == 6
+  let strokes = mode == 1 || mode == 2 || mode == 5 || mode == 6
+  let blend = blend_name(self.doc, state.blend_mode)
   for glyph in placed.glyphs {
     let m = render_matrix(state, glyph.text_matrix)
     let codepoints = font
@@ -243,18 +371,367 @@ fn glyphs_of_show(
     for cp in codepoints {
       text.write_char(cp.unsafe_to_char())
     }
-    out.push({
+    let b = glyph.bounding_box
+    self.glyphs.push({
       text: text.to_string(),
       font: name,
-      size: (m.c * m.c + m.d * m.d).sqrt(),
+      size: ts.font_size,
+      matrix: [m.a, m.b, m.c, m.d],
       x: m.e,
       y: m.f,
-      mode: ts.rendering_mode,
-      space: space_name(space),
-      colour: colour_values(values),
-      alpha,
+      mode,
+      fill: if fills {
+        Some(fill_paint(state))
+      } else {
+        None
+      },
+      stroke: if strokes {
+        Some(stroke_paint(state))
+      } else {
+        None
+      },
+      line_width: if strokes {
+        Some(state.path_state.line_width * scale_of(state.ctm))
+      } else {
+        None
+      },
+      clip: self.clip,
+      blend,
+      extent: bounds_of([b.x0, b.y0, b.x1, b.y1, b.x2, b.y2, b.x3, b.y3]),
+      order: self.next_order(),
     })
   }
+}
+
+///|
+/// A path's points in page space, with an explicit final segment back to
+/// the start of a closed subpath dropped (`re` and `m l l l l h` describe
+/// the same rectangle), and the exact facts about it.
+fn path_geometry(
+  drawn : @shape.PdfDrawnPath,
+  ctm : @geometry.TransformMatrix,
+) -> (Array[Double], Map[String, Json]) {
+  let points : Array[Double] = []
+  let subpaths : Array[Json] = []
+  let push = fn(p : @geometry.Point2) {
+    let q = ctm.apply(p)
+    points.push(q.x)
+    points.push(q.y)
+  }
+  for sub in drawn.path.subpaths {
+    if sub.segments.is_empty() {
+      continue
+    }
+    let closed = sub.closure is PdfPathClosed
+    let segments = sub.segments.copy()
+    if closed && segments.length() > 1 {
+      let start = match segments[0] {
+        PdfPathStraight(p, _) | PdfPathBezier(p, _, _, _) => p
+      }
+      match segments[segments.length() - 1] {
+        PdfPathStraight(_, q) if q.x == start.x && q.y == start.y =>
+          segments.pop() |> ignore
+        _ => ()
+      }
+    }
+    let kinds = StringBuilder()
+    for i, s in segments {
+      match s {
+        PdfPathStraight(p, q) => {
+          if i == 0 {
+            push(p)
+          }
+          push(q)
+          kinds.write_char('l')
+        }
+        PdfPathBezier(p, c1, c2, q) => {
+          if i == 0 {
+            push(p)
+          }
+          push(c1)
+          push(c2)
+          push(q)
+          kinds.write_char('c')
+        }
+      }
+    }
+    if closed {
+      kinds.write_char('h')
+    }
+    subpaths.push(kinds.to_string().to_json())
+  }
+  let exact : Map[String, Json] = Map([])
+  exact["subpaths"] = Json::array(subpaths)
+  exact["stroked"] = drawn.stroked.to_json()
+  exact["filled"] = drawn.filled.to_json()
+  if drawn.filled {
+    exact["even_odd"] = (drawn.path.winding_rule is PdfPathEvenOdd).to_json()
+  }
+  (points, exact)
+}
+
+///|
+fn Walk::path(
+  self : Walk,
+  state : @pdflite.PdfContentOperatorState,
+  drawn : @shape.PdfDrawnPath,
+) -> Unit {
+  let (points, exact) = path_geometry(drawn, state.ctm)
+  let ps = state.path_state
+  let lengths : Array[Double] = []
+  let paints : Array[Paint] = []
+  if drawn.stroked {
+    let scale = scale_of(state.ctm)
+    lengths.push(ps.line_width * scale)
+    for x in ps.dash_pattern.array {
+      lengths.push(x * scale)
+    }
+    // the phase only matters with a dash
+    lengths.push(
+      if ps.dash_pattern.array.is_empty() {
+        0.0
+      } else {
+        ps.dash_pattern.phase * scale
+      },
+    )
+    exact["cap"] = ps.line_cap.to_json()
+    exact["join"] = ps.line_join.to_json()
+    exact["dashes"] = ps.dash_pattern.array.length().to_json()
+    paints.push(stroke_paint(state))
+  }
+  if drawn.filled {
+    paints.push(fill_paint(state))
+  }
+  self.marks.push({
+    kind: "path",
+    points,
+    lengths,
+    paints,
+    exact: Json::object(exact),
+    clip: self.clip,
+    blend: blend_name(self.doc, state.blend_mode),
+    extent: bounds_of(points),
+    order: self.next_order(),
+  })
+}
+
+///|
+fn Walk::image(
+  self : Walk,
+  state : @pdflite.PdfContentOperatorState,
+  kind : String,
+  exact : Json,
+) -> Unit {
+  let points = corners(state.ctm, {
+    min_x: 0.0,
+    min_y: 0.0,
+    max_x: 1.0,
+    max_y: 1.0,
+  })
+  self.marks.push({
+    kind,
+    points,
+    lengths: [],
+    paints: [],
+    exact,
+    clip: self.clip,
+    blend: blend_name(self.doc, state.blend_mode),
+    extent: bounds_of(points),
+    order: self.next_order(),
+  })
+}
+
+///|
+fn lookup(
+  doc : @pdflite.PdfDocument,
+  dict : @syntax.PdfObject,
+  key : String,
+) -> @syntax.PdfObject? {
+  doc.lookup_direct(pdf_name("/" + key), dict)
+}
+
+///|
+fn number(obj : @syntax.PdfObject) -> Double {
+  match obj {
+    PdfInteger(n) => n.to_double()
+    PdfReal(x) => x
+    _ => 0.0
+  }
+}
+
+///|
+fn is_path_construction(op : @content.PdfContentOp) -> Bool {
+  match op {
+    Op_W
+    | Op_Wstar
+    | Op_m(_)
+    | Op_l(_)
+    | Op_c(_)
+    | Op_v(_)
+    | Op_y(_)
+    | Op_h
+    | Op_re(_) => true
+    _ => false
+  }
+}
+
+///|
+/// Walks content operators from `initial`, collecting what they show; the
+/// state after them.
+fn Walk::ops(
+  self : Walk,
+  initial : @pdflite.PdfContentOperatorState,
+  resources : @syntax.PdfObject,
+  ops : Array[@content.PdfContentOp],
+) -> @pdflite.PdfContentOperatorState raise {
+  let doc = self.doc
+  let mut state = initial
+  let mut clipping = false
+  // the points of the path under construction, in page space (for clips)
+  let building : Array[Double] = []
+  for op in ops {
+    let add = fn(x : Double, y : Double) {
+      let p = state.ctm.apply(@geometry.point2(x, y))
+      building.push(p.x)
+      building.push(p.y)
+    }
+    match op {
+      Op_m(x, y) | Op_l(x, y) => add(x, y)
+      Op_c(x1, y1, x2, y2, x3, y3) => {
+        add(x1, y1)
+        add(x2, y2)
+        add(x3, y3)
+      }
+      Op_v(x2, y2, x3, y3) | Op_y(x2, y2, x3, y3) => {
+        add(x2, y2)
+        add(x3, y3)
+      }
+      Op_re(x, y, w, h) => {
+        add(x, y)
+        add(x + w, y + h)
+        add(x, y + h)
+        add(x + w, y)
+      }
+      _ => ()
+    }
+    match op {
+      Op_Tj(_) | Op_TJ(_) | Op_quote(_) | Op_double_quote(_, _, _) =>
+        self.show(state, op)
+      Op_q => self.clips.push(self.clip)
+      Op_Q => self.clip = self.clips.pop().unwrap_or(None)
+      Op_W | Op_Wstar => clipping = true
+      Op_InlineImage(dict, _, data) =>
+        self.image(state, "inline-image", {
+          "dictionary": object_json(doc, dict),
+          "data": fnv(data).to_json(),
+        })
+      Op_Do(name) => {
+        let xobject = lookup(doc, resources, "XObject").bind(x => {
+          lookup(doc, x, name_text(name))
+        })
+        guard xobject is Some(xobject) else {
+          fail("no XObject \{name_text(name)}")
+        }
+        match lookup(doc, xobject, "Subtype") {
+          Some(PdfNameObject(subtype)) if name_text(subtype) == "Form" => {
+            self.form(state, resources, xobject)
+            continue
+          }
+          _ => self.image(state, "image", object_json(doc, xobject))
+        }
+      }
+      _ => ()
+    }
+    let result = match op {
+      // pdflite 0.3.2 applies the whole /ExtGState resource dictionary
+      // instead of the named entry: hand it a dictionary holding only that
+      Op_gs(name) => {
+        let named = lookup(doc, resources, "ExtGState").bind(d => {
+          lookup(doc, d, name_text(name))
+        })
+        guard named is Some(extgstate) else {
+          fail("no ExtGState \{name_text(name)}")
+        }
+        let only = @syntax.pdf_dictionary([(pdf_name("/ExtGState"), extgstate)])
+        doc.content_apply_resource_op(state, only, op)
+      }
+      _ => doc.content_apply_resource_op(state, resources, op)
+    }
+    for entry in result.entries {
+      match entry.object {
+        PdfContentPathObject(path) => self.path(result.state, path)
+        PdfContentShadingObject(name) =>
+          self.marks.push({
+            kind: "shading",
+            points: [],
+            lengths: [],
+            paints: [],
+            exact: match
+              lookup(doc, resources, "Shading").bind(s => lookup(doc, s, name)) {
+              Some(shading) => object_json(doc, shading)
+              None => Json::null()
+            },
+            clip: self.clip,
+            blend: blend_name(doc, result.state.blend_mode),
+            extent: self.clip.unwrap_or({ x0: 0.0, y0: 0.0, x1: 0.0, y1: 0.0, }),
+            order: self.next_order(),
+          })
+        // images and glyphs are recorded above
+        PdfContentImageObject(_)
+        | PdfContentInlineImageObject
+        | PdfContentGlyphObject(_) => ()
+      }
+    }
+    // the path a W marked becomes part of the clip when it is painted
+    // (usually by n); its bounding box stands for it
+    if !is_path_construction(op) {
+      if clipping && building.length() > 0 {
+        self.clip = Some(intersect(self.clip, bounds_of(building)))
+      }
+      clipping = false
+      building.clear()
+    }
+    state = result.state
+  }
+  state
+}
+
+///|
+/// A form XObject's content, painted as if in `q … Q`.
+fn Walk::form(
+  self : Walk,
+  state : @pdflite.PdfContentOperatorState,
+  resources : @syntax.PdfObject,
+  form : @syntax.PdfObject,
+) -> Unit raise {
+  let doc = self.doc
+  let matrix : @geometry.TransformMatrix = match lookup(doc, form, "Matrix") {
+    Some(PdfArray(items)) if items.length() == 6 => {
+      let n = items.map(number)
+      { a: n[0], b: n[1], c: n[2], d: n[3], e: n[4], f: n[5], }
+    }
+    _ => { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0, }
+  }
+  let ctm = @geometry.transform_matrix_compose(state.ctm, matrix)
+  let saved = self.clip
+  self.clips.push(saved)
+  match lookup(doc, form, "BBox") {
+    Some(box) => {
+      let r = doc.parse_rectangle(box)
+      self.clip = Some(intersect(self.clip, bounds_of(corners(ctm, r))))
+    }
+    None => ()
+  }
+  let form_resources = lookup(doc, form, "Resources").unwrap_or(resources)
+  let ops = doc.parse_content_ops_with_resources(form_resources, [form])
+  // fonts are resource names: the form's own, not the page's cached ones
+  let inner = {
+    ..state,
+    ctm,
+    text_state: { ..state.text_state, font_cache: [], },
+  }
+  self.ops(inner, form_resources, ops) |> ignore
+  self.clip = self.clips.pop().unwrap_or(saved)
 }
 
 ///|
@@ -273,8 +750,6 @@ fn inspect_page(
 ) -> PageView raise {
   let box = doc.parse_rectangle(page.mediabox)
   let ops = doc.parse_content_ops_with_resources(page.resources, page.content)
-  let glyphs : Array[Glyph] = []
-  let marks : Array[Mark] = []
   let initial = @pdflite.pdf_content_initial_operator_state(
     box.min_x,
     box.min_y,
@@ -283,7 +758,7 @@ fn inspect_page(
   )
   // The initial colour is black (PDF 32000-1:2008, 8.4.1); pdflite 0.3.2
   // starts from gray 1.0, which is white.
-  let mut state = {
+  let state = {
     ..initial,
     path_state: {
       ..initial.path_state,
@@ -291,92 +766,20 @@ fn inspect_page(
       colour_non_stroke: PdfContentColourFloats([0.0]),
     },
   }
-  for op in ops {
-    match op {
-      Op_Tj(_) | Op_TJ(_) | Op_quote(_) | Op_double_quote(_, _, _) => {
-        // ' and " move to the next line (and set spacing) first
-        let before = match op {
-          Op_quote(_) | Op_double_quote(_, _, _) =>
-            doc.content_apply_resource_op(state, page.resources, Op_Tstar).state
-          _ => state
-        }
-        glyphs_of_show(before, op, glyphs)
-        state = doc.content_apply_resource_op(state, page.resources, op).state
-        continue
-      }
-      _ => ()
-    }
-    let result = doc.content_apply_resource_op(state, page.resources, op)
-    for entry in result.entries {
-      match entry.object {
-        PdfContentPathObject(path) => {
-          let ps = result.state.path_state
-          // only what paints this path: a stroke's line style and colour, a
-          // fill's colour
-          let style : Map[String, Json] = Map([])
-          if path.stroked {
-            style["stroke"] = colour_json(
-              ps.colourspace_stroke,
-              ps.colour_stroke,
-            )
-            style["line_width"] = ps.line_width.to_json()
-            style["cap"] = ps.line_cap.to_json()
-            style["join"] = ps.line_join.to_json()
-            style["dash"] = ToJson::to_json(ps.dash_pattern)
-            style["alpha_stroke"] = result.state.alpha_constant_stroke.to_json()
-          }
-          if path.filled {
-            style["fill"] = colour_json(
-              ps.colourspace_non_stroke,
-              ps.colour_non_stroke,
-            )
-            style["alpha_fill"] = result.state.alpha_constant_non_stroke.to_json()
-          }
-          marks.push({
-            kind: "path",
-            shape: ToJson::to_json(path),
-            style: Json::object(style),
-          })
-        }
-        PdfContentImageObject(name) =>
-          marks.push({
-            kind: "image",
-            shape: placement_json(state.ctm),
-            style: image_style(doc, page.resources, name),
-          })
-        PdfContentInlineImageObject =>
-          marks.push({
-            kind: "inline-image",
-            shape: placement_json(state.ctm),
-            style: Json::null(),
-          })
-        PdfContentShadingObject(name) =>
-          marks.push({
-            kind: "shading",
-            shape: name.to_json(),
-            style: Json::null(),
-          })
-        PdfContentGlyphObject(_) => ()
-      }
-    }
-    state = result.state
+  let walk : Walk = {
+    doc,
+    glyphs: [],
+    marks: [],
+    order: 0,
+    clip: None,
+    clips: [],
   }
+  walk.ops(state, page.resources, ops) |> ignore
   {
     width: box.max_x - box.min_x,
     height: box.max_y - box.min_y,
     rotate: @page.pdf_page_int_of_rotation(page.rotate),
-    glyphs,
-    marks,
+    glyphs: walk.glyphs,
+    marks: walk.marks,
   }
-}
-
-///|
-/// Where an image's unit square lands: its corners in page space.
-fn placement_json(ctm : @geometry.TransformMatrix) -> Json {
-  [
-    point_json(ctm, 0.0, 0.0),
-    point_json(ctm, 1.0, 0.0),
-    point_json(ctm, 1.0, 1.0),
-    point_json(ctm, 0.0, 1.0),
-  ]
 }

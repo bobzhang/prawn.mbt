@@ -22,35 +22,6 @@ async fn read(path : String) -> Bytes {
 }
 
 ///|
-fn page_json(page : @inspect.PageView) -> Json {
-  {
-    "width": page.width.to_json(),
-    "height": page.height.to_json(),
-    "rotate": page.rotate.to_json(),
-    "glyphs": Json::array(
-      page.glyphs.map(g => {
-        "text": g.text.to_json(),
-        "font": g.font.to_json(),
-        "size": g.size.to_json(),
-        "x": g.x.to_json(),
-        "y": g.y.to_json(),
-        "mode": g.mode.to_json(),
-        "space": g.space.to_json(),
-        "colour": g.colour.to_json(),
-        "alpha": g.alpha.to_json(),
-      }),
-    ),
-    "marks": Json::array(
-      page.marks.map(m => {
-        "kind": m.kind.to_json(),
-        "shape": m.shape,
-        "style": m.style,
-      }),
-    ),
-  }
-}
-
-///|
 /// Runs the controls on one PDF; the violations.
 fn self_test_one(
   name : String,
@@ -92,7 +63,9 @@ async fn main {
     }
     "inspect" if args.length() == 3 => {
       let pages = @inspect.inspect(read(args[2]))
-      @stdio.stdout.write(Json::array(pages.map(page_json)).stringify() + "\n")
+      @stdio.stdout.write(
+        Json::array(pages.map(p => p.to_json())).stringify() + "\n",
+      )
     }
     "mutate" if args.length() == 5 =>
       match @inspect.mutate(read(args[3]), args[2]) {

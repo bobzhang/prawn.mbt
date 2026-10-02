@@ -5,4 +5,6 @@ import {
   "moonbitlang/pdflite/page",
   "moonbitlang/pdflite/content",
   "moonbitlang/pdflite/geometry",
+  "moonbitlang/pdflite/shape",
+  "moonbitlang/core/double",
 }
