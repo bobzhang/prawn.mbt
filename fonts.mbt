@@ -360,7 +360,11 @@ fn TextContext::apply_winansi(
     return fragments
   }
   fragments.map(f => {
-    if f.text != "" && f.style.image < 0 && self.is_standard(f.style) {
+    // a line mark's zero-width space is no text, and stays
+    if f.text != "" &&
+      f.style.image < 0 &&
+      !f.style.line_mark &&
+      self.is_standard(f.style) {
       { ..f, text: winansi_text(f.text), }
     } else {
       f
@@ -400,7 +404,11 @@ fn TextContext::apply_fallbacks(
   }
   let out : Array[Fragment] = []
   for fragment in fragments {
-    if fragment.text == "" || fragment.style.image >= 0 {
+    // a line mark stays in its font, as asciidoctor-pdf's placeholder (a
+    // NUL) is never looked for in the fallback fonts
+    if fragment.text == "" ||
+      fragment.style.image >= 0 ||
+      fragment.style.line_mark {
       out.push(fragment)
       continue
     }
