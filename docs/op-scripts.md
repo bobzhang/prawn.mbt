@@ -65,15 +65,16 @@ One JSON object per line, in the order things happened:
 Values are numbers, strings, booleans, `null`, arrays and objects. Symbols are logged as `":name"`,
 bounding boxes as `{left, bottom, width, height, absolute_left, absolute_top}`, fragments as
 `{text, width}`, and anything else as `{class}`. Paths in the Prawn checkout are logged as
-`$PRAWN/…`, so logs do not depend on where the checkout is. Floats are logged as Ruby prints them, so `1.0`
-and `1` stay distinct.
+`$PRAWN/…`, so logs do not depend on where the checkout is. Floats are logged as Ruby prints
+them, so `1.0` and `1` stay distinct.
 
 ## Determinism
 
 `moon run --target native scripts/oracle.mbtx -- --determinism` runs every script twice and fails
-unless the PDFs and logs are byte-identical. The driver fixes Ruby's warning settings (`$VERBOSE = false`, deprecation
-and experimental warnings off), so an inherited `RUBYOPT` cannot change the log. Scripts must not depend on the clock or randomness
-(set `info` dates explicitly, never use `:random` passwords).
+unless the PDFs and logs are byte-identical. The driver fixes Ruby's warning settings
+(`$VERBOSE = false`, deprecation and experimental warnings off), so an inherited `RUBYOPT` cannot
+change the log. Scripts must not depend on the clock or randomness (set `info` dates explicitly,
+never use `:random` passwords).
 
 Examples that need mocks, extension subclasses or object identity are not op scripts; they are
 hand-ported as MoonBit tests.
