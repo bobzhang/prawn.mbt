@@ -150,6 +150,34 @@ test "a bordered fragment that does not fit cannot fit, without looping" {
 }
 
 ///|
+test "a bordered fragment wraps where its padding still fits" {
+  // 12 + 5 + 12 + 5 = 34 > 30: the break falls on the padding after the
+  // x; after the first x both lines take 12 + 5 + 6 + 5 = 28
+  let style = mono_style()
+  let fragments : Array[Fragment] = [
+    { text: "1 ", style: { ..style, linenum: true, }, anchor: None, },
+    { text: "xx", style: { ..style, border_offset: 5.0, }, anchor: None, },
+  ]
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 30.0).unwrap()),
+    content=(
+      #|"1 " | "x" | "\n" | "~ " | "x"
+    ),
+  )
+  // at a blank when there is one: 12 + 5 + 24 + 5 = 46 > 44
+  let fragments : Array[Fragment] = [
+    { text: "1 ", style: { ..style, linenum: true, }, anchor: None, },
+    { text: "ab c", style: { ..style, border_offset: 5.0, }, anchor: None, },
+  ]
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 44.0).unwrap()),
+    content=(
+      #|"1 " | "ab " | "\n" | "~ " | "c"
+    ),
+  )
+}
+
+///|
 test "a wrapped line keeps the line break that ends it" {
   let style = mono_style()
   let fragments : Array[Fragment] = [
@@ -182,15 +210,46 @@ test "a wrapped line keeps the line break that ends it" {
 }
 
 ///|
-test "line numbers wider than the line cannot fit" {
+test "a line number wider than the line breaks before its blank" {
   let style = mono_style()
   let number = (n : String) => {
     ({ text: n, style: { ..style, linenum: true, }, anchor: None, } : Fragment)
   }
   let newline : Fragment = { text: "\n", style, anchor: None, }
   let fragments = [number("1 "), newline, number("2 "), newline]
+  // not even a digit fits: Prawn's CannotFit
   inspect(source_wrap(fragments, mono_text(), 5.0) is None, content="true")
-  inspect(source_wrap(fragments, mono_text(), 50.0) is Some(_), content="true")
+  // the digit fits, its blank does not: as asciidoctor-pdf prints
+  // "1\n\n2\n", the line's text (here none) on a line of its own
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 6.0).unwrap()),
+    content=(
+      #|"1" | "\n" | "\n" | "2" | "\n" | "\n"
+    ),
+  )
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 50.0).unwrap()),
+    content=(
+      #|"1 " | "\n" | "2 " | "\n"
+    ),
+  )
+  // text after it goes on the next line, as Ruby's "1", "a"
+  let fragments = [number("1 "), { text: "a", style, anchor: None, }]
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 8.0).unwrap()),
+    content=(
+      #|"1" | "\n" | "a"
+    ),
+  )
+  // and where that text wraps, its blank (as wide as the first number)
+  // breaks the same way: Ruby's "1", "a", " ", "b", " ", "c"
+  let fragments = [number("1 "), { text: "abc", style, anchor: None, }]
+  inspect(
+    texts(source_wrap(fragments, mono_text(), 8.0).unwrap()),
+    content=(
+      #|"1" | "\n" | "a" | "\n" | "~" | "\n" | "b" | "\n" | "~" | "\n" | "c"
+    ),
+  )
 }
 
 ///|
@@ -274,5 +333,26 @@ test "a highlighted line paints its background from its mark to the edge" {
   inspect(
     rectangles(builtin, highlighted_line(courier)),
     content="22+138 255,255,204",
+  )
+}
+
+///|
+test "a wrapped highlighted line paints both its lines, in Courier too" {
+  // 40 x in 150pt: the line wraps once, its mark goes with it, so each
+  // line is painted from the number's end to the edge
+  let courier = { ..mono_style(), family: "Courier", }
+  let builtin = { catalog: FontCatalog::load([]), hooks: Hooks::new(), }
+  let line = highlighted_line(courier)
+  line[2] = { ..line[2], text: "x".repeat(40), }
+  let wrapped = source_wrap(line, builtin, 150.0).unwrap()
+  inspect(
+    texts(wrapped),
+    content=(
+      #|"1 " | "^" | "xxxxxxxxxxxxxxxxxxxxxxx" | "\n" | "~ " | "^" | "xxxxxxxxxxxxxxxxx"
+    ),
+  )
+  inspect(
+    rectangles(builtin, wrapped),
+    content="22+138 255,255,204; 22+138 255,255,204",
   )
 }

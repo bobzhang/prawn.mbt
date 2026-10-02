@@ -88,11 +88,13 @@ fn plain_number_style(style : Style) -> Style {
 /// number's blank (a no-break space and spaces as wide as the number, in
 /// no style of its own), the line's highlight mark if it has one
 /// (`Style::line_mark`), and the rest of the line without the blanks it
-/// starts with. Each pass breaks the first line that wraps, and consumes
-/// some of the source's text, so the passes end.
+/// starts with. A number (or blank) wider than the line breaks before its
+/// trailing blanks, the line's text going on a line of its own, as Prawn
+/// breaks it. Each pass breaks the first line that wraps, consuming some of
+/// the source's text or of a number's blanks, so the passes end.
 ///
 /// None when a line cannot fit, as Prawn raises `Prawn::Errors::CannotFit`:
-/// its number (or blank) and mark alone are wider than the line, or it
+/// its number (or blank) without its blanks is wider than the line, or it
 /// would hold nothing else.
 pub fn source_wrap(
   fragments : Array[Fragment],
@@ -102,6 +104,9 @@ pub fn source_wrap(
   guard fragments.get(0) is Some(first) && first.style.linenum else {
     return Some(fragments)
   }
+  // the blank of every wrapped line, as wide as the block's first number
+  // (SourceWrap's `linenum_spacer ||=`)
+  let spacer = "\u{a0}" + " ".repeat(first.text.length() - 1)
   let mut fragments = ctx.apply_fallbacks(fragments)
   while true {
     let (items, _, ranges) = break_lines(fragments, ctx, width, width)
@@ -116,16 +121,45 @@ pub fn source_wrap(
       item.offset >= 0
     }
     let mut cut : (Int, Int)? = None
+    let mut split_number : Array[Fragment]? = None
     for index, range in ranges {
       let (start, end, hard) = range
-      let mut gutter = 0.0
-      for k in start..<end {
-        if fragments[items[k].fragment].style.linenum {
-          gutter += items[k].fit
+      // the number (or blank) the line starts with, when it is wider than
+      // the line: Prawn breaks it before its trailing blanks, which the
+      // next line strips, so the line's text goes on a line of its own (a
+      // number too wide without them cannot fit)
+      if start < end && fragments[items[start].fragment].style.linenum {
+        let f = items[start].fragment
+        let text = fragments[f].text
+        let mut keep = text.length()
+        while keep > 0 && (text[keep - 1] == ' ' || text[keep - 1] == '\t') {
+          keep -= 1
         }
-      }
-      if gutter > width + 0.0001 {
-        return None
+        let mut full = 0.0
+        let mut digits = 0.0
+        let mut k = start
+        while k < items.length() && items[k].fragment == f {
+          full += items[k].fit
+          if items[k].offset < keep {
+            digits += items[k].fit
+          }
+          k += 1
+        }
+        if full > width + 0.0001 {
+          if keep == 0 || digits > width + 0.0001 {
+            return None
+          }
+          let plain = plain_number_style(fragments[f].style)
+          split_number = Some(
+            [
+              ..fragments[:f],
+              { ..fragments[f], text: text[:keep].to_owned(), },
+              { text: "\n", style: { ..plain, linenum: false, }, anchor: None, },
+              ..strip_line_start([..fragments[f + 1:]]),
+            ],
+          )
+          break
+        }
       }
       if hard || index == ranges.length() - 1 || end >= items.length() {
         continue
@@ -133,13 +167,58 @@ pub fn source_wrap(
       cut = Some((start, end))
       break
     }
+    if split_number is Some(next) {
+      fragments = next
+      continue
+    }
     guard cut is Some((start, at)) else { break }
-    let item = items[at]
-    let f = item.fragment
+    let f = items[at].fragment
     let fragment = fragments[f]
     // what the line keeps of the fragment the break falls in: up to the
-    // character, or, at the padding of a bordered fragment, nothing (the
-    // fragment goes to the next line whole, padding and all)
+    // character; at the padding after a bordered fragment, which the line
+    // cannot hold, the fragment wraps itself, at its last blank that leaves
+    // room for the padding, else (with no text before it on the line) by
+    // character; else it goes to the next line whole
+    let mut at = at
+    if items[at].unit == pad_unit && at > start && items[at - 1].fragment == f {
+      let pad = items[at].fit
+      let mut used = 0.0
+      for k in start..<at {
+        used += items[k].fit
+      }
+      let mut fits = at
+      while fits > start &&
+            items[fits - 1].fragment == f &&
+            items[fits - 1].offset >= 0 &&
+            used + pad > width + 0.0001 {
+        fits -= 1
+        used -= items[fits].fit
+      }
+      let mut blank = fits
+      while blank > start &&
+            items[blank - 1].fragment == f &&
+            items[blank - 1].offset >= 0 &&
+            items[blank - 1].unit != ' '.to_int() {
+        blank -= 1
+      }
+      let before = items[start:at]
+        .iter()
+        .any(it => is_text(it) && it.fragment < f)
+      at = if blank > start &&
+        items[blank - 1].fragment == f &&
+        items[blank - 1].offset >= 0 &&
+        blank < at {
+        blank
+      } else if !before &&
+        fits > start &&
+        items[fits - 1].fragment == f &&
+        items[fits - 1].offset >= 0 {
+        fits
+      } else {
+        at
+      }
+    }
+    let item = items[at]
     let offset = if item.offset >= 0 { item.offset } else { 0 }
     // the line must keep some text, or what is left would wrap the same way
     // again: Prawn's CannotFit
@@ -169,36 +248,44 @@ pub fn source_wrap(
       next.push({ ..fragment, text: fragment.text[:offset].to_owned(), })
     }
     next.push({ text: "\n", style: { ..plain, linenum: false, }, anchor: None, })
-    next.push({
-      text: "\u{a0}" + " ".repeat(linenum.text.length() - 1),
-      style: plain,
-      anchor: None,
-    })
+    next.push({ text: spacer, style: plain, anchor: None, })
     match mark {
       Some(m) => next.push(m)
       None => ()
     }
-    // the rest of the line, its first fragment without the blanks it
-    // starts with (SourceWrap's lstrip; a line break stays)
-    let rest = [
-      { ..fragment, text: fragment.text[offset:].to_owned(), },
-      ..fragments[f + 1:],
-    ]
-    let mut stripping = true
-    for r in rest {
-      if stripping && r.text != "" {
-        let text = strip_blanks(r.text)
-        stripping = false
-        if text != "" {
-          next.push({ ..r, text, })
-        }
-      } else if r.text != "" || r.anchor is Some(_) {
-        next.push(r)
-      }
-    }
+    // the rest of the line, without the blanks it starts with
+    next.append(
+      strip_line_start(
+        [
+          { ..fragment, text: fragment.text[offset:].to_owned(), },
+          ..fragments[f + 1:],
+        ],
+      ),
+    )
     fragments = next
   }
   Some(fragments)
+}
+
+///|
+/// `rest`, the fragments of a line that wrapped, its first fragment with
+/// text without the blanks it starts with (SourceWrap's and Prawn's
+/// `lstrip`; a line break stays), empty fragments dropped.
+fn strip_line_start(rest : Array[Fragment]) -> Array[Fragment] {
+  let out = []
+  let mut stripping = true
+  for r in rest {
+    if stripping && r.text != "" {
+      let text = strip_blanks(r.text)
+      stripping = false
+      if text != "" {
+        out.push({ ..r, text, })
+      }
+    } else if r.text != "" || r.anchor is Some(_) {
+      out.push(r)
+    }
+  }
+  out
 }
 
 ///|
