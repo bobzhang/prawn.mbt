@@ -1,0 +1,13 @@
+{
+  "document": { "page_size": "A4", "margin": 50 },
+  "ops": [
+    ["font_size", 11],
+    ["text", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", { "align": ":justify", "leading": 2 }],
+    ["?cursor"],
+    ["text", "Centered and kerned AVATAR WAVE To.", { "align": ":center", "size": 18, "kerning": true }],
+    ["?cursor"],
+    ["?width_of", "AVATAR", { "size": 18, "kerning": true }],
+    ["?width_of", "AVATAR", { "size": 18, "kerning": false }],
+    ["?height_of", "a b c d e f g h i j k l m n o p", { "width": 40 }]
+  ]
+}

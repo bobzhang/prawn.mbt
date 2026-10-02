@@ -1,0 +1,18 @@
+{
+  "ops": [
+    ["stroke_color", "336699"],
+    ["line_width", 2],
+    ["stroke_rectangle", [50, 700], 100, 50],
+    ["fill_color", "FFCC00"],
+    ["fill_circle", [250, 675], 25],
+    ["dash", 5, { "space": 3 }],
+    ["stroke_line", [50, 600], [300, 620]],
+    ["undash"],
+    ["cap_style", ":round"],
+    ["stroke_polygon", [50, 500], [100, 550], [150, 500]],
+    ["transparent", 0.5, { "block": [["fill_rectangle", [200, 550], 80, 80]]}],
+    ["rotate", 15, { "origin": [400, 500], "block": [["stroke_rectangle", [380, 520], 40, 40]] }],
+    ["fill_color", 0, 100, 0, 0],
+    ["fill_ellipse", [450, 650], 40, 20]
+  ]
+}

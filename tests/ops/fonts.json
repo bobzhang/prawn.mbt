@@ -1,0 +1,15 @@
+{
+  "ops": [
+    ["font_families.update", { "=DejaVu": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf", "bold": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "DejaVu", { "block": [
+      ["text", "DejaVu: ÄÖÜ äöü ß — ‘quotes’ ∑ ∞"],
+      ["text", "Bold DejaVu", { "style": ":bold" }],
+      ["?width_of", "DejaVu ∑"]
+    ] }],
+    ["font", "Times-Roman", { "block": [["text", "Times-Roman AFM: Ñandú café"], ["?width_of", "café"]] }],
+    ["font_families.update", { "=Kai": { "normal": "$PRAWN/data/fonts/gkai00mp.ttf" } }],
+    ["fallback_fonts", ["Kai"]],
+    ["text", "Helvetica with fallback: 中文 and back"],
+    ["?cursor"]
+  ]
+}

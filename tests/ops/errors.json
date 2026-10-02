@@ -1,0 +1,8 @@
+{
+  "ops": [
+    ["!raises", "Prawn::Errors::CannotFit", ["text_box", "Wordthatcannotfit", { "at": [100, 700], "width": 1, "height": 50 }]],
+    ["!raises", "Prawn::Errors::UnknownFont", ["font", "NoSuchFont"]],
+    ["!raises", "none", ["text", "fine"]],
+    ["?cursor"]
+  ]
+}
