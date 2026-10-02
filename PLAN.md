@@ -1,238 +1,147 @@
-# Prawn → MoonBit port plan
+# Prawn for MoonBit: plan
 
-Upstream: `.repos/prawn` (prawnpdf/prawn @ `c5be930c` = 2.5.0 + 16 commits, Ruby, ~11.8k lines in
-`lib/`, 839 RSpec examples, ~100 manual example programs). Gems unpacked in `.repos/gems/`:
+Goal: a MoonBit Prawn as good as the Ruby original. It should offer the same capabilities, make the
+same layout decisions and behave the same way, built on
+[moonbitlang/pdflite and pagelayout](https://github.com/moonbitlang/office.mbt).
 
-| gem | version | lines | role | v1 phase |
-|---|---|---|---|---|
-| pdf-core | 0.10.0 | 2.9k | PDF objects + serializer, object store, pages, name trees, renderer | A |
-| ttfunk | 1.8.0 | 9.7k | TTF/OTF(CFF)/TTC/dfont parsing, kerning, **subset encoding** | A |
-| matrix | 0.4 | – | `Matrix` multiply in the transformation stack (trivial) | A |
-| prawn-table | 0.2.2 | 2.3k | tables | B |
-| prawn-svg | 0.40.4 | 7.1k (+ css_parser 3.2.0 2.0k, REXML) | SVG input | B |
-| prawn-icon | 4.1.0 | 0.7k + 3 MB icon fonts | icon fonts (FontAwesome, Foundation, Material, PaymentFont) | B |
-| prawn-templates | 0.1.2 | 0.6k (+ pdf-reader 2.16 8.5k) | import pages of existing PDFs | B |
+Upstream: `.repos/prawn` (prawnpdf/prawn @ `c5be930c` = 2.5.0 + 16 commits, ~11.8k lines in `lib/`,
+839 RSpec examples, ~100 manual example programs). Companion gems are unpacked in `.repos/gems/`:
+pdf-core 0.10.0, ttfunk 1.8.0, prawn-table 0.2.2, prawn-svg 0.40.4 (+ css_parser 3.2.0),
+prawn-icon 4.1.0, prawn-templates 0.1.2 (+ pdf-reader 2.16).
 
-Reference ports: `~/git/asciidoctor.mbt` (methodology: Ruby oracle, harvest, differential tests,
-Codex reviews), `~/git/office.mbt` (pdflite/pagelayout; reused and improved via PRs). The long-term
-consumer is an asciidoctor-pdf port (`asciidoctor.mbt/docs/pdf-backend-guidance.md`), which needs
-Prawn's cursor/bounding-box/text-box semantics exactly. Codex's review of the first draft:
-`docs/plan-review-codex.md`.
+Starting point: the layout factored out of asciidoctor.mbt's PDF backend, published as
+`bobzhang/prawn` 0.1.0 and used by `bobzhang/asciidoctor-pdf` 0.2.0. It covers Prawn 2.4.0's
+cursor/bounds/columns/pages (`Flow`), formatted text and line wrapping (`typeset_lines`,
+`Flow::typeset`, `Flow::typeset_box`), AFM/TTF metrics with fallback and icon fonts
+(`FontCatalog`, `Face`), a prawn-svg 0.34.2 port (`svg/`) and prawn-table sizing (`table/`). It is
+checked end to end by asciidoctor.mbt's comparison with Ruby Asciidoctor PDF.
 
-## 0. Decisions (confirmed with user 2026-10-01)
+The superseded first draft (a line-by-line pdf-core/ttfunk port aiming at byte-identical PDFs) and
+Codex's review of it are in git history and `docs/plan-review-codex.md`.
+
+## 0. Decisions (2026-10-02)
 
 | Topic | Decision |
 |---|---|
-| Module | `bobzhang/prawn`, repo `prawn.mbt`, git, `.repos/` ignored |
-| Fidelity | **Byte-identical PDFs** vs Ruby for eligible fixtures (see §5 for the exact contract) |
-| pdf-core / ttfunk | Packages of this module (`pdfcore/`, `ttfunk/`), shaped like the Ruby so Prawn ports line by line. Generic capabilities go to office.mbt as PRs |
-| Scope | Prawn + pdf-core + ttfunk (phase A), then prawn-table, prawn-svg, prawn-icon, prawn-templates (phase B), with early integration spikes for each |
-| office.mbt | Reuse narrowly (§3); bugs/gaps fixed upstream with focused PRs to `moonbitlang/office.mbt` |
-| Review | Codex CLI (`model_reasoning_effort=high`, read-only) reviews the plan, each milestone's architecture, and the API before release; reviews saved under `docs/` |
-
-Version note: asciidoctor-pdf pins `prawn ~> 2.4.0`, `prawn-svg ~> 0.38.0`, `prawn-icon ~> 3.1.0`.
-Prawn 2.4→2.5 changes in `lib/` are mostly documentation and small fixes; we port the checkout
-(2.5.0+) and the latest companion releases, and record any behavior the asciidoctor-pdf port needs
-from the older pins when we get there.
+| Stack | prawn.mbt → `moonbitlang/pagelayout` → `moonbitlang/pdflite`. No pdf-core or ttfunk port |
+| Upstream work | Missing capabilities go into pdflite/pagelayout as **general features** with their own tests and docs (useful to every pdflite user), as focused PRs to `moonbitlang/office.mbt`. Nothing Prawn-only goes upstream: Prawn's policies stay here |
+| Who benefits | pdflite/pagelayout users get the general features; prawn.mbt gets a complete Prawn; asciidoctor-pdf gets each prawn release (its Ruby comparison is a main source of prawn bugs) |
+| Fidelity | Prawn's **decisions**, not its bytes: page count and sizes, each glyph's font, size and position, line breaks, graphics, images, links/outline/destinations, and behaviour (cursor, bounds, remainders, errors). Serialization is pdflite's (§3) |
+| Releases | asciidoctor-pdf depends only on published prawn versions; release prawn first, then bump it there. Breaking API changes bump the minor version |
+| Scope | Prawn core first, then prawn-table (beyond sizing), prawn-svg, prawn-icon, prawn-templates |
+| Review | Small PRs, each reviewed by Codex CLI (read-only, high/xhigh) with CI green before merge |
 
 ## 1. Architecture
 
-* **Direct pdf-core emission.** This compatibility backend produces bytes through a port of
-  pdf-core, not through pagelayout's IR + pdflite emitter. This supersedes, for the Prawn layer, the
-  "record pagelayout IR" recommendation in `pdf-backend-guidance.md`: only one of them can own the
-  output bytes, and byte parity requires pdf-core's. Reusable measurement/geometry contracts can be
-  shared with pagelayout later.
-* **One root package for Prawn** (at the module root, imported as `bobzhang/prawn`). `Document` mixes
-  in ~15 Ruby modules that call each other freely, and `Font`/`BoundingBox`/`Text::Box` hold
-  document back-pointers, so splitting creates cycles. Many cohesive files, not necessarily Ruby's
-  file boundaries. `pdfcore` and `ttfunk` sit below it with no back-dependencies.
-* **Synchronous, pure core.** Fonts/images/SVG/PDF templates are passed as bytes or resolved through
-  an `AssetLoader` trait over **preloaded** assets. No rerun-on-miss fixpoint (unlike asciidoctor's
-  io): drawing closures and callbacks have side effects. `io/` (moonbitlang/async) preloads files
-  and writes output (`render_file`, `generate(path)`).
+* **Grow 0.1.0, keep it working.** Add a Prawn-shaped `Document` API (pages, cursor, bounding
+  boxes, text, graphics, fonts, images, navigation) on top of and around the existing `Flow`, and
+  move asciidoctor-pdf onto it over time. `Flow` and friends stay until asciidoctor-pdf no longer
+  needs them.
+* **Output.** Layout produces pagelayout page items where pagelayout's IR fits; content it can't
+  express goes to pdflite's object and content-stream API directly. Where neither can express
+  something Prawn does (a graphics state, an annotation type, an image kind), add it upstream as a
+  general feature.
+* **One root package for Prawn.** `Document` mixes in ~15 Ruby modules that call each other freely,
+  and `Font`/`BoundingBox`/`Text::Box` hold document back-pointers, so splitting creates cycles.
+  Many cohesive files, not necessarily Ruby's file boundaries. `svg/`, `table/`, `icon/`,
+  `templates/` sit on top.
+* **Synchronous, pure core.** Fonts, images, SVG and PDF templates are passed as bytes or resolved
+  through an asset loader over preloaded assets; an optional `io/` package (moonbitlang/async)
+  preloads files and writes output.
 * **Ruby idioms → MoonBit**
   - option hashes → labeled optional params; internally typed option records that preserve
     "unset/inherit" vs explicit `false`/`0`, resolved at the same stage as Ruby (formatted boxes
-    inherit direction, spacing, kerning from document state — `text/formatted/box.rb:186`);
-  - `generate { … }` / `instance_eval` / `bounding_box { … }` / `float` / `repeat` / `stamp` /
-    `transparent` → closures `(Document) -> Unit raise`, with specified state restoration on error
-    and across page changes; repeater/page hooks get explicit lifetime/ordering contracts;
-  - `Prawn::View` → composition: a trait with a `document()` accessor and default methods
-    forwarding to it (Ruby's `method_missing` has no analogue; the forwarded set is explicit);
-  - formatted-text fragments → `Fragment` record; callbacks → ordered `FragmentCallback` trait
-    objects with underlay/overlay phases and draw-text replacement, suppressed during dry runs
-    (`box.rb:332`);
-  - Text box extension points → **explicit policy hooks** that asciidoctor-pdf overrides (fallback
-    font selection, justification, vertical alignment, decoration, wrap configuration — see
-    `asciidoctor-pdf/lib/asciidoctor/pdf/ext/prawn/formatted_text/box.rb`), plus rich layout results
-    (consumed fragments, remainder, line metrics) and a supported scratch/checkpoint mechanism
-    instead of Ruby Marshal cloning (`ext/prawn/extensions.rb:958`);
-  - exceptions → `suberror PrawnError { CannotFit, UnknownFont, IncompatibleStringEncoding, … }`;
-    `Prawn.debug = true` option verification → validation errors.
-* **Strings.** Unicode text is scanned by scalar (never split surrogates); AFM fonts transcode to
-  Windows-1252 **bytes** and lay out on bytes (`fonts/afm.rb:141`, `:301`); binary data is `Bytes`.
-* ~15 regexes (inline-format tokenizer, line-wrap scanning, AFM lines) → hand-written scanners
-  with differential tests. No regex engine dependency.
+    inherit direction, spacing, kerning from document state, `text/formatted/box.rb:186`);
+  - `bounding_box { … }` / `float` / `repeat` / `stamp` / `transparent` / `column_box` → closures,
+    with specified state restoration on error and across page changes; repeater/page hooks get
+    explicit lifetime and ordering contracts;
+  - `Prawn::View` → a trait with a `document()` accessor and forwarding default methods;
+  - formatted-text fragments → `Fragment`; callbacks → ordered callback objects with
+    underlay/overlay phases, suppressed during dry runs (`box.rb:332`);
+  - text box extension points → explicit policy hooks (fallback font selection, justification,
+    vertical alignment, decoration, wrapping), as asciidoctor-pdf overrides them
+    (`asciidoctor-pdf/lib/asciidoctor/pdf/ext/prawn/formatted_text/box.rb`), plus rich layout
+    results (consumed fragments, remainder, line metrics) and a scratch/checkpoint mechanism in
+    place of Ruby's Marshal cloning;
+  - exceptions → `suberror PrawnError { CannotFit, UnknownFont, … }`; `Prawn.debug` option checks
+    → validation errors.
+* **Strings.** Unicode text is scanned by scalar; AFM fonts measure on Windows-1252 bytes as Prawn
+  does (`fonts/afm.rb:141`, `:301`); binary data is `Bytes`.
 
-## 2. Package layout
+## 2. Upstream work in office.mbt (candidates, to verify against current APIs)
 
-```
-moon.mod                      bobzhang/prawn
-*.mbt (root package)          Prawn: Document + mixins, fonts (AFM/TTF/TTC/DFont/OTF), metric cache,
-                              ToUnicode CMap, text + Text::Formatted::{Parser,Arranger,LineWrap,Wrap,
-                              Fragment,Box}, BoundingBox/ColumnBox/Span, Grid, Repeater, Stamp,
-                              Outline, Security, SoftMask, TransformationStack, Graphics (color, dash,
-                              cap/join, blend, transparency, patterns, transformation), Images
-                              (PNG, JPG, handler), Measurements, View
-internal/rb/                  Ruby compat: Float#to_s, format('%.5f') exact rounding, Integer floor
-                              div/mod, round/ceil/floor, Windows-1252 encode (+errors), pack/unpack,
-                              32/64-bit wrapping arithmetic, SHA1 hex
-pdfcore/                      pdf-core port (PdfValue, pdf_object, real, Reference, Stream, Filters,
-                              ObjectStore, DocumentState, Page, PageGeometry, NameTree, Outline,
-                              Annotations, Destinations, GraphicsState, Renderer, Text)
-ttfunk/                       ttfunk port (File, Collection, ResourceFile, tables, CFF, Subset::*,
-                              TTF/OTF encoders, BinUtils, Placeholder)
-table/                        prawn-table            (phase B)
-svg/  internal/css/           prawn-svg, css_parser  (phase B)
-icon/  icon/data/             prawn-icon             (phase B; font packs optional)
-templates/                    prawn-templates on the pdflite reader (phase B)
-io/                           async preload/write
-inspector/                    PDF::Inspector equivalent for tests, on pdflite's reader
-cmd/oracle/                   op-script interpreter (§5)
-cmd/golden/                   harvested-PDF replay runner
-scripts/                      harvest.mbtx, oracle Ruby driver, generators/shrinker, check.mbtx
-tests/                        op scripts, goldens, known_failures.txt, record counts
-data/                         Prawn's AFM files (embedded as constants so std-14 fonts work on wasm),
-                              test fonts/images (licenses recorded)
-```
+Each is a general pdflite/pagelayout feature, proposed as its own PR with tests:
 
-## 3. Reuse from office.mbt (verified against current APIs)
+| Capability | Why Prawn needs it | General value |
+|---|---|---|
+| AFM glyph-name kerning (incl. `C -1` glyphs) and glyph bboxes | kerned std-14 text | correct std-14 kerning for everyone |
+| PNG: transparency info, translucent palettes, all bit depths/colour types | Prawn's image support | PNG coverage |
+| JPEG: bits per component, CMYK/grey, Adobe inversion | `image` with any JPEG | JPEG coverage |
+| TrueType/OpenType subsetting quality (composites, CFF, TTC, dfont) | Prawn's font support | smaller, more correct embedded fonts |
+| Graphics state: soft masks, blend modes, transparency groups, dash/cap/join, patterns/shadings | Prawn graphics | richer drawing API |
+| Annotations, destinations, outlines, page labels, name trees | Prawn navigation | navigation for every document |
+| Security (RC4/AES, permissions) | `encrypt_document` | encryption for everyone |
+| Reader: text positions, font decoding, form recursion | the test comparator (§3); prawn-templates | PDF inspection and import |
 
-pdflite's writer does not match pdf-core (12-significant-digit reals, unsorted one-line dicts,
-different string/name escaping, own xref/trailer), so serialization is ported from pdf-core.
+## 3. Fidelity and testing
 
-| Piece | Decision |
-|---|---|
-| Inflate/deflate | Reuse `pdflite/flate` (`pdf_flate_decode_view`, `pdf_flate_encode_view_with_level`). Exact zlib reproduction is an optional later project |
-| Encryption | Reuse MD5, RC4, padding, qualified R2 entry helpers from `crypt_core`. Keep Prawn's orchestration: permissions start with all 32 bits set (pdflite follows reserved-bit conventions), Prawn's key derivation omits the file ID (`security.rb:179`) |
-| AFM | PR to `pdflite/font/afm`: expose glyph-name kerning (incl. `C -1` glyphs, currently discarded) and glyph bboxes; then reuse the parser. Std-14 kerning is not a drop-in |
-| PNG/JPEG | Port Prawn's small handlers. `PdfPNG` lacks transparency info, rejects translucent palettes, accepts Adam7 (Prawn rejects); JPEG API lacks bits/components. Optional PRs to pdflite for those gaps |
-| TrueType | Qualify `pdf_truetype_tables/table`, metrics, loca offsets, composite expansion individually; TTFunk's subset assignment + encoder (table order, checksum adjustment, naming) ported exactly |
-| PDF reading | `pdf_read_document_from_bytes`, `pdf_parse_content_ops_from_bytes` for `inspector/` (add position tracking, font decoding, form recursion) and for prawn-templates (map pdflite objects to `PdfValue`) |
-| XML (prawn-svg) | Candidate: `Milky2018/xml` / `ooxml/xml`, qualified against REXML behavior (entities, whitespace, namespaces) |
+* **Oracle.** Ruby Prawn from `.repos` (pinned Ruby and gems, frozen clock/TZ/RNG).
+* **Comparator.** Read both PDFs with pdflite's reader and compare decisions: pages and sizes; text
+  runs (string, font, size, position to a small tolerance, character spacing); graphics operators
+  after normalizing serialization (number formatting, resource names, operator grouping); images
+  (decoded); annotations, destinations, outline, page labels. Exact bytes are never required.
+* **Operation scripts.** A JSON op language with nested scopes (bounding_box, float, column_box,
+  repeat, stamp), explicit assets and **queries** (cursor, bounds, `width_of`, `height_of`, text box
+  remainder, page count). It is run by a Ruby driver and by `cmd/oracle` and compared as above.
+  Translate representative RSpec examples and every manual example once.
+* **Generators** for boundaries (widths within ε of measured values, Unicode scalars, fallback
+  switches, page breaks), with shrinking; minimized failures kept as regression scripts.
+* **asciidoctor-pdf** remains an end-to-end check: its comparison failures that trace to Prawn
+  become prawn.mbt issues with an op-script reproduction.
+* Gates exit non-zero on unexpected differences; known failures are categorized; record counts
+  guarded; `scripts/check.mbtx` runs everything; tests on native, wasm-gc, js.
 
-## 4. Data model notes
-
-* `PdfValue` mirrors pdf-core's `pdf_object` dispatch: nil, bool, Integer, Float, String (text →
-  `<FEFF…>` UTF-16BE hex), ByteString (hex), LiteralString (`(…)`, escapes `\ ( ) \r`), Symbol
-  (name), Array, Hash, Reference, Date/Time, NameTree::Node, OutlineRoot/Item.
-  **Dicts serialize with keys sorted by `k.to_s`** (`pdf_object.rb:110`); insertion order still
-  matters elsewhere (resource allocation, font encodings).
-* Numbers: `pdf_object(1)` and `pdf_object(1.0)` both give `1`, but `real(1.0)` gives `1.0`;
-  `real(-0.0)` = `-0.0`, `pdf_object(-0.0)` = `-0` (`pdf_object.rb:11`, `:82`) — separate contracts.
-* `Reference`s are shared mutable cells in creation order; identity via `physical_equal`.
-* Fonts: closed enum `Afm | Ttf | Otf | …` sharing a `FontBase`; one subset object per 256 glyphs.
-
-## 5. Fidelity contract and testing
-
-**Contract.** Three tiers, never normalizing away text positions, glyph choice or pagination:
-1. *Exact bytes* for fixtures whose output involves no Flate encoding.
-2. *Decoded equivalence* where Flate is involved: every PNG image stream (Prawn inflates IDAT and
-   recompresses via the Flate filter, `png.rb:132`, `:216`, `filters.rb:16`), `compress: true`,
-   compressed font/ToUnicode streams. Compare objects after inflating; `/Length`, xref offsets and
-   `startxref` are recomputed, everything else identical.
-3. *Behavioral assertions* everywhere: cursor, bounds, page number, remainder fragments, line
-   metrics, callback order, errors, warnings.
-
-Oracle environment pinned: Homebrew Ruby 4.0.7, gem versions above + rspec/pdf-reader/pdf-inspector
-installed into `.repos/gems`, frozen clock/TZ/RNG (the manual uses `Time.now` and random owner
-passwords: `manual/document_and_page_options/metadata.rb:26`, `manual/security/permissions.rb:44`),
-pinned zlib.
-
-**Primary investment: operation-script differential testing.** Recording rendered PDFs can't
-recover the Ruby programs that made them, and many examples assert without rendering. So:
-1. A JSON op language with nested scopes (bounding_box/float/column_box/repeat/stamp as nested op
-   lists), explicit assets, typed numbers (Integer vs Float), **queries** (cursor, bounds,
-   `width_of`, `height_of`, text box remainder, page count), callback traces, expected errors.
-   Interpreted by `scripts/oracle/driver.rb` (Ruby Prawn) and `cmd/oracle` (port); outputs = PDF +
-   query/trace log, compared under the contract.
-2. Translate representative upstream spec examples and every manual example into op scripts once;
-   replay through both implementations.
-3. Seeded generators targeting boundaries: widths/heights within ε of measured values, Unicode
-   scalars (combining, astral, CJK, RTL, soft hyphen, ZWSP), fallback switches, subset capacity
-   (256-glyph chunks), page breaks. Shrinking; minimized failures saved as regression scripts.
-   Coverage is tracked by feature × boundary, not raw case count.
-4. Harvested PDFs from the RSpec run (recorder hooks `render` without forcing extra renders —
-   rendering runs repeaters and finalizes pages, `document.rb:456`, `renderer.rb:192`) as extra
-   evidence; hand-port only examples that need mocks, extensions, or object identity.
-5. Unit differential tests for pure pieces: `real`/`pdf_object`, Float#to_s, Windows-1252, inline
-   tokenizer, line-wrap scanning, ttfunk tables and subset bytes per test font, ToUnicode CMaps.
-6. pdf-core's and ttfunk's own **test suites** (fetched from their pinned git tags — the gems ship
-   no specs) ported for those packages.
-7. Gates exit non-zero on unexpected differences; record counts guarded; `scripts/check.mbtx` runs
-   everything; tests on native, wasm-gc, js.
-
-## 6. Milestones (ordered by layout risk)
+## 4. Milestones
 
 | # | Milestone | Exit criterion |
 |---|---|---|
-| 0 | Scaffold, git, pinned oracle env, op language + Ruby driver, pdf-core/ttfunk test repos, check script | Ruby driver runs the seed scripts deterministically twice |
-| 1 | `internal/rb` + `pdfcore` (serializer, store, renderer, pages) | pdf-core specs; empty and hello-world documents byte-identical |
-| 2 | AFM fonts + text measurement; Text::Box, Formatted::{Parser, Arranger, LineWrap, Wrap, Fragment, Box}; dry runs; overflow/remainder; page transitions; bounding boxes, column box, cursor | text/box/line_wrap/arranger/parser specs as op scripts; boundary fuzz identical |
-| 3 | One TTF path end-to-end (ttfunk TTF subset + encoder, Prawn TTF font, ToUnicode, kerning, fallback fonts) + an asciidoctor-pdf-shaped integration scenario (justified multipage text near a page boundary, decorated split block, link) | subset bytes identical for test TTFs; integration scenario identical |
-| 4 | Graphics, colors, transformations, transparency, blend, soft masks, patterns/gradients; asset loader + `io/`; API review (Codex) | graphics specs + manual graphics/basic_concepts/bounding_box/layout sections |
-| 5 | Images (PNG all color types/bit depths/transparency, JPG) + fragment callbacks/inline images | images specs (decoded tier) |
-| 6 | Navigation and page hooks: outline, destinations, annotations, links, page labels/numbering, repeaters, stamps, grid, view | remaining specs; manual text/outline/repeatable_content sections |
-| 7 | Remaining fonts: TTC, dfont, OTF/CFF (ttfunk CFF encoder) | font specs; CFF subset bytes identical |
-| 8 | Security (RC4 40-bit, R2) | security specs; manual security section |
-| 9 | Full manual byte/decoded identical; README.mbt.md; release prep; Codex architecture review | publish `bobzhang/prawn` |
-| 10 | prawn-table (spike already after M3) | prawn-table specs + manual |
-| 11 | prawn-templates on pdflite reader (spike after M6) | template specs (decoded tier) |
-| 12 | prawn-icon (+ optional font-pack packages to bound binary size) | specs |
-| 13 | prawn-svg + css_parser + XML (spike after M5) | prawn-svg specs + its sample SVGs |
-| – | Performance (from M2 on: fallback scanning, repeated dry runs); optional exact zlib deflate | benchmarks in status log |
+| 0 | Oracle harness: Ruby driver, comparator on pdflite's reader, `scripts/check.mbtx` | seed scripts compare clean twice in a row |
+| 1 | `Document` core: page setup, margins, cursor, bounding/column boxes, `move_down`/`pad`/`float`, page navigation | bounding_box/column_box/document specs as op scripts |
+| 2 | Text: `text`, `text_box`, `formatted_text`, inline format, `draw_text`, overflow modes (truncate, shrink_to_fit, expand), alignment/valign, leading, spacing, rotation; std-14 AFM with kerning | text specs and manual text section |
+| 3 | Graphics: paths, shapes, colours (RGB/CMYK), stroke styles, transformations, transparency, soft masks, gradients | graphics specs and manual |
+| 4 | Fonts: TTF/OTF/TTC/dfont, subsetting, fallback fonts, kerning | font specs |
+| 5 | Images: PNG (all types, transparency), JPEG; inline images via fragment callbacks | images specs |
+| 6 | Navigation and repeated content: outline, links, destinations, annotations, page labels, `number_pages`, repeaters, stamps, grid, `View` | remaining specs; manual outline/repeatable_content |
+| 7 | Security; prawn-templates on pdflite's reader | specs |
+| 8 | prawn-table (full), prawn-svg upgrade, prawn-icon | their specs and manuals |
+| 9 | Full manual compares clean; API review (Codex); release | publish |
 
-## 7. Pitfalls checklist
+## 5. Pitfalls
 
-* `real()` vs `pdf_object()` number formatting (§4); correctly rounded `%.5f` from the exact binary
-  value; keep Ruby's floating-point operation order everywhere.
-* Ruby Integer vs Float semantics: `/` and `%` floor, `round` half away from zero, `Float#floor`
-  returning Integer, `1` vs `1.0` in `to_s` (gradient keys hash Ruby float strings,
-  `graphics/patterns.rb:292`).
-* Transcendental functions in rotations (`graphics/transformation.rb:39`): check native/wasm/js
-  agree with Ruby's libm on test angles.
-* Explicit integer widths: permissions `4294967295` (`security.rb:140`), 64-bit LONGDATETIME
-  (`ttfunk/table/head.rb:92`), wrapping 32-bit checksums.
-* Omitted owner password = user password (`security.rb:78`); only `:random` uses `rand`.
-  Encrypted trailers get no automatic `/ID` (`renderer.rb:265`).
-* Font subset tag = `SHA1(key)[0,6]` (`ttfunk/table/name.rb:188`).
-* Hash insertion order where it is observable (resources, encodings); sorted keys in output dicts.
-* Malformed inputs (bad encodings, truncated images/fonts) must fail like Ruby; record any
-  intentional deviation in a compatibility-limits section.
+* Ruby number semantics where they reach layout: `/` and `%` floor, `round` half away from zero,
+  `Float#floor` returns Integer; keep Ruby's floating-point operation order in measurements.
+* Prawn facts already found: glyph widths truncated to 1/1000 em; line wrap pulls back only the
+  previous fragment's last word; name-tree duplicates resolve to the last added.
+* Transcendental functions in rotations: check native/wasm/js agree with Ruby's libm on test
+  angles.
+* Malformed inputs (bad encodings, truncated images/fonts) fail like Ruby; record any intentional
+  deviation in a compatibility-limits section.
 
-## 8. Open questions from the import
+## 6. Open questions
 
-The module now starts from the layout code factored out of asciidoctor.mbt's PDF backend
-(published as `bobzhang/prawn` 0.1.0, consumed by `bobzhang/asciidoctor-pdf` 0.2.0). That code
-measures and wraps like Prawn but draws through pagelayout/pdflite, while §1 has pdf-core own the
-bytes. To settle before milestone 1:
-
-* **Path from 0.1.0 to §1.** Grow the existing `Flow`/`typeset`/`FontCatalog` API toward Prawn's
-  `Document` with pdf-core emission as a second backend, or start the root package fresh and keep
-  0.1.0's API as a compatibility layer until asciidoctor-pdf switches. asciidoctor-pdf
-  depends on the published API, so breaking changes need a minor version bump and a matching
-  asciidoctor-pdf release.
-* **Licence.** Prawn, pdf-core and TTFunk are under Ruby's licence / GPLv2 / GPLv3, so a
-  line-by-line port cannot simply be MIT. 0.1.0 keeps adapted parts under Matz's terms with a
-  NOTICE (`NOTICE`, `LICENSES/LICENSE-prawn`).
-* **Versions.** §0 targets Prawn 2.5 / prawn-svg 0.40; asciidoctor-pdf 2.3.27 (the consumer's
-  oracle) pins Prawn 2.4.0, and `svg/` ports prawn-svg 0.34.2.
-* **0.1.0 API cleanup** (carried over from asciidoctor.mbt's TODO): move converter-only
-  `Style.text_transform` and `default_font_files` back to asciidoctor-pdf; stop exposing
-  `build_items`/`Item` (public only for a white-box test there); `Flow` is `pub(all)` for now.
+* **Licence.** Prawn, pdf-core and TTFunk are under Ruby's licence / GPLv2 / GPLv3. Code adapted
+  from them keeps Matz's terms with a NOTICE (`NOTICE`, `LICENSES/LICENSE-prawn`); the module is
+  MIT otherwise.
+* **Versions.** Upstream here is Prawn 2.5 / prawn-svg 0.40; asciidoctor-pdf 2.3.27 pins Prawn
+  2.4.0, and `svg/` ports prawn-svg 0.34.2. Record the behaviour asciidoctor-pdf needs from the
+  older pins.
+* **0.1.0 API cleanup** (from asciidoctor.mbt's TODO): move converter-only `Style.text_transform`
+  and `default_font_files` back to asciidoctor-pdf; stop exposing `build_items`/`Item`; `Flow` is
+  `pub(all)` for now.
 * **SVG regression coverage** (Codex nit on asciidoctor.mbt#7): SVG under different documents'
   font scopes; bounds-dependent SVG in a section title loaded after a differently sized document.
 
-## 9. Status log
+## 7. Status log
 
-* 2026-10-02: imported `prawn/` from asciidoctor.mbt with its history (46 tests pass standalone).
+* 2026-10-02: imported `prawn/` from asciidoctor.mbt with its history (46 tests pass standalone);
+  repository github.com/bobzhang/prawn.mbt. Plan rebased onto pdflite/pagelayout.
