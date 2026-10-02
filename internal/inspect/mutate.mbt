@@ -14,7 +14,7 @@ pub let mutations : Array[(String, Control)] = [
   ("shift-text", Negative),
   // the first font size grows by 0.05
   ("font-size", Negative),
-  // the first text object of the last page with text moves to a new page
+  // the last text object of the last page with text moves to a new page
   ("page-break", Negative),
   // the first fill colour changes by one 8-bit step
   ("colour", Negative),
@@ -113,6 +113,36 @@ fn first_text_object(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
     }
   }
   None
+}
+
+///|
+/// The last BT … ET range of `ops`.
+fn last_text_object(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
+  let mut found : (Int, Int)? = None
+  let mut start = -1
+  for i, op in ops {
+    match op {
+      Op_BT => start = i
+      Op_ET if start >= 0 => found = Some((start, i))
+      _ => ()
+    }
+  }
+  found
+}
+
+///|
+/// Whether `op` shows or paints something.
+fn shows(op : @content.PdfContentOp) -> Bool {
+  match op {
+    Op_Tj(_)
+    | Op_TJ(_)
+    | Op_quote(_)
+    | Op_double_quote(_, _, _)
+    | Op_Do(_)
+    | Op_sh(_)
+    | Op_InlineImage(_, _, _) => true
+    _ => is_painting(op)
+  }
 }
 
 ///|
@@ -240,7 +270,16 @@ fn mutate_ops(kind : String, ops : Array[@content.PdfContentOp]) -> Bool raise {
           scale = s
         }
       }
-      ops.insert(stop, Op_Tz(scale))
+      // every Tz inside the object scales too, so none undoes it
+      let mut last = scale
+      for i in start..<stop {
+        if ops[i] is Op_Tz(s) {
+          last = s
+          ops[i] = Op_Tz(s * 1.01)
+        }
+      }
+      // the scaling the object leaves behind stays as it was
+      ops.insert(stop, Op_Tz(last))
       ops.insert(start + 1, Op_Tz(scale * 1.01))
       true
     }
@@ -267,7 +306,11 @@ fn mutate_ops(kind : String, ops : Array[@content.PdfContentOp]) -> Bool raise {
         if i + 1 < ops.length() && ops[i + 1] is (Op_W | Op_Wstar) {
           match op {
             Op_re(x, y, w, h) => {
-              ops[i] = Op_re(x - 1.0, y - 1.0, w + 2.0, h + 2.0)
+              // 1 pt in page space, in user units
+              let m = ctms(ops)[i]
+              let dx = 1.0 / (m.a * m.a + m.b * m.b).sqrt()
+              let dy = 1.0 / (m.c * m.c + m.d * m.d).sqrt()
+              ops[i] = Op_re(x - dx, y - dy, w + 2.0 * dx, h + 2.0 * dy)
               return true
             }
             _ => ()
@@ -325,27 +368,26 @@ pub fn mutate(bytes : Bytes, kind : String) -> Bytes? raise {
       return None
     }
     let ops = all_ops[last]
-    guard first_text_object(ops) is Some((start, stop)) else { return None }
-    // the state the text object relies on: the font and colours set before
-    // it, under the CTM in effect there
-    let moved : Array[@content.PdfContentOp] = [Op_cm(ctms(ops)[start])]
-    for i in 0..<start {
-      match ops[i] {
-        Op_Tf(_)
-        | Op_cs(_)
-        | Op_scn(_)
-        | Op_sc(_)
-        | Op_rg(_)
-        | Op_g(_)
-        | Op_k(_) => moved.push(ops[i])
-        _ => ()
+    guard last_text_object(ops) is Some((start, stop)) else { return None }
+    // The new page replays the page up to that text object without showing
+    // or painting anything else, so the object keeps every state it relies
+    // on (fonts, spacing, colours, the CTM, q and Q); the old page keeps
+    // the object's state changes but no longer shows its text.
+    let moved : Array[@content.PdfContentOp] = []
+    for i in 0..<=stop {
+      if i >= start || !shows(ops[i]) {
+        moved.push(ops[i])
+      } else if is_painting(ops[i]) {
+        // end the path without painting it
+        moved.push(Op_n)
       }
     }
     for i in start..<=stop {
-      moved.push(ops[i])
-    }
-    for _ in start..<=stop {
-      ops.remove(start) |> ignore
+      if ops[i] is (Op_Tj(_) | Op_TJ(_)) {
+        ops[i] = Op_Tj(b"")
+      } else if ops[i] is (Op_quote(_) | Op_double_quote(_, _, _)) {
+        ops[i] = Op_Tstar
+      }
     }
     set_ops(last)
     pages.insert(last + 1, {

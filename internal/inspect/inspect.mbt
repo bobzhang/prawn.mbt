@@ -422,7 +422,9 @@ fn path_geometry(
     if sub.segments.is_empty() {
       continue
     }
-    let closed = sub.closure is PdfPathClosed
+    // a fill closes every subpath itself: only a stroke tells open from
+    // closed
+    let closed = sub.closure is PdfPathClosed || !drawn.stroked
     let segments = sub.segments.copy()
     if closed && segments.length() > 1 {
       let start = match segments[0] {
@@ -471,18 +473,37 @@ fn path_geometry(
 }
 
 ///|
+/// `ctm` is the CTM the path was built under.
 fn Walk::path(
   self : Walk,
   state : @pdflite.PdfContentOperatorState,
   drawn : @shape.PdfDrawnPath,
+  ctm : @geometry.TransformMatrix,
 ) -> Unit {
-  let (points, exact) = path_geometry(drawn, state.ctm)
+  let (points, exact) = path_geometry(drawn, ctm)
   let ps = state.path_state
   let lengths : Array[Double] = []
   let paints : Array[Paint] = []
+  let mut extent = bounds_of(points)
   if drawn.stroked {
-    let scale = scale_of(state.ctm)
-    lengths.push(ps.line_width * scale)
+    let scale = scale_of(ctm)
+    // the line width as the CTM shapes it (a non-uniform scale makes it
+    // thicker one way than the other)
+    let w = ps.line_width
+    lengths.push(w * ctm.a)
+    lengths.push(w * ctm.b)
+    lengths.push(w * ctm.c)
+    lengths.push(w * ctm.d)
+    // what the stroke covers, for paint order
+    let half = w /
+      2.0 *
+      (ctm.a * ctm.a + ctm.b * ctm.b).max(ctm.c * ctm.c + ctm.d * ctm.d).sqrt()
+    extent = {
+      x0: extent.x0 - half,
+      y0: extent.y0 - half,
+      x1: extent.x1 + half,
+      y1: extent.y1 + half,
+    }
     for x in ps.dash_pattern.array {
       lengths.push(x * scale)
     }
@@ -510,7 +531,7 @@ fn Walk::path(
     exact: Json::object(exact),
     clip: self.clip,
     blend: blend_name(self.doc, state.blend_mode),
-    extent: bounds_of(points),
+    extent,
     order: self.next_order(),
   })
 }
@@ -532,7 +553,10 @@ fn Walk::image(
     kind,
     points,
     lengths: [],
-    paints: [],
+    // an image is painted with the fill alpha
+    paints: [
+      { space: "image", values: [], alpha: state.alpha_constant_non_stroke, },
+    ],
     exact,
     clip: self.clip,
     blend: blend_name(self.doc, state.blend_mode),
@@ -547,7 +571,8 @@ fn lookup(
   dict : @syntax.PdfObject,
   key : String,
 ) -> @syntax.PdfObject? {
-  doc.lookup_direct(pdf_name("/" + key), dict)
+  let key = if key.has_prefix("/") { key } else { "/" + key }
+  doc.lookup_direct(pdf_name(key), dict)
 }
 
 ///|
@@ -587,9 +612,17 @@ fn Walk::ops(
   let doc = self.doc
   let mut state = initial
   let mut clipping = false
-  // the points of the path under construction, in page space (for clips)
+  // the points of the path under construction, in page space (for clips),
+  // and the CTM it is built under
   let building : Array[Double] = []
+  let mut path_ctm = state.ctm
+  // what glyphs shown in a clipping render mode (4 to 7) cover; they clip
+  // at ET
+  let mut text_clip : Rect? = None
   for op in ops {
+    if building.is_empty() && is_path_construction(op) {
+      path_ctm = state.ctm
+    }
     let add = fn(x : Double, y : Double) {
       let p = state.ctm.apply(@geometry.point2(x, y))
       building.push(p.x)
@@ -615,8 +648,34 @@ fn Walk::ops(
       _ => ()
     }
     match op {
-      Op_Tj(_) | Op_TJ(_) | Op_quote(_) | Op_double_quote(_, _, _) =>
+      Op_Tj(_) | Op_TJ(_) | Op_quote(_) | Op_double_quote(_, _, _) => {
+        let first = self.glyphs.length()
         self.show(state, op)
+        if state.text_state.rendering_mode >= 4 {
+          for g in self.glyphs[first:] {
+            text_clip = Some(
+              match text_clip {
+                None => g.extent
+                Some(r) =>
+                  {
+                    x0: r.x0.min(g.extent.x0),
+                    y0: r.y0.min(g.extent.y0),
+                    x1: r.x1.max(g.extent.x1),
+                    y1: r.y1.max(g.extent.y1),
+                  }
+              },
+            )
+          }
+        }
+      }
+      Op_ET =>
+        match text_clip {
+          Some(r) => {
+            self.clip = Some(intersect(self.clip, r))
+            text_clip = None
+          }
+          None => ()
+        }
       Op_q => self.clips.push(self.clip)
       Op_Q => self.clip = self.clips.pop().unwrap_or(None)
       Op_W | Op_Wstar => clipping = true
@@ -659,11 +718,17 @@ fn Walk::ops(
     }
     for entry in result.entries {
       match entry.object {
-        PdfContentPathObject(path) => self.path(result.state, path)
+        PdfContentPathObject(path) => self.path(result.state, path, path_ctm)
         PdfContentShadingObject(name) =>
           self.marks.push({
             kind: "shading",
-            points: [],
+            // where the shading's space lands: the unit square under the CTM
+            points: corners(state.ctm, {
+              min_x: 0.0,
+              min_y: 0.0,
+              max_x: 1.0,
+              max_y: 1.0,
+            }),
             lengths: [],
             paints: [],
             exact: match
@@ -682,9 +747,9 @@ fn Walk::ops(
         | PdfContentGlyphObject(_) => ()
       }
     }
-    // the path a W marked becomes part of the clip when it is painted
-    // (usually by n); its bounding box stands for it
-    if !is_path_construction(op) {
+    // the path a W marked becomes part of the clip when the path ends
+    // (usually with n); its bounding box stands for it
+    if is_painting(op) || op is Op_n {
       if clipping && building.length() > 0 {
         self.clip = Some(intersect(self.clip, bounds_of(building)))
       }
