@@ -39,6 +39,18 @@ fn Document::y(self : Document) -> Double {
 ///|
 fn Document::set_y(self : Document, y : Double) -> Unit {
   self.flow.y = self.flow.page_h() - y
+  self.track()
+}
+
+///|
+/// Prawn's `y=` updates the innermost box's height (`update_height`): a
+/// stretchy box keeps the depth its content reached, even when the
+/// position moves back up (`float`). Called after every move.
+fn Document::track(self : Document) -> Unit {
+  match self.boxes.last() {
+    Some(box) if box.height is None => box.height_at(self.y()) |> ignore
+    _ => ()
+  }
 }
 
 ///|
@@ -191,6 +203,7 @@ pub fn Document::float(self : Document, body : () -> Unit raise) -> Unit raise {
       self.flow.go_to_page(page)
     }
     self.flow.y = y
+    self.track()
   }
   body()
 }

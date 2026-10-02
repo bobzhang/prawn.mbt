@@ -162,7 +162,10 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.bounding_box(
         (number(x), number(y)),
         number(opts.get("width").unwrap_or(Json::null())),
-        height?=opts.get("height").map(number),
+        height?=match opts.get("height") {
+          None | Some(Null) => None
+          Some(h) => Some(number(h))
+        },
         () => self.ops(ops),
       )
       Some(Json::null())

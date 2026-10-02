@@ -140,7 +140,7 @@ pub fn Document::text(
   // nothing to set: Prawn moves by the leading alone (an empty box has no
   // line gap)
   if string.is_empty() {
-    self.flow.move_down(leading)
+    self.move_down(leading)
     return
   }
   let style = self.style(size?)
@@ -157,12 +157,14 @@ pub fn Document::text(
     style,
     align~,
   )
+  self.track()
 }
 
 ///|
 /// Prawn's `move_down`.
 pub fn Document::move_down(self : Document, amount : Double) -> Unit {
   self.flow.move_down(amount)
+  self.track()
 }
 
 ///|

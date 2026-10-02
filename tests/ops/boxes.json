@@ -34,6 +34,14 @@
         ["indent", 15, { "block": [["text", "An indent inside a box inside an indent."], ["?bounds"]] }]
       ] }]
     ] }],
+    ["?cursor"],
+    ["bounding_box", [0, 300], { "width": 200, "height": null }, { "block": [
+      ["float", { "block": [["move_down", 100]] }],
+      ["?bounds"],
+      ["?cursor"],
+      ["bounding_box", [10, 20], { "width": 50, "height": 10 }, { "block": [["?bounds"]] }],
+      ["?bounds"]
+    ] }],
     ["?cursor"]
   ]
 }
