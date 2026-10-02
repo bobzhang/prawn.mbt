@@ -31,7 +31,7 @@ fn string(j : Json) -> String raise ScriptError {
   match j {
     // "::text" is the literal ":text"; ":name" is a symbol, not a string
     String(s) if s.has_prefix("::") => s[1:].to_owned()
-    String(s) if s.has_prefix(":") =>
+    String(s) if s.has_prefix(":") && s.length() > 1 =>
       raise ScriptError("a symbol where a string goes: \{s}")
     String(s) => s
     _ => raise ScriptError("not a string: \{j.stringify()}")
@@ -44,7 +44,7 @@ fn string(j : Json) -> String raise ScriptError {
 fn symbol(j : Json) -> String? {
   match j {
     String(s) if s.has_prefix("::") => None
-    String(s) if s.has_prefix(":") => Some(s[1:].to_owned())
+    String(s) if s.has_prefix(":") && s.length() > 1 => Some(s[1:].to_owned())
     _ => None
   }
 }
