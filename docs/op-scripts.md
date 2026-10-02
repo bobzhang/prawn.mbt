@@ -104,9 +104,9 @@ the contract in `PLAN.md` §3:
 * `compare inspect FILE` prints what the comparison sees.
 * `compare self-test DIR` runs the controls on every PDF in `DIR`. Negative mutations (text moved
   0.02 pt, a font size changed, a page break moved, a colour changed by one 8-bit step, a path
-  moved 0.02 pt, text 1% wider, a clip grown by 1 pt) must be reported. Positive ones (text moved 0.004 pt, a pdflite round trip,
-  colours written in full instead of Prawn's 5 decimals) must not. Every mutation must apply to at
-  least one PDF.
+  moved 0.02 pt, text 1% wider, a clip grown by 1 pt) must be reported. Positive ones (text moved
+  0.004 pt, a pdflite round trip, colours written in full instead of Prawn's 5 decimals) must
+  not. Every mutation must apply to at least one PDF.
 
 Not compared yet: annotations, destinations, the outline and page labels; which pattern a
 pattern colour uses (gradients); glyph outlines (glyphs are identified by font name and Unicode
