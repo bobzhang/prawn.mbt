@@ -78,8 +78,10 @@ class Driver
     list.each { |op| op(op) }
   end
 
-  def block_ops(receiver, list)
-    @receivers.push(receiver.equal?(self) ? @receivers.last : receiver)
+  # receiver: self inside the block; home: the receiver when the block was
+  # made (deferred blocks such as on_page_create run later, elsewhere).
+  def block_ops(receiver, home, list)
+    @receivers.push(receiver.equal?(self) ? home : receiver)
     ops(list)
   ensure
     @receivers.pop
@@ -128,7 +130,8 @@ class Driver
       # Under instance_eval, self in the block is Prawn's object, not the
       # driver: ops then target it.
       driver = self
-      blk = proc { driver.send(:block_ops, self, block_arg) }
+      home = @receivers.last
+      blk = proc { driver.send(:block_ops, self, home, block_arg) }
       options ? target.public_send(method, *positional, **options, &blk) : target.public_send(method, *positional, &blk)
     else
       options ? target.public_send(method, *positional, **options) : target.public_send(method, *positional)
@@ -177,11 +180,11 @@ class Driver
   # Ruby → JSON-able observation.
   def observe(v)
     case v
-    when String then v.start_with?(PRAWN_DIR) ? "$PRAWN/#{v.delete_prefix(PRAWN_DIR)}" : v
+    when String then v.gsub(PRAWN_DIR, '$PRAWN/')
     when Integer, Float, true, false, nil then v
     when Symbol then ":#{v}"
     when Array then v.map { |x| observe(x) }
-    when Hash then v.to_h { |k, x| [k.to_s, observe(x)] }
+    when Hash then v.to_h { |k, x| [observe(k.to_s), observe(x)] }
     when Prawn::Document::BoundingBox
       { 'left' => v.left, 'bottom' => v.bottom, 'width' => v.width, 'height' => v.height,
         'absolute_left' => v.absolute_left, 'absolute_top' => v.absolute_top }
