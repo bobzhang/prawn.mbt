@@ -100,18 +100,22 @@ check), soft masks, blend modes, patterns/shadings, annotations and destinations
 * **Comparator.** Read both PDFs with pdflite's reader (extended as in §2) and compare Prawn's
   decisions. Exact bytes are never required.
   - *Exact:* page count, page sizes, which page and line each glyph is on, the glyph sequence
-    (canonicalized: `Tj`/`TJ` grouping ignored, subset tags stripped, glyphs identified by Unicode
-    plus a hash of their outline in the embedded font program), font family and size, text render
-    mode, colours, alpha/blend state, annotations, destinations, outline, page labels.
+    (canonicalized: `Tj`/`TJ` grouping ignored, subset tags stripped; a glyph in an embedded font
+    is identified by Unicode plus a hash of its outline in the font program, a glyph in an
+    unembedded standard-14 font by the canonical face and its encoding-resolved glyph name), font
+    family and size, text render mode, colour space, alpha/blend state, annotations, destinations, outline, page labels.
   - *Within 0.01 pt in final page coordinates:* glyph origins, path coordinates, image placement,
-    character/word spacing, rise. Ruby rounds content operands to 5 decimals
+    character/word spacing, rise.
+  - *Colour components within 1e-5* (Prawn rounds its normalized channels to 5 decimals, e.g.
+    128/255 is `0.50196`; pdflite keeps more digits); a positive control checks the two
+    serializations agree. Ruby rounds content operands to 5 decimals
     (`pdf-core/pdf_object.rb:11`); the bound leaves room for that and for accumulated advances.
     Tighter where a test needs it.
   - *Images:* PNG and other Flate images compared decoded; JPEG compared on the DCT payload plus
     the image dictionary (`/ColorSpace`, `/BitsPerComponent`, `/Decode`, `/SMask`, `/Mask`),
     since pdflite doesn't decode DCT.
   - *Negative controls:* the harness checks itself on mutated outputs (a glyph displaced by
-    0.02 pt, a changed font, a moved page break, a changed colour), which must all fail.
+    0.02 pt, a changed font, a moved page break, a colour changed by one 8-bit step), which must all fail.
 * **Operation scripts.** A JSON op language with nested scopes (bounding_box, float, column_box,
   repeat, stamp), explicit assets, typed numbers, **queries** (cursor, bounds, `width_of`,
   `height_of`, text box remainder, line metrics, page count), **callback traces** (fragment and
