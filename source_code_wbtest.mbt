@@ -405,3 +405,45 @@ test "text wider than the line after a broken number cannot fit" {
   ]
   inspect(source_wrap(fragments, mono_text(), 8.0) is None, content="true")
 }
+
+///|
+test "a number whose digits are wider than the line wraps by digit" {
+  // 10pt Courier, 6pt a digit, at 8pt: Ruby's SourceWrap prints "1", "2",
+  // "a", nothing left over
+  let courier = { ..mono_style(), family: "Courier", }
+  let builtin = { catalog: FontCatalog::load([]), hooks: Hooks::new(), }
+  let fragments : Array[Fragment] = [
+    { text: "12 ", style: { ..courier, linenum: true, }, anchor: None, },
+    { text: "a", style: courier, anchor: None, },
+  ]
+  inspect(
+    texts(source_wrap(fragments, builtin, 8.0).unwrap()),
+    content=(
+      #|"1" | "\n" | "2" | "\n" | "a"
+    ),
+  )
+  // not even one digit: CannotFit
+  inspect(source_wrap(fragments, builtin, 5.0) is None, content="true")
+}
+
+///|
+test "a highlighted line paints its background behind its images" {
+  // an inline image (drawn as a blue rectangle here) on a highlighted line:
+  // the highlight first, so that it does not cover the image
+  let base = mono_text()
+  let hooks = {
+    ..base.hooks,
+    image_size: (_, _, _) => (12.0, 8.0, false),
+    image_items: (_, _, x, top, w, h) => {
+      [rect_item(x, top, w, h, fill=@pagelayout.Color::rgb(0, 0, 255))]
+    },
+  }
+  let text = { ..base, hooks, }
+  let line = highlighted_line(mono_style())
+  line.push({
+    text: "\u{2063}",
+    style: { ..mono_style(), image: 0, },
+    anchor: None,
+  })
+  inspect(rectangles(text, line), content="22+138 255,255,204; 28+12 0,0,255")
+}

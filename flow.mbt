@@ -514,6 +514,26 @@ pub fn Flow::line_items(
   baseline : Double,
 ) -> Array[@pagelayout.PageItem] {
   let items : Array[@pagelayout.PageItem] = []
+  // the marks of highlighted source lines: behind everything else of the
+  // line, its images and glyphs (Ruby paints them as the line starts)
+  for mark in line.marks {
+    let (x, style, face) = mark
+    match (style.background, style.code_background) {
+      (Some(color), Some(extent)) =>
+        items.push(
+          self.code_background_item(
+            extent,
+            x0 + x,
+            0.0,
+            baseline,
+            face,
+            style.size,
+            color,
+          ),
+        )
+      _ => ()
+    }
+  }
   // inline images (InlineImageRenderer): one taller than one and a half
   // lines sits on the text's descender, a smaller one is centred on its
   // placeholder's box
@@ -554,25 +574,6 @@ pub fn Flow::line_items(
         target,
       }),
     )
-  }
-  // the marks of highlighted source lines: behind the rest of the line
-  for mark in line.marks {
-    let (x, style, face) = mark
-    match (style.background, style.code_background) {
-      (Some(color), Some(extent)) =>
-        items.push(
-          self.code_background_item(
-            extent,
-            x0 + x,
-            0.0,
-            baseline,
-            face,
-            style.size,
-            color,
-          ),
-        )
-      _ => ()
-    }
   }
   for anchor in line.anchors {
     items.push(

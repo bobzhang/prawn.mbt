@@ -137,8 +137,9 @@ pub fn source_wrap(
       }
       // the number (or blank) the line starts with, when it is wider than
       // the line: Prawn breaks it before its trailing blanks, which the
-      // next line strips, so the line's text goes on a line of its own (a
-      // number too wide without them cannot fit)
+      // next line strips, so the line's text goes on a line of its own, or
+      // within its digits when they are too wide (a digit wider than the
+      // line cannot fit)
       if start < end && fragments[items[start].fragment].style.linenum {
         let f = items[start].fragment
         let text = fragments[f].text
@@ -157,10 +158,43 @@ pub fn source_wrap(
           k += 1
         }
         if full > width + 0.0001 {
-          if keep == 0 || digits > width + 0.0001 {
+          if keep == 0 {
             return None
           }
           let plain = plain_number_style(fragments[f].style)
+          if digits > width + 0.0001 {
+            // its digits are wider than the line: Prawn wraps them by
+            // character, the rest of the number starting the next line
+            // (CannotFit when not even one fits)
+            let mut used = 0.0
+            let mut fits = 0
+            let mut k = start
+            while k < items.length() &&
+                  items[k].fragment == f &&
+                  items[k].offset < keep &&
+                  used + items[k].fit <= width + 0.0001 {
+              used += items[k].fit
+              fits = items[k].offset + 1
+              k += 1
+            }
+            if fits == 0 {
+              return None
+            }
+            split_number = Some(
+              [
+                ..fragments[:f],
+                { ..fragments[f], text: text[:fits].to_owned(), },
+                {
+                  text: "\n",
+                  style: { ..plain, linenum: false, },
+                  anchor: None,
+                },
+                { ..fragments[f], text: text[fits:].to_owned(), },
+                ..fragments[f + 1:],
+              ],
+            )
+            break
+          }
           split_number = Some(
             [
               ..fragments[:f],
