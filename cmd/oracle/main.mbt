@@ -190,6 +190,10 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         "absolute_top": b.absolute_top.to_json(),
       })
     }
+    "go_to_page" if args is [Number(_)] => {
+      doc.go_to_page(number(args[0]).to_int())
+      Some(Json::null())
+    }
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
@@ -245,6 +249,10 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       }
       @prawn.IncompatibleStringEncoding(s) => {
         raised(@prawn.IncompatibleStringEncoding(s))
+        return
+      }
+      @prawn.ArgumentError(s) => {
+        raised(@prawn.ArgumentError(s))
         return
       }
       e => raise e
@@ -455,7 +463,7 @@ fn Run::graphics(
   }
   match name {
     "fill_color" | "stroke_color" if args is [String(hex)] => {
-      guard @prawn.color_of_hex(hex) is Some(color) else { return None }
+      let color = @prawn.color_of_hex(hex)
       if name == "fill_color" {
         doc.set_fill_color(color)
       } else {

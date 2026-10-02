@@ -1,0 +1,18 @@
+{"ops": [
+  ["fill_color", "FF0000"],
+  ["float", {"block": [["start_new_page"], ["fill_color", "0000FF"], ["text", "blue on page 2"]]}],
+  ["text", "red on page 1"],
+  ["rectangle", [10, 300], 50, 50],
+  ["go_to_page", 2],
+  ["stroke"],
+  ["!raises", "ArgumentError", ["dash", 0]],
+  ["!raises", "ArgumentError", ["dash", [-1, 2]]],
+  ["!raises", "none", ["dash", [0, 2]]],
+  ["!raises", "ArgumentError", ["fill_color", "#FF0000"]],
+  ["!raises", "ArgumentError", ["fill_color", "F00"]],
+  ["line_width", 0],
+  ["stroke_line", [10, 100], [200, 100]],
+  ["close_and_stroke"],
+  ["close_path"],
+  ["stroke"]
+]}

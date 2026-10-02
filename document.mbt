@@ -55,9 +55,12 @@ pub struct Document {
   mut layout : String
   /// the bounding boxes inside the margin box, innermost last
   priv boxes : Array[Box]
-  /// the graphics state and the path being built (`graphics.mbt`)
-  priv gs : GraphicState
+  /// each page's graphics state (`graphics.mbt`); a new page inherits
+  /// the last one's
+  priv states : Array[GraphicState]
+  /// the path being built, and the page it is built on
   priv path : Array[@pagelayout.PathSegment]
+  priv mut path_page : Int
 }
 
 ///|
@@ -98,8 +101,9 @@ pub fn Document::new(
     page_size: size,
     layout,
     boxes: [],
-    gs: GraphicState::new(),
+    states: [GraphicState::new()],
     path: [],
+    path_page: 0,
   }
 }
 
@@ -111,7 +115,7 @@ fn Document::style(self : Document, size? : Double) -> Style {
     size: size.unwrap_or(self.size),
     bold: false,
     italic: false,
-    color: self.gs.fill,
+    color: self.gs().fill,
     link: None,
     background: None,
     script: 0,
@@ -313,4 +317,12 @@ fn Document::check(
       raise CannotFit
     }
   }
+}
+
+///|
+/// Prawn's `go_to_page` (from 1): back to an existing page, at the top of
+/// its margin box.
+pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
+  self.flow.go_to_page(number - 1)
+  self.flow.y = self.flow.top
 }

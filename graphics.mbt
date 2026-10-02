@@ -31,14 +31,50 @@ fn GraphicState::new() -> GraphicState {
 }
 
 ///|
+fn GraphicState::copy(self : GraphicState) -> GraphicState {
+  { ..self, dash: self.dash.copy(), }
+}
+
+///|
+/// The current page's graphics state: a page made since the last one
+/// asked for starts with a copy of the state before it (Prawn's pages
+/// inherit it; going back to a page finds that page's).
+fn Document::gs(self : Document) -> GraphicState {
+  let page = if self.flow.page < 0 { 0 } else { self.flow.page }
+  while self.states.length() <= page {
+    self.states.push(self.states[self.states.length() - 1].copy())
+  }
+  self.states[page]
+}
+
+///|
+/// Adds a segment to the path: a path left unpainted on another page is
+/// dropped (Prawn wrote it into that page's content, unpainted), and a
+/// close with nothing to close does nothing.
+fn Document::add_segment(
+  self : Document,
+  segment : @pagelayout.PathSegment,
+) -> Unit {
+  if self.path_page != self.flow.page {
+    self.path.clear()
+    self.path_page = self.flow.page
+  }
+  if segment is Close && self.path.is_empty() {
+    return
+  }
+  self.path.push(segment)
+}
+
+///|
 /// Prawn's `KAPPA`: the control point distance, as a fraction of the
 /// radius, of the four Bézier curves that make a circle.
 let kappa : Double = 4.0 * ((2.0.sqrt() - 1.0) / 3.0)
 
 ///|
-/// A colour Prawn names in hex (`"FFCC00"`).
-pub fn color_of_hex(hex : String) -> Color? {
-  guard hex.length() == 6 else { return None }
+/// A colour Prawn names in hex (`"FFCC00"`: six digits, no `#`).
+pub fn color_of_hex(hex : String) -> Color raise PrawnError {
+  let bad = ArgumentError("Unknown type of color: \"\{hex}\"")
+  guard hex.length() == 6 else { raise bad }
   let digit = fn(c : Char) -> Int? {
     match c {
       '0'..='9' => Some(c.to_int() - '0'.to_int())
@@ -51,29 +87,29 @@ pub fn color_of_hex(hex : String) -> Color? {
   for i in 0..<3 {
     guard digit(hex[2 * i].unsafe_to_char()) is Some(hi) &&
       digit(hex[2 * i + 1].unsafe_to_char()) is Some(lo) else {
-      return None
+      raise bad
     }
     parts.push(hi * 16 + lo)
   }
-  Some(Color::rgb(parts[0], parts[1], parts[2]))
+  Color::rgb(parts[0], parts[1], parts[2])
 }
 
 ///|
 /// Prawn's `fill_color=`: what fills and text are painted with.
 pub fn Document::set_fill_color(self : Document, color : Color) -> Unit {
-  self.gs.fill = color
+  self.gs().fill = color
 }
 
 ///|
 /// Prawn's `stroke_color=`.
 pub fn Document::set_stroke_color(self : Document, color : Color) -> Unit {
-  self.gs.stroke = color
+  self.gs().stroke = color
 }
 
 ///|
 /// Prawn's `line_width=`.
 pub fn Document::set_line_width(self : Document, width : Double) -> Unit {
-  self.gs.line_width = width
+  self.gs().line_width = width
 }
 
 ///|
@@ -82,7 +118,7 @@ pub fn Document::set_cap_style(
   self : Document,
   cap : @pagelayout.LineCap,
 ) -> Unit {
-  self.gs.cap = cap
+  self.gs().cap = cap
 }
 
 ///|
@@ -91,7 +127,7 @@ pub fn Document::set_join_style(
   self : Document,
   join : @pagelayout.LineJoin,
 ) -> Unit {
-  self.gs.join = join
+  self.gs().join = join
 }
 
 ///|
@@ -102,19 +138,27 @@ pub fn Document::dash(
   lengths : Array[Double],
   space? : Double,
   phase? : Double = 0.0,
-) -> Unit {
-  self.gs.dash = match lengths {
+) -> Unit raise PrawnError {
+  if lengths.iter().all(x => x == 0.0) {
+    raise ArgumentError(
+      "Zero length dashes are invalid. Call #undash to disable dashes.",
+    )
+  }
+  if lengths.iter().any(x => x < 0.0) {
+    raise ArgumentError("Negative numbers are not allowed for dash lengths.")
+  }
+  self.gs().dash = match lengths {
     [length] => [length, space.unwrap_or(length)]
     _ => lengths
   }
-  self.gs.dash_phase = phase
+  self.gs().dash_phase = phase
 }
 
 ///|
 /// Prawn's `undash`.
 pub fn Document::undash(self : Document) -> Unit {
-  self.gs.dash = []
-  self.gs.dash_phase = 0.0
+  self.gs().dash = []
+  self.gs().dash_phase = 0.0
 }
 
 ///|
@@ -134,14 +178,14 @@ fn Document::page_point(
 /// Prawn's `move_to`.
 pub fn Document::move_to(self : Document, x : Double, y : Double) -> Unit {
   let (px, py) = self.page_point(x, y)
-  self.path.push(MoveTo(px, py))
+  self.add_segment(MoveTo(px, py))
 }
 
 ///|
 /// Prawn's `line_to`.
 pub fn Document::line_to(self : Document, x : Double, y : Double) -> Unit {
   let (px, py) = self.page_point(x, y)
-  self.path.push(LineTo(px, py))
+  self.add_segment(LineTo(px, py))
 }
 
 ///|
@@ -155,7 +199,7 @@ pub fn Document::curve_to(
   let (x1, y1) = self.page_point(bounds.0.0, bounds.0.1)
   let (x2, y2) = self.page_point(bounds.1.0, bounds.1.1)
   let (x3, y3) = self.page_point(dest.0, dest.1)
-  self.path.push(CurveTo(x1, y1, x2, y2, x3, y3))
+  self.add_segment(CurveTo(x1, y1, x2, y2, x3, y3))
 }
 
 ///|
@@ -167,7 +211,7 @@ pub fn Document::rectangle(
   height : Double,
 ) -> Unit {
   let (x, y) = self.page_point(point.0, point.1)
-  self.path.push(Rectangle(x, y, width, height))
+  self.add_segment(Rectangle(x, y, width, height))
 }
 
 ///|
@@ -266,7 +310,7 @@ pub fn Document::polygon(
     self.line_to(p.0, p.1)
   }
   self.line_to(points[0].0, points[0].1)
-  self.path.push(Close)
+  self.add_segment(Close)
 }
 
 ///|
@@ -315,7 +359,7 @@ pub fn Document::rounded_polygon(
   for i in 0..<points.length() {
     self.rounded_vertex(radius, ring[i], ring[i + 1], ring[i + 2])
   }
-  self.path.push(Close)
+  self.add_segment(Close)
 }
 
 ///|
@@ -339,7 +383,7 @@ pub fn Document::rounded_rectangle(
 ///|
 /// Prawn's `close_path`.
 pub fn Document::close_path(self : Document) -> Unit {
-  self.path.push(Close)
+  self.add_segment(Close)
 }
 
 ///|
@@ -352,8 +396,11 @@ fn Document::paint(
 ) -> Unit {
   let segments = self.path.copy()
   self.path.clear()
-  guard segments.length() > 0 else { return }
-  let gs = self.gs
+  // a path built on another page stays there, unpainted
+  guard segments.length() > 0 && self.path_page == self.flow.page else {
+    return
+  }
+  let gs = self.gs()
   self.flow.push(
     Graphic({
       x_pt: 0.0,
@@ -377,7 +424,11 @@ fn Document::paint(
             None
           },
           stroke_style: {
-            width: Width(gs.line_width),
+            width: if gs.line_width == 0.0 {
+              Hairline
+            } else {
+              Width(gs.line_width)
+            },
             cap: gs.cap,
             join: gs.join,
             miter_limit: 10.0,
@@ -399,7 +450,7 @@ pub fn Document::stroke(self : Document) -> Unit {
 ///|
 /// Prawn's `close_and_stroke`.
 pub fn Document::close_and_stroke(self : Document) -> Unit {
-  self.path.push(Close)
+  self.add_segment(Close)
   self.paint(stroke=true)
 }
 

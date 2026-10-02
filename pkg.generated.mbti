@@ -9,7 +9,7 @@ import {
 // Values
 pub fn build_items(Array[Fragment], TextContext, available? : Double) -> (Array[Item], Array[Face])
 
-pub fn color_of_hex(String) -> @pagelayout.Color?
+pub fn color_of_hex(String) -> @pagelayout.Color raise PrawnError
 
 pub fn dashed_hrule(Double, Double, Double, Double, @pagelayout.Color) -> Array[@pagelayout.PageItem]
 
@@ -45,6 +45,7 @@ pub fn vrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.P
 pub(all) suberror PrawnError {
   CannotFit
   IncompatibleStringEncoding(String)
+  ArgumentError(String)
 }
 pub fn PrawnError::ruby_class(Self) -> String
 
@@ -97,11 +98,12 @@ pub fn Document::close_path(Self) -> Unit
 pub fn Document::cursor(Self) -> Double
 pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
-pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit
+pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit raise PrawnError
 pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise
+pub fn Document::go_to_page(Self, Int) -> Unit
 pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
 pub fn Document::horizontal_rule(Self) -> Unit
