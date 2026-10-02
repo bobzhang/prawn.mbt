@@ -29,6 +29,10 @@ fn number(j : Json) -> Double raise ScriptError {
 ///|
 fn string(j : Json) -> String raise ScriptError {
   match j {
+    // "::text" is the literal ":text"; ":name" is a symbol, not a string
+    String(s) if s.has_prefix("::") => s[1:].to_owned()
+    String(s) if s.has_prefix(":") =>
+      raise ScriptError("a symbol where a string goes: \{s}")
     String(s) => s
     _ => raise ScriptError("not a string: \{j.stringify()}")
   }
@@ -46,9 +50,19 @@ fn symbol(j : Json) -> String? {
 }
 
 ///|
+/// The options of an op: its trailing object without `block` (as the driver
+/// takes them).
 fn options(args : Array[Json]) -> Map[String, Json] {
   match args.last() {
-    Some(Object(map)) if !map.contains("block") && !map.contains("trace") => map
+    Some(Object(map)) if !map.contains("trace") => {
+      let out = Map([])
+      for k, v in map {
+        if k != "block" {
+          out[k] = v
+        }
+      }
+      out
+    }
     _ => Map([])
   }
 }
@@ -92,8 +106,14 @@ fn Run::call(
       doc.set_font_size(number(args[0]))
       Some(Json::null())
     }
-    "start_new_page" if opts.is_empty() => {
-      doc.start_new_page()
+    "start_new_page" if opts.keys().all(k => k == "layout" || k == "size") => {
+      doc.start_new_page(
+        layout?=opts.get("layout").bind(symbol),
+        size?=match opts.get("size") {
+          Some(size) => Some(page_size(Some(size)))
+          None => None
+        },
+      )
       Some(Json::null())
     }
     "cursor" => Some(doc.cursor().to_json())

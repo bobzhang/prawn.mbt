@@ -49,6 +49,19 @@ pub struct Document {
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
+  /// the page size as given and the layout new pages take (Prawn keeps
+  /// them apart: a landscape page reverses the size, whatever its shape)
+  mut page_size : (Double, Double)
+  mut layout : String
+}
+
+///|
+fn oriented(size : (Double, Double), layout : String) -> (Double, Double) {
+  if layout == "landscape" {
+    (size.1, size.0)
+  } else {
+    size
+  }
 }
 
 ///|
@@ -60,7 +73,7 @@ pub fn Document::new(
   layout? : String = "portrait",
   margin? : Array[Double] = [36.0],
 ) -> Document raise {
-  let (w, h) = if layout == "landscape" { (size.1, size.0) } else { size }
+  let (w, h) = oriented(size, layout)
   let (top, right, bottom, left) = margins_of(margin)
   let catalog = FontCatalog::load([])
   let flow = Flow::new(catalog, {
@@ -71,8 +84,8 @@ pub fn Document::new(
     margin_bottom: bottom,
     margin_left: left,
   })
-  flow.start_new_page()
-  { flow, catalog, family: "Helvetica", size: 12.0, }
+  flow.start_new_page(size=(w, h))
+  { flow, catalog, family: "Helvetica", size: 12.0, page_size: size, layout, }
 }
 
 ///|
@@ -114,6 +127,10 @@ pub fn Document::text(
   align? : Alignment = Left,
   leading? : Double = 0.0,
 ) -> Unit {
+  // nothing to set: Prawn moves nothing either
+  if string.is_empty() {
+    return
+  }
   let style = self.style(size?)
   self.flow.typeset(
     [{ text: string, style, anchor: None, }],
@@ -161,7 +178,9 @@ pub fn Document::start_new_page(
   layout? : String,
   size? : (Double, Double),
 ) -> Unit {
-  self.flow.start_new_page(layout?, size?)
+  self.page_size = size.unwrap_or(self.page_size)
+  self.layout = layout.unwrap_or(self.layout)
+  self.flow.start_new_page(size=oriented(self.page_size, self.layout))
 }
 
 ///|
