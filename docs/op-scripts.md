@@ -78,3 +78,26 @@ never use `:random` passwords).
 
 Examples that need mocks, extension subclasses or object identity are not op scripts; they are
 hand-ported as MoonBit tests.
+
+## Goldens and the comparison
+
+`scripts/oracle.mbtx` writes Ruby's outputs to `tests/golden` (`NAME.pdf`, `NAME.jsonl`), which
+are committed, so the comparison runs without Ruby. `moon run --target native scripts/check.mbtx --
+--oracle` reruns Ruby and requires the goldens to be unchanged.
+
+`cmd/compare` (on `internal/inspect`) reads PDFs with pdflite and compares what they show under
+the contract in `PLAN.md` §3:
+
+* `compare diff EXPECTED ACTUAL` prints the differences. It checks page count and sizes. On each
+  page it checks the glyph sequence (text, font, size, origin, render mode, colour, alpha) and the
+  marks in paint order: paths with their paint style, images with their placement, dictionary and
+  data hash, and shadings.
+* `compare inspect FILE` prints what the comparison sees.
+* `compare self-test DIR` runs the controls on every PDF in `DIR`. Negative mutations (text moved
+  0.02 pt, a font size changed, a page break moved, a colour changed by one 8-bit step, a path
+  moved 0.02 pt) must be reported. Positive ones (text moved 0.004 pt, a pdflite round trip,
+  colours written in full instead of Prawn's 5 decimals) must not. Every mutation must apply to at
+  least one PDF.
+
+Not compared yet: annotations, destinations, the outline and page labels; form XObjects (stamps);
+glyph outlines (glyphs are identified by font name and Unicode text).

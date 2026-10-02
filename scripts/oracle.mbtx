@@ -4,7 +4,7 @@
 //   --ops DIR     the scripts to run (default tests/ops); NAME selects
 //                 scripts by file name without `.json`
 //   --out DIR     where to write NAME.pdf and NAME.jsonl (default
-//                 _build/oracle/ruby)
+//                 tests/golden, the goldens the comparison replays)
 //   --ruby RUBY   the Ruby to use (default $PRAWN_RUBY, else Homebrew's Ruby
 //                 when installed, else `ruby` on PATH)
 //   --determinism run every script twice and fail unless both runs write the
@@ -42,7 +42,7 @@ struct Options {
 fn parse_args(args : Array[String]) -> Options raise {
   let opts = {
     ops: "tests/ops",
-    out: "_build/oracle/ruby",
+    out: "tests/golden",
     ruby: None,
     determinism: false,
     names: [],

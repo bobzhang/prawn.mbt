@@ -32,8 +32,6 @@ jobs:
           moon info
           git diff --exit-code
 
+      # type-check, unit tests, and the comparison's self-test on the goldens
       - name: Check
-        run: moon check --target all --deny-warn
-
-      - name: Test
-        run: moon test --target native
+        run: moon run --target native scripts/check.mbtx

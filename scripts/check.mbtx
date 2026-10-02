@@ -1,0 +1,43 @@
+// Full validation: type-check (all targets), unit tests, and the
+// comparison's self-test on the goldens in tests/golden (PLAN.md §3).
+//
+// Usage: moon run --target native scripts/check.mbtx -- [--oracle]
+//   --oracle   also rerun the op scripts through Ruby Prawn (needs Ruby and
+//              .repos; see scripts/oracle.mbtx) and require the goldens to
+//              be unchanged
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+async fn step(name : String, cmd : String, args : Array[String]) -> Unit {
+  println("== \{name}")
+  let code = @process.run(cmd, args)
+  if code != 0 {
+    fail("\{name} failed (exit \{code})")
+  }
+}
+
+///|
+async fn main {
+  let oracle = @env.args().contains("--oracle")
+  step("check", "moon", ["check", "--target", "all", "--deny-warn"])
+  step("test (native)", "moon", ["test", "--target", "native"])
+  step("test (wasm)", "moon", ["test", "--target", "wasm"])
+  step("build compare", "moon", [
+    "build", "--target", "native", "--release", "cmd/compare",
+  ])
+  let compare = "_build/native/release/build/cmd/compare/compare.exe"
+  step("comparison self-test", compare, ["self-test", "tests/golden"])
+  if oracle {
+    step("oracle", "moon", [
+      "run", "--target", "native", "scripts/oracle.mbtx", "--", "--determinism",
+    ])
+    step("goldens unchanged", "git", [
+      "diff", "--exit-code", "--stat", "tests/golden",
+    ])
+  }
+  println("all checks passed")
+}
