@@ -29,6 +29,8 @@ pub fn rect_item(Double, Double, Double, Double, fill? : @pagelayout.Color, stro
 
 pub fn rgb_hex(Int) -> @pagelayout.Color
 
+pub fn source_wrap(Array[Fragment], TextContext, Double) -> Array[Fragment]?
+
 pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_width? : Double, indent_paragraphs? : Bool) -> Array[Line]
 
 pub fn vrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.PageItem
@@ -44,6 +46,13 @@ pub(all) enum Alignment {
 } derive(Eq)
 pub fn Alignment::equal(Self, Self) -> Bool
 pub fn Alignment::not_equal(Self, Self) -> Bool
+
+pub(all) enum CodeBackground {
+  Gap(Double, Bool)
+  FullLine
+} derive(Eq)
+pub fn CodeBackground::equal(Self, Self) -> Bool
+pub fn CodeBackground::not_equal(Self, Self) -> Bool
 
 pub(all) struct Columns {
   count : Int
@@ -176,6 +185,7 @@ pub(all) struct Line {
   height : Double
   empty_links : Array[(Double, Style, Face)]
   images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
+  marks : Array[(Double, Style, Face)]
 }
 
 pub(all) struct LineMetrics {
@@ -228,6 +238,9 @@ pub(all) struct Style {
   doc_italic : Bool
   font_set : Bool
   text_transform : String?
+  code_background : CodeBackground?
+  linenum : Bool
+  line_mark : Bool
 } derive(Eq)
 pub fn Style::equal(Self, Self) -> Bool
 pub fn Style::face_style(Self) -> (Bool, Bool)

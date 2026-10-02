@@ -45,6 +45,15 @@ pub(all) struct Style {
   font_set : Bool
   /// the theme's `text_transform` (`uppercase`, `lowercase`, `capitalize`)
   text_transform : String?
+  /// how far `background` reaches in a highlighted source block (None: the
+  /// glyph box)
+  code_background : CodeBackground?
+  /// a line number of a source block (asciidoctor-pdf's `linenum`
+  /// fragments): never dropped, and no break opportunity (`SourceLineWrap`)
+  linenum : Bool
+  /// a zero-width mark that paints its `background` behind the rest of its
+  /// line (a highlighted source line)
+  line_mark : Bool
 } derive(Eq)
 
 ///|

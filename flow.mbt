@@ -555,6 +555,25 @@ pub fn Flow::line_items(
       }),
     )
   }
+  // the marks of highlighted source lines: behind the rest of the line
+  for mark in line.marks {
+    let (x, style, face) = mark
+    match (style.background, style.code_background) {
+      (Some(color), Some(extent)) =>
+        items.push(
+          self.code_background_item(
+            extent,
+            x0 + x,
+            0.0,
+            baseline,
+            face,
+            style.size,
+            color,
+          ),
+        )
+      _ => ()
+    }
+  }
   for anchor in line.anchors {
     items.push(
       Anchor({
@@ -582,15 +601,27 @@ pub fn Flow::line_items(
     match style.background {
       Some(color) =>
         items.push(
-          {
-            let o = style.border_offset
-            rect_item(
-              x - o,
-              baseline - rise - a - o,
-              run.width + 2.0 * o,
-              a + d + 2.0 * o,
-              fill=color,
-            )
+          match style.code_background {
+            Some(extent) =>
+              self.code_background_item(
+                extent,
+                x,
+                run.width,
+                baseline,
+                run.face,
+                style.size,
+                color,
+              )
+            None => {
+              let o = style.border_offset
+              rect_item(
+                x - o,
+                baseline - rise - a - o,
+                run.width + 2.0 * o,
+                a + d + 2.0 * o,
+                fill=color,
+              )
+            }
           },
         )
       None => ()

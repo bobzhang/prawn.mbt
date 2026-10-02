@@ -72,6 +72,9 @@ pub(all) struct Line {
   /// inline images: x, their index, width, height, whether they make the
   /// line taller, and their fragment's style and face
   images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
+  /// the line marks of highlighted source lines (`Style::line_mark`): x,
+  /// their fragment's style and face
+  marks : Array[(Double, Style, Face)]
 }
 
 ///|
@@ -362,6 +365,10 @@ fn break_lines(
     // spaces a line starts with are dropped, as Prawn strips the first
     // fragment of each line (anchors in front of them notwithstanding)
     let mut visible = false
+    // line numbers take room but make no break opportunity: a word too long
+    // for the line after one wraps by character (asciidoctor-pdf's
+    // SourceLineWrap)
+    let mut content = false
     let mut last_break = -1
     let mut i = start
     let mut end = -1
@@ -373,8 +380,14 @@ fn break_lines(
         hard = true
         break
       }
-      if visible && starts[i] {
+      if content && starts[i] {
         last_break = i
+      }
+      if fragments[item.fragment].style.linenum {
+        w += item.fit
+        visible = true
+        i += 1
+        continue
       }
       if is_break_space(item.unit) {
         if !visible {
@@ -388,6 +401,8 @@ fn break_lines(
           break
         } else {
           w += item.fit
+          // a space kept after a line number makes the line breakable
+          content = true
         }
         i += 1
         continue
@@ -408,6 +423,7 @@ fn break_lines(
       w += item.fit
       if item.anchor is None && item.unit != 0x200B {
         visible = true
+        content = true
       }
       i += 1
     }
@@ -670,6 +686,7 @@ fn place_line(
   let mut descender = 0.0
   let mut height = 0.0
   let images : Array[(Double, Int, Double, Double, Bool, Style, Face)] = []
+  let marks : Array[(Double, Style, Face)] = []
   fn measure(fragment : Int) {
     let style = fragments[fragment].style
     let face = faces[fragment]
@@ -728,6 +745,9 @@ fn place_line(
       measure(fragment)
       i += 1
       continue
+    }
+    if style.line_mark {
+      marks.push((x, style, faces[fragment]))
     }
     let sb = StringBuilder()
     let advances : Array[Double] = []
@@ -825,5 +845,6 @@ fn place_line(
     height,
     empty_links,
     images,
+    marks,
   }
 }

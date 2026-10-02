@@ -15,8 +15,10 @@ https://github.com/asciidoctor/asciidoctor-pdf
   arranging of fragments (fonts, fallback fonts, line height
   normalization), the text box with a height, inline images
   (InlineImageArranger), destinations (InlineDestinationMarker and
-  `add_dest_for_block`), its patches to prawn-svg, and its default fonts
-  (`default_font_files`).
+  `add_dest_for_block`), the source blocks its highlighters lay out
+  (SourceWrap, SourceLineWrap, Rouge's BackgroundColorizer and
+  TextBackgroundAndBorderRenderer: source_code.mbt), its patches to
+  prawn-svg, and its default fonts (`default_font_files`).
 
 The MIT license text is in LICENSE.
 
