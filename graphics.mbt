@@ -36,33 +36,30 @@ fn GraphicState::copy(self : GraphicState) -> GraphicState {
 }
 
 ///|
-/// The current page's graphics state: a page made since the last one
-/// asked for starts with a copy of the state before it (Prawn's pages
-/// inherit it; going back to a page finds that page's).
+/// The current page's graphics state (each page has its own; see
+/// `Document::new`).
 fn Document::gs(self : Document) -> GraphicState {
-  let page = if self.flow.page < 0 { 0 } else { self.flow.page }
-  while self.states.length() <= page {
-    self.states.push(self.states[self.states.length() - 1].copy())
-  }
-  self.states[page]
+  self.states[self.flow.page]
 }
 
 ///|
-/// Adds a segment to the path: a path left unpainted on another page is
-/// dropped (Prawn wrote it into that page's content, unpainted), and a
-/// close with nothing to close does nothing.
+/// The current page's path being built.
+fn Document::path(self : Document) -> Array[@pagelayout.PathSegment] {
+  self.paths[self.flow.page]
+}
+
+///|
+/// Adds a segment to the current page's path (a close with nothing to
+/// close does nothing).
 fn Document::add_segment(
   self : Document,
   segment : @pagelayout.PathSegment,
 ) -> Unit {
-  if self.path_page != self.flow.page {
-    self.path.clear()
-    self.path_page = self.flow.page
-  }
-  if segment is Close && self.path.is_empty() {
+  let path = self.path()
+  if segment is Close && path.is_empty() {
     return
   }
-  self.path.push(segment)
+  path.push(segment)
 }
 
 ///|
@@ -394,12 +391,9 @@ fn Document::paint(
   stroke? : Bool = false,
   even_odd? : Bool = false,
 ) -> Unit {
-  let segments = self.path.copy()
-  self.path.clear()
-  // a path built on another page stays there, unpainted
-  guard segments.length() > 0 && self.path_page == self.flow.page else {
-    return
-  }
+  let segments = self.path().copy()
+  self.path().clear()
+  guard segments.length() > 0 else { return }
   let gs = self.gs()
   self.flow.push(
     Graphic({

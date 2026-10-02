@@ -14,5 +14,14 @@
   ["stroke_line", [10, 100], [200, 100]],
   ["close_and_stroke"],
   ["close_path"],
-  ["stroke"]
+  ["stroke"],
+  ["go_to_page", 1],
+  ["fill_color", "00AA00"],
+  ["go_to_page", 2],
+  ["fill_rectangle", [300, 300], 40, 40],
+  ["go_to_page", 1],
+  ["rectangle", [300, 600], 60, 60],
+  ["float", {"block": [["start_new_page"], ["close_path"]]}],
+  ["stroke"],
+  ["?page_count"]
 ]}

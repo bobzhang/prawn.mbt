@@ -58,9 +58,9 @@ pub struct Document {
   /// each page's graphics state (`graphics.mbt`); a new page inherits
   /// the last one's
   priv states : Array[GraphicState]
-  /// the path being built, and the page it is built on
-  priv path : Array[@pagelayout.PathSegment]
-  priv mut path_page : Int
+  /// each page's path being built (Prawn writes it into that page's
+  /// content, to be painted there)
+  priv paths : Array[Array[@pagelayout.PathSegment]]
 }
 
 ///|
@@ -92,8 +92,7 @@ pub fn Document::new(
     margin_bottom: bottom,
     margin_left: left,
   })
-  flow.start_new_page(size=(w, h))
-  {
+  let doc = {
     flow,
     catalog,
     family: "Helvetica",
@@ -101,10 +100,22 @@ pub fn Document::new(
     page_size: size,
     layout,
     boxes: [],
-    states: [GraphicState::new()],
-    path: [],
-    path_page: 0,
+    states: [],
+    paths: [],
   }
+  // a new page starts with the graphics state of the page it was made from,
+  // as it is then (a page made by a page break included)
+  flow.page_started = (from, to) => {
+    let state = if from >= 0 && from < doc.states.length() {
+      doc.states[from].copy()
+    } else {
+      GraphicState::new()
+    }
+    doc.states.insert(to, state)
+    doc.paths.insert(to, [])
+  }
+  flow.start_new_page(size=(w, h))
+  doc
 }
 
 ///|

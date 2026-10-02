@@ -3,3 +3,4 @@
 {"raises":"none","error":null}
 {"raises":"ArgumentError","error":"ArgumentError"}
 {"raises":"ArgumentError","error":"ArgumentError"}
+{"query":"page_count","value":3}
