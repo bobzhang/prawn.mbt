@@ -1,0 +1,12 @@
+{"query":["width_of","Hello"],"value":27.336000000000002}
+{"query":["width_of","Hello",{"size":30}],"value":68.34}
+{"query":["width_of","café — naïve “quotes”"],"value":118.056}
+{"query":["width_of","WAVE AWAY To.",{"kerning":true}],"value":88.932}
+{"query":["width_of",""],"value":0.0}
+{"query":["height_of",""],"value":0}
+{"query":["height_of","one line"],"value":13.872}
+{"query":["height_of","first\nsecond\n\nfourth"],"value":55.488}
+{"query":["height_of","Wrapped many times in a narrow column of text that keeps going",{"width":60,"leading":3}],"value":134.976}
+{"query":["height_of","Larger",{"size":24}],"value":27.744}
+{"query":"cursor","value":664.512}
+{"query":"cursor","value":626.1439999999999}

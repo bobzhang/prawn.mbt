@@ -1,0 +1,18 @@
+{
+  "ops": [
+    ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["width_of", "中"]],
+    ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["height_of", "😀"]],
+    ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["text", "smile 😀"]],
+    ["!raises", "Prawn::Errors::CannotFit", ["height_of", "W", { "width": 1 }]],
+    ["!raises", "none", ["height_of", "W", { "width": 20 }]],
+    ["?height_of", "", { "leading": 3 }],
+    ["text", "", { "leading": 3 }],
+    ["?cursor"],
+    ["text", ":"],
+    ["?cursor"],
+    ["!raises", "none", ["?width_of", "A\u007f"]],
+    ["!raises", "none", ["?height_of", "A\u007f", { "width": 9 }]],
+    ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["height_of", "W中", { "width": 1 }]],
+    ["!raises", "none", ["?height_of", "&", { "size": 9, "width": 6.002999999999999 }]]
+  ]
+}

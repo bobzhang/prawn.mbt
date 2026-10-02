@@ -1,0 +1,18 @@
+{
+  "ops": [
+    ["?width_of", "Hello"],
+    ["?width_of", "Hello", { "size": 30 }],
+    ["?width_of", "café — naïve “quotes”"],
+    ["?width_of", "WAVE AWAY To.", { "kerning": true }],
+    ["?width_of", ""],
+    ["?height_of", ""],
+    ["?height_of", "one line"],
+    ["?height_of", "first\nsecond\n\nfourth"],
+    ["?height_of", "Wrapped many times in a narrow column of text that keeps going", { "width": 60, "leading": 3 }],
+    ["?height_of", "Larger", { "size": 24 }],
+    ["text", "first\nsecond\n\nfourth"],
+    ["?cursor"],
+    ["text", "Wrapped many times in a narrow column of text that keeps going and going so that it needs several lines here.", { "leading": 3, "size": 14 }],
+    ["?cursor"]
+  ]
+}

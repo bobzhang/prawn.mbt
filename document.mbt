@@ -126,12 +126,15 @@ pub fn Document::text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
-) -> Unit {
-  // nothing to set: Prawn moves nothing either
+) -> Unit raise PrawnError {
+  // nothing to set: Prawn moves by the leading alone (an empty box has no
+  // line gap)
   if string.is_empty() {
+    self.flow.move_down(leading)
     return
   }
   let style = self.style(size?)
+  self.check(string, style, Some(self.flow.width()))
   self.flow.typeset(
     [{ text: string, style, anchor: None, }],
     // after the text box, the line gap and leading (`final_gap`, Prawn's
@@ -206,4 +209,89 @@ pub fn Document::render(self : Document) -> Bytes raise {
       truncate_widths=true,
     ),
   )
+}
+
+///|
+/// Prawn's `width_of`: how wide `string` is set in the current font at
+/// `size` (the current font size), with the font's kerning only when
+/// `kerning` asks for it (Prawn does not apply the document's default
+/// here).
+pub fn Document::width_of(
+  self : Document,
+  string : String,
+  size? : Double,
+  kerning? : Bool = false,
+) -> Double raise PrawnError {
+  let style = self.style(size?)
+  self.check(string, style, None)
+  let face = self.flow.font(style)
+  let chars = string.iter().map(c => c.to_int()).to_array()
+  let mut width = 0.0
+  for i, cp in chars {
+    width += face.prawn_width(cp)
+    if kerning && i + 1 < chars.length() {
+      width += face.kerning(cp, chars[i + 1])
+    }
+  }
+  // as Prawn scales: by size / 1000
+  width * (style.size / 1000.0)
+}
+
+///|
+/// Prawn's `height_of`: how tall `string` would be set by `text` in boxes
+/// `width` wide (the bounds' width), with the line gap and leading after
+/// it (Prawn's final gap).
+pub fn Document::height_of(
+  self : Document,
+  string : String,
+  size? : Double,
+  width? : Double,
+  leading? : Double = 0.0,
+) -> Double raise PrawnError {
+  // an empty box: its final gap is the leading alone
+  if string.is_empty() {
+    return leading
+  }
+  let style = self.style(size?)
+  self.check(string, style, Some(width.unwrap_or(self.flow.width())))
+  self.flow.height_of(
+    [{ text: string, style, anchor: None, }],
+    {
+      leading,
+      padding_top: 0.0,
+      padding_bottom: self.flow.font(style).line_gap_pt(style.size) + leading,
+    },
+    style,
+    width?,
+  )
+}
+
+///|
+/// What Prawn refuses before setting `string` in `style`: characters a
+/// standard font cannot encode (Windows-1252), and, given the `width`
+/// lines are set in, a character too wide for it (the line wrap cannot
+/// fit even one).
+fn Document::check(
+  self : Document,
+  string : String,
+  style : Style,
+  width : Double?,
+) -> Unit raise PrawnError {
+  let face = self.flow.font(style)
+  // the whole string is encoded before anything is wrapped
+  if face.standard {
+    for c in string {
+      let cp = c.to_int()
+      if cp >= 0x80 && winansi_code_of(cp) is None {
+        raise IncompatibleStringEncoding(string)
+      }
+    }
+  }
+  guard width is Some(w) else { return }
+  let scale = style.size / 1000.0
+  for c in string {
+    if c != ' ' && c != '\n' && face.prawn_width(c.to_int()) * scale > w {
+      raise CannotFit
+    }
+  }
 }

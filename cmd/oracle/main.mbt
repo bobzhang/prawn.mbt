@@ -79,17 +79,22 @@ fn alignment(j : Json?) -> @prawn.Alignment raise ScriptError {
 }
 
 ///|
+/// Whether `opts` has only the options in `known` (an op given others is
+/// one this module cannot run faithfully yet).
+fn only(opts : Map[String, Json], known : Array[String]) -> Bool {
+  opts.keys().all(k => known.contains(k))
+}
+
+///|
 /// Runs op `name` with `args`; its value (for a `?` query), or None when
-/// this module cannot run it.
-fn Run::call(
-  self : Run,
-  name : String,
-  args : Array[Json],
-) -> Json? raise ScriptError {
+/// this module cannot run it. Prawn's errors propagate.
+fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
   let doc = self.doc
   let opts = options(args)
   match name {
-    "text" => {
+    // kerning is Prawn's default (`default_kerning`), and how Flow sets text
+    "text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+      !(opts.get("kerning") is Some(False)) => {
       doc.text(
         string(args[0]),
         size?=opts.get("size").map(number),
@@ -106,7 +111,7 @@ fn Run::call(
       doc.set_font_size(number(args[0]))
       Some(Json::null())
     }
-    "start_new_page" if opts.keys().all(k => k == "layout" || k == "size") => {
+    "start_new_page" if only(opts, ["layout", "size"]) => {
       doc.start_new_page(
         layout?=opts.get("layout").bind(symbol),
         size?=match opts.get("size") {
@@ -116,6 +121,27 @@ fn Run::call(
       )
       Some(Json::null())
     }
+    "width_of" if only(opts, ["size", "kerning"]) =>
+      Some(
+        doc
+        .width_of(
+          string(args[0]),
+          size?=opts.get("size").map(number),
+          kerning=opts.get("kerning") is Some(True),
+        )
+        .to_json(),
+      )
+    "height_of" if only(opts, ["size", "width", "leading"]) =>
+      Some(
+        doc
+        .height_of(
+          string(args[0]),
+          size?=opts.get("size").map(number),
+          width?=opts.get("width").map(number),
+          leading=opts.get("leading").map(number).unwrap_or(0.0),
+        )
+        .to_json(),
+      )
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
@@ -124,18 +150,44 @@ fn Run::call(
 }
 
 ///|
-fn Run::op(self : Run, op : Json) -> Unit raise ScriptError {
+/// Runs one op, logging what the driver logs.
+fn Run::op(self : Run, op : Json) -> Unit raise {
   guard op is Array(items) && items.length() > 0 else {
     raise ScriptError("not an op: \{op.stringify()}")
   }
   let name = string(items[0])
   let args = items[1:].to_owned()
-  if name.has_prefix("?") {
+  if name == "!raises" {
+    // [expected, op]: the op runs as any other (a query in it is logged),
+    // then the class of the error it raised, or null
+    guard args is [expected, Array(_) as inner] else {
+      raise ScriptError("!raises needs an expected class and an op")
+    }
+    let raised = fn(error : @prawn.PrawnError) {
+      self.log.push({
+        "raises": expected,
+        "error": error.ruby_class().to_json(),
+      })
+    }
+    self.op(inner) catch {
+      @prawn.CannotFit => {
+        raised(@prawn.CannotFit)
+        return
+      }
+      @prawn.IncompatibleStringEncoding(s) => {
+        raised(@prawn.IncompatibleStringEncoding(s))
+        return
+      }
+      e => raise e
+    }
+    self.log.push({ "raises": expected, "error": Json::null() })
+  } else if name.has_prefix("?") {
     let query = name[1:].to_owned()
-    let label : Json = if args.is_empty() {
+    let shown = args.filter(a => !(a is Object(map) && map.contains("block")))
+    let label : Json = if shown.is_empty() {
       query.to_json()
     } else {
-      Json::array([query.to_json(), ..args])
+      Json::array([query.to_json(), ..shown])
     }
     match self.call(query, args) {
       Some(value) => self.log.push({ "query": label, "value": value })

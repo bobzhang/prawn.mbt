@@ -854,8 +854,14 @@ pub fn Flow::height_of(
   metrics : LineMetrics,
   base : Style,
   normalize_line_height? : Bool = false,
+  width? : Double,
 ) -> Double {
-  let lines = typeset_lines(fragments, self.text(), self.width(), Left)
+  let lines = typeset_lines(
+    fragments,
+    self.text(),
+    width.unwrap_or(self.width()),
+    Left,
+  )
   let base_face = self.font(base)
   let mut baseline = 0.0
   let mut depth = 0.0

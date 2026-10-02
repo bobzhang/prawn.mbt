@@ -40,6 +40,11 @@ pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_widt
 pub fn vrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.PageItem
 
 // Errors
+pub(all) suberror PrawnError {
+  CannotFit
+  IncompatibleStringEncoding(String)
+}
+pub fn PrawnError::ruby_class(Self) -> String
 
 // Types and methods
 pub(all) enum Alignment {
@@ -73,6 +78,7 @@ pub struct Document {
   mut layout : String
 }
 pub fn Document::cursor(Self) -> Double
+pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::move_down(Self, Double) -> Unit
 pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
 pub fn Document::page_count(Self) -> Int
@@ -81,7 +87,8 @@ pub fn Document::render(Self) -> Bytes raise
 pub fn Document::set_font(Self, String) -> Unit
 pub fn Document::set_font_size(Self, Double) -> Unit
 pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
-pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit
+pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit raise PrawnError
+pub fn Document::width_of(Self, String, size? : Double, kerning? : Bool) -> Double raise PrawnError
 
 pub(all) struct Face {
   metrics : @fonts.FaceMetrics
@@ -132,7 +139,7 @@ pub fn Flow::dest_x(Self) -> Double
 pub fn Flow::fits(Self, Double, y? : Double) -> Bool
 pub fn Flow::font(Self, Style) -> Face
 pub fn Flow::go_to_page(Self, Int) -> Unit
-pub fn Flow::height_of(Self, Array[Fragment], LineMetrics, Style, normalize_line_height? : Bool) -> Double
+pub fn Flow::height_of(Self, Array[Fragment], LineMetrics, Style, normalize_line_height? : Bool, width? : Double) -> Double
 pub fn[T] Flow::indent(Self, Double, Double, () -> T) -> T
 pub fn Flow::ink_line(Self, Line, Double, Double) -> Unit
 pub fn Flow::items(Self) -> Array[@pagelayout.PageItem]
