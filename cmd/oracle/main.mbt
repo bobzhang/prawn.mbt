@@ -158,8 +158,9 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
   let name = string(items[0])
   let args = items[1:].to_owned()
   if name == "!raises" {
-    // [expected, op]: the class of the error the op raises, or null
-    guard args is [expected, Array([String(inner), .. rest])] else {
+    // [expected, op]: the op runs as any other (a query in it is logged),
+    // then the class of the error it raised, or null
+    guard args is [expected, Array(_) as inner] else {
       raise ScriptError("!raises needs an expected class and an op")
     }
     let raised = fn(error : @prawn.PrawnError) {
@@ -168,7 +169,7 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
         "error": error.ruby_class().to_json(),
       })
     }
-    let value = self.call(inner, rest.to_owned()) catch {
+    self.op(inner) catch {
       @prawn.CannotFit => {
         raised(@prawn.CannotFit)
         return
@@ -179,10 +180,7 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       }
       e => raise e
     }
-    match value {
-      Some(_) => self.log.push({ "raises": expected, "error": Json::null() })
-      None => self.log.push({ "unsupported": inner.to_json() })
-    }
+    self.log.push({ "raises": expected, "error": Json::null() })
   } else if name.has_prefix("?") {
     let query = name[1:].to_owned()
     let shown = args.filter(a => !(a is Object(map) && map.contains("block")))

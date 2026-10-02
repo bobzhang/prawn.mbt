@@ -6,3 +6,8 @@
 {"query":["height_of","",{"leading":3}],"value":3}
 {"query":"cursor","value":717.0}
 {"query":"cursor","value":703.1279999999999}
+{"query":["width_of","A"],"value":8.004}
+{"raises":"none","error":null}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"query":["height_of","&",{"size":9,"width":6.002999999999999}],"value":10.404}
+{"raises":"none","error":null}

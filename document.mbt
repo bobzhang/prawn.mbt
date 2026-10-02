@@ -233,7 +233,8 @@ pub fn Document::width_of(
       width += face.kerning(cp, chars[i + 1])
     }
   }
-  width * style.size / 1000.0
+  // as Prawn scales: by size / 1000
+  width * (style.size / 1000.0)
 }
 
 ///|
@@ -277,16 +278,20 @@ fn Document::check(
   width : Double?,
 ) -> Unit raise PrawnError {
   let face = self.flow.font(style)
-  for c in string {
-    let cp = c.to_int()
-    if face.standard && cp >= 0x20 && winansi_code_of(cp) is None {
-      raise IncompatibleStringEncoding(string)
+  // the whole string is encoded before anything is wrapped
+  if face.standard {
+    for c in string {
+      let cp = c.to_int()
+      if cp >= 0x80 && winansi_code_of(cp) is None {
+        raise IncompatibleStringEncoding(string)
+      }
     }
-    match width {
-      Some(w) if c != ' ' &&
-        c != '\n' &&
-        face.prawn_width(cp) * style.size / 1000.0 > w => raise CannotFit
-      _ => ()
+  }
+  guard width is Some(w) else { return }
+  let scale = style.size / 1000.0
+  for c in string {
+    if c != ' ' && c != '\n' && face.prawn_width(c.to_int()) * scale > w {
+      raise CannotFit
     }
   }
 }
