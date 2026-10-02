@@ -217,6 +217,27 @@ pub fn source_wrap(
       continue
     }
     guard cut is Some((start, at)) else { break }
+    // a line's mark goes with the text after it, as Ruby's (a NUL, glued
+    // to that text) does, also when only blanks separate them (Ruby strips
+    // the NUL with them at the end of the line)
+    let at = {
+      let mut back = at
+      let mut mark = None
+      while back > start {
+        let item = items[back - 1]
+        let style = fragments[item.fragment].style
+        if style.line_mark {
+          mark = Some(back - 1)
+        } else if style.linenum || item.unit != ' '.to_int() {
+          break
+        }
+        back -= 1
+      }
+      match mark {
+        Some(m) if m > start => m
+        _ => at
+      }
+    }
     let f = items[at].fragment
     let fragment = fragments[f]
     // what the line keeps of the fragment the break falls in: up to the
@@ -265,12 +286,22 @@ pub fn source_wrap(
     }
     let item = items[at]
     let offset = if item.offset >= 0 { item.offset } else { 0 }
-    // the line must keep some text, or what is left would wrap the same way
-    // again: Prawn's CannotFit
+    // the line must keep some text, or (a line of the number alone, the
+    // text wrapping behind the blank) the rest of a number: consuming it
+    // is progress. A line of the blank alone is not: what follows would
+    // wrap the same way again (Ruby prints blanks until the box is full);
+    // Prawn's CannotFit
     let kept = items[start:at]
       .iter()
       .any(it => is_text(it) && (it.fragment < f || offset > 0))
-    if !kept {
+    let number_alone = items[start:at]
+      .iter()
+      .any(it => {
+        let fragment = fragments[it.fragment]
+        fragment.style.linenum &&
+        fragment.text.iter().any(c => c != '\u{a0}' && c != ' ')
+      })
+    if !kept && !number_alone {
       return None
     }
     // the number and mark of the source line this one continues
@@ -319,7 +350,10 @@ fn strip_line_start(rest : Array[Fragment]) -> Array[Fragment] {
   let out = []
   let mut stripping = true
   for r in rest {
-    if stripping && r.text != "" {
+    if stripping && r.style.line_mark {
+      // a mark takes no room: the line is still empty after it
+      out.push(r)
+    } else if stripping && r.text != "" {
       let text = strip_blanks(r.text)
       stripping = false
       if text != "" {
