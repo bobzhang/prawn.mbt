@@ -54,6 +54,10 @@ pub(all) struct Style {
   /// a zero-width mark that paints its `background` behind the rest of its
   /// line (a highlighted source line)
   line_mark : Bool
+  /// a line break `source_wrap` puts where a numbered line wraps: the line
+  /// it ends loses its trailing blanks and mark as a wrapped line does in
+  /// Prawn, not as one a line break of the text ends
+  wrap_break : Bool
 } derive(Eq)
 
 ///|

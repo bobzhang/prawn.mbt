@@ -649,12 +649,18 @@ fn place_line(
   // trailing spaces are not part of the line, nor are the spaces before
   // anchors that end it: Prawn's `omit_trailing_whitespace_from_line_width`
   // takes a fragment whose text Ruby's `strip` empties as white space, and
-  // asciidoctor-pdf's anchor text is a NUL, which `strip` removes
+  // asciidoctor-pdf's anchor text is a NUL, which `strip` removes; so is
+  // the highlight mark of a source line, but Prawn stops at a line break,
+  // so only a line that wraps (source_wrap's breaks included) or ends the
+  // text loses the blanks before it
+  let wraps = !hard ||
+    (to < items.length() && fragments[items[to].fragment].style.wrap_break)
   let mut visible_end = to
   while visible_end > from &&
         (
           is_break_space(items[visible_end - 1].unit) ||
-          items[visible_end - 1].anchor is Some(_)
+          items[visible_end - 1].anchor is Some(_) ||
+          (wraps && fragments[items[visible_end - 1].fragment].style.line_mark)
         ) {
     visible_end -= 1
   }
@@ -779,11 +785,20 @@ fn place_line(
       measure(fragment)
     }
   }
-  // the anchors among the trailing white space, where the line's text ends
+  // the anchors and line marks among the trailing white space, where the
+  // line's text ends (an empty highlighted source line is painted from the
+  // end of its number, not of the blank after it)
   for k in visible_end..<to {
     match items[k].anchor {
       Some(name) => anchors.push((name, x))
-      None => ()
+      None => {
+        let fragment = items[k].fragment
+        let style = fragments[fragment].style
+        if style.line_mark &&
+          (k == visible_end || items[k - 1].fragment != fragment) {
+          marks.push((x, style, faces[fragment]))
+        }
+      }
     }
   }
   // every fragment the line holds counts towards its height, as Prawn's

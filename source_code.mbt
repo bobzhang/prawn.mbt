@@ -186,7 +186,7 @@ pub fn source_wrap(
                 { ..fragments[f], text: text[:fits].to_owned(), },
                 {
                   text: "\n",
-                  style: { ..plain, linenum: false, },
+                  style: { ..plain, linenum: false, wrap_break: true, },
                   anchor: None,
                 },
                 { ..fragments[f], text: text[fits:].to_owned(), },
@@ -199,7 +199,11 @@ pub fn source_wrap(
             [
               ..fragments[:f],
               { ..fragments[f], text: text[:keep].to_owned(), },
-              { text: "\n", style: { ..plain, linenum: false, }, anchor: None, },
+              {
+                text: "\n",
+                style: { ..plain, linenum: false, wrap_break: true, },
+                anchor: None,
+              },
               ..strip_line_start([..fragments[f + 1:]]),
             ],
           )
@@ -217,27 +221,6 @@ pub fn source_wrap(
       continue
     }
     guard cut is Some((start, at)) else { break }
-    // a line's mark goes with the text after it, as Ruby's (a NUL, glued
-    // to that text) does, also when only blanks separate them (Ruby strips
-    // the NUL with them at the end of the line)
-    let at = {
-      let mut back = at
-      let mut mark = None
-      while back > start {
-        let item = items[back - 1]
-        let style = fragments[item.fragment].style
-        if style.line_mark {
-          mark = Some(back - 1)
-        } else if style.linenum || item.unit != ' '.to_int() {
-          break
-        }
-        back -= 1
-      }
-      match mark {
-        Some(m) if m > start => m
-        _ => at
-      }
-    }
     let f = items[at].fragment
     let fragment = fragments[f]
     // what the line keeps of the fragment the break falls in: up to the
@@ -322,7 +305,11 @@ pub fn source_wrap(
     if offset > 0 {
       next.push({ ..fragment, text: fragment.text[:offset].to_owned(), })
     }
-    next.push({ text: "\n", style: { ..plain, linenum: false, }, anchor: None, })
+    next.push({
+      text: "\n",
+      style: { ..plain, linenum: false, wrap_break: true, },
+      anchor: None,
+    })
     next.push({ text: spacer, style: plain, anchor: None, })
     match mark {
       Some(m) => next.push(m)

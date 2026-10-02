@@ -241,6 +241,7 @@ pub(all) struct Style {
   code_background : CodeBackground?
   linenum : Bool
   line_mark : Bool
+  wrap_break : Bool
 } derive(Eq)
 pub fn Style::equal(Self, Self) -> Bool
 pub fn Style::face_style(Self) -> (Bool, Bool)

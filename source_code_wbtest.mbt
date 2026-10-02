@@ -41,6 +41,7 @@ fn mono_style() -> Style {
     code_background: None,
     linenum: false,
     line_mark: false,
+    wrap_break: false,
   }
 }
 
