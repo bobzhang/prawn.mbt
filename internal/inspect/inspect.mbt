@@ -43,7 +43,11 @@ pub(all) struct Glyph {
   mode : Int
   fill : Paint?
   stroke : Paint?
-  line_width : Double?
+  /// Its stroke's pen (see `pen`), empty when it is not stroked.
+  pen : Array[Double]
+  /// Exact facts about how it is painted: its stroke's cap, join, miter
+  /// limit and dashes, and the soft mask in effect.
+  style : Json
   clip : Rect?
   blend : String
   /// Where it is drawn (its font's ascent to descent, its advance), for
@@ -361,6 +365,21 @@ fn Walk::show(
   let mode = ts.rendering_mode
   let fills = mode == 0 || mode == 2 || mode == 4 || mode == 6
   let strokes = mode == 1 || mode == 2 || mode == 5 || mode == 6
+  let style : Map[String, Json] = Map([])
+  let pen = if strokes {
+    let (lengths, exact, _) = pen(state, state.ctm)
+    for k, v in exact {
+      style[k] = v
+    }
+    lengths
+  } else {
+    []
+  }
+  match soft_mask(self.doc, state) {
+    Some(mask) => style["soft_mask"] = mask
+    None => ()
+  }
+  let style = Json::object(style)
   let blend = blend_name(self.doc, state.blend_mode)
   for glyph in placed.glyphs {
     let m = render_matrix(state, glyph.text_matrix)
@@ -390,11 +409,8 @@ fn Walk::show(
       } else {
         None
       },
-      line_width: if strokes {
-        Some(state.path_state.line_width * scale_of(state.ctm))
-      } else {
-        None
-      },
+      pen,
+      style,
       clip: self.clip,
       blend,
       extent: bounds_of([b.x0, b.y0, b.x1, b.y1, b.x2, b.y2, b.x3, b.y3]),
@@ -473,6 +489,94 @@ fn path_geometry(
 }
 
 ///|
+/// A stroke's pen under `ctm`: its lengths (the pen's shape in page space,
+/// then the dash and its phase), its exact facts (cap, join, miter limit,
+/// number of dashes) and half its widest extent.
+///
+/// The pen is the line-width circle mapped by the CTM: an ellipse, given
+/// by its horizontal and vertical extents and their correlation, which do
+/// not change when the CTM flips or turns the user space (pagelayout's
+/// y-down CTM draws the same strokes as Prawn's y-up one).
+fn pen(
+  state : @pdflite.PdfContentOperatorState,
+  ctm : @geometry.TransformMatrix,
+) -> (Array[Double], Map[String, Json], Double) {
+  let ps = state.path_state
+  let w = ps.line_width
+  let sxx = w * w * (ctm.a * ctm.a + ctm.c * ctm.c)
+  let syy = w * w * (ctm.b * ctm.b + ctm.d * ctm.d)
+  let sxy = w * w * (ctm.a * ctm.b + ctm.c * ctm.d)
+  let wx = sxx.sqrt()
+  let wy = syy.sqrt()
+  let widest = if wx > wy { wx } else { wy }
+  let lengths = [wx, wy, if widest > 0.0 { sxy / widest } else { 0.0 }]
+  let scale = scale_of(ctm)
+  for x in ps.dash_pattern.array {
+    lengths.push(x * scale)
+  }
+  // the phase only matters with a dash
+  lengths.push(
+    if ps.dash_pattern.array.is_empty() {
+      0.0
+    } else {
+      ps.dash_pattern.phase * scale
+    },
+  )
+  let exact : Map[String, Json] = Map([])
+  exact["cap"] = ps.line_cap.to_json()
+  exact["join"] = ps.line_join.to_json()
+  if ps.line_join == 0 {
+    exact["miter_limit"] = state.miter_limit.to_json()
+  }
+  exact["dashes"] = ps.dash_pattern.array.length().to_json()
+  let half = w /
+    2.0 *
+    (ctm.a * ctm.a + ctm.b * ctm.b).max(ctm.c * ctm.c + ctm.d * ctm.d).sqrt()
+  (lengths, exact, half)
+}
+
+///|
+/// The soft mask in effect, if any: its type and backdrop, and what its
+/// group shows (the glyphs' text and the kinds of marks).
+fn soft_mask(
+  doc : @pdflite.PdfDocument,
+  state : @pdflite.PdfContentOperatorState,
+) -> Json? {
+  let mask = match state.soft_mask {
+    PdfIndirect(n) => doc.lookup_object_or_null(n)
+    other => other
+  }
+  guard mask is PdfDictionary(_) else { return None }
+  let out : Map[String, Json] = Map([])
+  for key in ["S", "BC"] {
+    match lookup(doc, mask, key) {
+      Some(v) => out[key] = object_json(doc, v)
+      None => ()
+    }
+  }
+  match lookup(doc, mask, "G") {
+    Some(group) => {
+      let inner : Walk = {
+        doc,
+        glyphs: [],
+        marks: [],
+        order: 0,
+        clip: None,
+        clips: [],
+      }
+      let plain = { ..state, soft_mask: @syntax.PdfNull, }
+      inner.form(plain, @syntax.pdf_dictionary([]), group) catch {
+        _ => ()
+      }
+      out["text"] = text_of(inner.glyphs).to_json()
+      out["marks"] = kinds(inner.marks).to_json()
+    }
+    None => ()
+  }
+  Some(Json::object(out))
+}
+
+///|
 /// `ctm` is the CTM the path was built under.
 fn Walk::path(
   self : Walk,
@@ -481,44 +585,27 @@ fn Walk::path(
   ctm : @geometry.TransformMatrix,
 ) -> Unit {
   let (points, exact) = path_geometry(drawn, ctm)
-  let ps = state.path_state
-  let lengths : Array[Double] = []
+  let mut lengths : Array[Double] = []
   let paints : Array[Paint] = []
   let mut extent = bounds_of(points)
   if drawn.stroked {
-    let scale = scale_of(ctm)
-    // the line width as the CTM shapes it (a non-uniform scale makes it
-    // thicker one way than the other)
-    let w = ps.line_width
-    lengths.push(w * ctm.a)
-    lengths.push(w * ctm.b)
-    lengths.push(w * ctm.c)
-    lengths.push(w * ctm.d)
+    let (pen_lengths, pen_exact, half) = pen(state, ctm)
+    lengths = pen_lengths
+    for k, v in pen_exact {
+      exact[k] = v
+    }
     // what the stroke covers, for paint order
-    let half = w /
-      2.0 *
-      (ctm.a * ctm.a + ctm.b * ctm.b).max(ctm.c * ctm.c + ctm.d * ctm.d).sqrt()
     extent = {
       x0: extent.x0 - half,
       y0: extent.y0 - half,
       x1: extent.x1 + half,
       y1: extent.y1 + half,
     }
-    for x in ps.dash_pattern.array {
-      lengths.push(x * scale)
-    }
-    // the phase only matters with a dash
-    lengths.push(
-      if ps.dash_pattern.array.is_empty() {
-        0.0
-      } else {
-        ps.dash_pattern.phase * scale
-      },
-    )
-    exact["cap"] = ps.line_cap.to_json()
-    exact["join"] = ps.line_join.to_json()
-    exact["dashes"] = ps.dash_pattern.array.length().to_json()
     paints.push(stroke_paint(state))
+  }
+  match soft_mask(self.doc, state) {
+    Some(mask) => exact["soft_mask"] = mask
+    None => ()
   }
   if drawn.filled {
     paints.push(fill_paint(state))
@@ -712,7 +799,18 @@ fn Walk::ops(
           fail("no ExtGState \{name_text(name)}")
         }
         let only = @syntax.pdf_dictionary([(pdf_name("/ExtGState"), extgstate)])
-        doc.content_apply_resource_op(state, only, op)
+        let applied = doc.content_apply_resource_op(state, only, op)
+        // nor does it take the soft mask (/SMask, /None to clear it)
+        match lookup(doc, extgstate, "SMask") {
+          Some(PdfNameObject(_)) =>
+            {
+              ..applied,
+              state: { ..applied.state, soft_mask: @syntax.PdfNull, },
+            }
+          Some(mask) =>
+            { ..applied, state: { ..applied.state, soft_mask: mask, }, }
+          None => applied
+        }
       }
       _ => doc.content_apply_resource_op(state, resources, op)
     }

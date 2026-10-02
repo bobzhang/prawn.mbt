@@ -30,7 +30,8 @@ pub(all) struct Glyph {
   mode : Int
   fill : Paint?
   stroke : Paint?
-  line_width : Double?
+  pen : Array[Double]
+  style : Json
   clip : Rect?
   blend : String
   extent : Rect

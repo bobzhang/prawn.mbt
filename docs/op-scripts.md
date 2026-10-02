@@ -90,11 +90,12 @@ the contract in `PLAN.md` §3:
 
 * `compare diff EXPECTED ACTUAL` prints the differences, under a rule per field:
   - *exact:* page count, sizes and rotation, each glyph's text, font, `Tf` size and render mode,
-    colour spaces, alpha, blend modes, path structure (segment kinds, closure, winding rule,
-    cap, join), image dictionaries and data hashes (decoded where pdflite decodes, a DCT stream's
+    colour spaces, alpha, blend modes, soft masks, path structure (segment kinds, closure,
+    winding rule), stroke style (cap, join, miter limit, number of dashes), image dictionaries and data hashes (decoded where pdflite decodes, a DCT stream's
     own bytes otherwise; soft masks included);
   - *within 0.01 pt in page space:* glyph origins and render matrices (which carry horizontal
-    scaling and rotation), path points, line widths and dashes, image corners, clips;
+    scaling and rotation), path points, the stroke pen (the line width as the CTM shapes it,
+    the same whether the CTM is y-up or y-down) and dashes, image corners, clips;
   - *within 1e-5:* colour components;
   - *paint order:* glyphs and marks that overlap must be painted in the same relative order.
 
@@ -112,6 +113,7 @@ Not compared yet: annotations, destinations, the outline and page labels; which 
 pattern colour uses (gradients); glyph outlines (glyphs are identified by font name and Unicode
 text). Clips are compared as bounding boxes.
 
-Two pdflite 0.3.2 bugs are worked around in `internal/inspect` until fixed upstream: the content
-state starts with white instead of black, and `gs` applies the whole `/ExtGState` resource
-dictionary instead of the named entry.
+Three pdflite 0.3.2 gaps are worked around in `internal/inspect` until fixed upstream: the content
+state starts with white instead of black, `gs` applies the whole `/ExtGState` resource dictionary
+instead of the named entry, and `gs` does not set the soft mask. Its paths and clips are also kept
+in user space, so the inspector maps them to page space itself.

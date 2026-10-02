@@ -192,3 +192,34 @@ test "shadings: their definition and where their space lands" {
     differs(paint, "2 0 0 2 0 0 cm " + paint, resources=shading("0 1 0")),
   )
 }
+
+///|
+test "a flipped CTM draws the same stroke" {
+  // pagelayout draws with y down (d = -1), Prawn with y up
+  assert_false(
+    differs(
+      "2 w 0 100 m 100 100 l S", "1 0 0 -1 0 792 cm 2 w 0 692 m 100 692 l S",
+    ),
+  )
+}
+
+///|
+test "stroked text keeps its dash, cap and join" {
+  let text = "BT /F1 36 Tf 1 Tr 72 600 Td (A) Tj ET"
+  assert_true(differs(text, "[3] 0 d " + text))
+  assert_true(differs(text, "1 J " + text))
+}
+
+///|
+test "miter limits count for mitered joins" {
+  let path = "10 w 0 0 m 50 10 l 0 20 l S"
+  assert_true(differs("10 M " + path, "1 M " + path))
+}
+
+///|
+test "soft masks" {
+  let resources = "/ExtGState << /M1 << /SMask << /S /Luminosity /G 6 0 R >> >> >>"
+  // the mask's group is object 6, which this one-page PDF does not have: a
+  // mask that is there at all must still show
+  assert_true(differs("0 0 10 10 re f", "/M1 gs 0 0 10 10 re f", resources~))
+}

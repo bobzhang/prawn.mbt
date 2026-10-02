@@ -127,10 +127,13 @@ fn glyph_difference(a : Glyph, b : Glyph, tol : Tolerance) -> String? {
       "\{glyph_text(a)}: stroke \{paint_text(a.stroke)} vs \{paint_text(b.stroke)}",
     )
   }
-  match (a.line_width, b.line_width) {
-    (Some(x), Some(y)) if !near(x, y, tol.position) =>
-      return Some("\{glyph_text(a)}: line width \{fmt(x)} vs \{fmt(y)}")
-    _ => ()
+  if !all_near(a.pen, b.pen, tol.position) {
+    return Some("\{glyph_text(a)}: pen \{fmts(a.pen)} vs \{fmts(b.pen)}")
+  }
+  if a.style != b.style {
+    return Some(
+      "\{glyph_text(a)}: \{a.style.stringify()} vs \{b.style.stringify()}",
+    )
   }
   if a.blend != b.blend {
     return Some("\{glyph_text(a)}: blend \{a.blend} vs \{b.blend}")
