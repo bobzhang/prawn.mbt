@@ -86,6 +86,11 @@ pub(all) struct Flow {
   /// the size of the page the bounds were set for
   mut page_width_now : Double
   mut page_height_now : Double
+  /// told of each new page (the page it was made from, the new page,
+  /// inserted after it, so later pages move up by one),
+  /// before it becomes current: what carries over from page to page
+  /// (Prawn's graphics state) is copied then
+  mut page_started : (Int, Int) -> Unit
 }
 
 ///|
@@ -134,6 +139,7 @@ pub fn Flow::new(
     margin_right: setup.margin_right,
     page_width_now: setup.width,
     page_height_now: setup.height,
+    page_started: (_, _) => (),
   }
 }
 
@@ -164,7 +170,7 @@ pub fn Flow::start_new_page(
   // a new page takes the current page's size and layout (Prawn's
   // `start_new_page`), or the size (as an imported page has) and the
   // layout asked for: landscape swaps the sides
-  let (w, h) = match (size, self.model.pages.last()) {
+  let (w, h) = match (size, self.model.pages.get(self.page)) {
     (Some(size), _) => size
     (None, Some(p)) => (p.width_pt, p.height_pt)
     (None, None) => (self.setup.width, self.setup.height)
@@ -174,8 +180,12 @@ pub fn Flow::start_new_page(
     Some("portrait") if w > h => (h, w)
     _ => (w, h)
   }
-  self.model.pages.push({ width_pt: w, height_pt: h, items: [], })
-  self.page = self.model.pages.length() - 1
+  // the new page comes right after the current one (Prawn inserts it
+  // there; at the last page, that is the end)
+  let index = self.page + 1
+  self.model.pages.insert(index, { width_pt: w, height_pt: h, items: [], })
+  (self.page_started)(self.page, index)
+  self.page = index
   self.fit_page_size()
   self.apply_page_margins(self.page)
   self.top = self.page_top

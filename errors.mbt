@@ -6,6 +6,9 @@ pub(all) suberror PrawnError {
   /// text a standard (AFM) font cannot encode: its characters must be in
   /// Windows-1252
   IncompatibleStringEncoding(String)
+  /// Ruby's `ArgumentError`: an argument Prawn rejects (a zero or negative
+  /// dash, a malformed colour)
+  ArgumentError(String)
 }
 
 ///|
@@ -14,5 +17,6 @@ pub fn PrawnError::ruby_class(self : PrawnError) -> String {
   match self {
     CannotFit => "Prawn::Errors::CannotFit"
     IncompatibleStringEncoding(_) => "Prawn::Errors::IncompatibleStringEncoding"
+    ArgumentError(_) => "ArgumentError"
   }
 }

@@ -55,6 +55,12 @@ pub struct Document {
   mut layout : String
   /// the bounding boxes inside the margin box, innermost last
   priv boxes : Array[Box]
+  /// each page's graphics state (`graphics.mbt`); a new page inherits
+  /// the last one's
+  priv states : Array[GraphicState]
+  /// each page's path being built (Prawn writes it into that page's
+  /// content, to be painted there)
+  priv paths : Array[Array[@pagelayout.PathSegment]]
 }
 
 ///|
@@ -86,8 +92,7 @@ pub fn Document::new(
     margin_bottom: bottom,
     margin_left: left,
   })
-  flow.start_new_page(size=(w, h))
-  {
+  let doc = {
     flow,
     catalog,
     family: "Helvetica",
@@ -95,7 +100,22 @@ pub fn Document::new(
     page_size: size,
     layout,
     boxes: [],
+    states: [],
+    paths: [],
   }
+  // a new page starts with the graphics state of the page it was made from,
+  // as it is then (a page made by a page break included)
+  flow.page_started = (from, to) => {
+    let state = if from >= 0 && from < doc.states.length() {
+      doc.states[from].copy()
+    } else {
+      GraphicState::new()
+    }
+    doc.states.insert(to, state)
+    doc.paths.insert(to, [])
+  }
+  flow.start_new_page(size=(w, h))
+  doc
 }
 
 ///|
@@ -106,7 +126,7 @@ fn Document::style(self : Document, size? : Double) -> Style {
     size: size.unwrap_or(self.size),
     bold: false,
     italic: false,
-    color: @pagelayout.Color::rgb(0, 0, 0),
+    color: self.gs().fill,
     link: None,
     background: None,
     script: 0,
@@ -308,4 +328,12 @@ fn Document::check(
       raise CannotFit
     }
   }
+}
+
+///|
+/// Prawn's `go_to_page` (from 1): back to an existing page, at the top of
+/// its margin box.
+pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
+  self.flow.go_to_page(number - 1)
+  self.flow.y = self.flow.top
 }

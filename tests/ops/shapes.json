@@ -1,0 +1,56 @@
+{
+  "ops": [
+    ["stroke_rectangle", [10, 700], 100, 50],
+    ["fill_color", "336699"],
+    ["fill_rectangle", [130, 700], 100, 50],
+    ["stroke_color", "CC0000"],
+    ["line_width", 3],
+    ["fill_and_stroke_rounded_rectangle", [250, 700], 100, 50, 10],
+    ["stroke_circle", [420, 675], 25],
+    ["fill_ellipse", [500, 675], 40, 20],
+    ["line_width", 1],
+    ["stroke_color", "000000"],
+    ["stroke_polygon", [10, 600], [60, 640], [110, 600], [60, 560]],
+    ["fill_rounded_polygon", 8, [130, 600], [180, 640], [230, 600]],
+    ["dash", 5],
+    ["stroke_line", [250, 600], [400, 640]],
+    ["dash", [2, 4, 6], { "phase": 3 }],
+    ["stroke_line", 250, 580, 400, 620],
+    ["dash", 4, { "space": 1, "phase": 2 }],
+    ["stroke_horizontal_line", 250, 400, { "at": 560 }],
+    ["undash"],
+    ["cap_style", ":round"],
+    ["line_width", 8],
+    ["stroke_vertical_line", 450, 600, { "at": 450 }],
+    ["cap_style", ":projecting_square"],
+    ["join_style", ":bevel"],
+    ["stroke_polygon", [480, 560], [520, 640], [560, 560]],
+    ["join_style", ":round"],
+    ["cap_style", ":butt"],
+    ["line_width", 2],
+    ["stroke", { "block": [
+      ["move_to", 10, 500],
+      ["line_to", 60, 540],
+      ["curve_to", [150, 500], { "bounds": [[80, 560], [120, 440]] }]
+    ] }],
+    ["stroke_curve", [170, 500], [300, 520], { "bounds": [[200, 560], [260, 440]] }],
+    ["fill_color", "009900"],
+    ["fill", { "fill_rule": ":even_odd", "block": [
+      ["rectangle", [320, 540], 80, 80],
+      ["rectangle", [340, 520], 40, 40]
+    ] }],
+    ["move_to", 420, 480],
+    ["line_to", 470, 530],
+    ["line_to", 520, 480],
+    ["close_and_stroke"],
+    ["fill_color", "990099"],
+    ["move_down", 330],
+    ["text", "Text in the fill colour."],
+    ["stroke_horizontal_rule"],
+    ["bounding_box", [100, 250], { "width": 200, "height": 80 }, { "block": [
+      ["stroke_bounds"],
+      ["stroke_circle", [100, 40], 30],
+      ["fill_and_stroke_rectangle", [10, 70], 30, 20]
+    ] }]
+  ]
+}
