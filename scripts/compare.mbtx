@@ -1,0 +1,113 @@
+// Run every operation script through this module and compare the result
+// with Ruby Prawn's goldens (tests/golden): the PDFs under PLAN.md §3, the
+// observation logs entry by entry.
+//
+// Usage: moon run --target native scripts/compare.mbtx -- [options] [NAME...]
+//   --ops DIR     the scripts (default tests/ops); NAME selects scripts
+//   --out DIR     where this module's outputs go (default _build/compare)
+//   -v            print every difference, not just the first few
+//
+// Prints one line per script (`pass`, or what differs) and a summary. It
+// reports; it does not gate (milestone 1 has just begun).
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/env",
+}
+
+///|
+let oracle : String = "_build/native/release/build/cmd/oracle/oracle.exe"
+
+///|
+let compare : String = "_build/native/release/build/cmd/compare/compare.exe"
+
+///|
+async fn build() -> Unit {
+  for pkg in ["cmd/oracle", "cmd/compare"] {
+    let code = @process.run("moon", [
+      "build", "--target", "native", "--release", pkg,
+    ])
+    if code != 0 {
+      fail("building \{pkg} failed")
+    }
+  }
+}
+
+///|
+/// The differences `compare MODE A B` reports (empty when they agree), or
+/// its failure.
+async fn differences(mode : String, a : String, b : String) -> Array[String] {
+  let (code, out) = @process.collect_output_merged(compare, [mode, a, b])
+  let lines = out
+    .text()
+    .split("\n")
+    .filter(l => !l.is_empty() && !l.has_prefix("Failure("))
+    .map(l => l.to_owned())
+    .to_array()
+  if code == 0 {
+    []
+  } else if lines.is_empty() {
+    ["compare \{mode} failed"]
+  } else {
+    lines
+  }
+}
+
+///|
+async fn main {
+  let args = @env.args()[1:].to_owned().filter(a => a != "--")
+  let mut ops = "tests/ops"
+  let mut out = "_build/compare"
+  let mut verbose = false
+  let names : Array[String] = []
+  let mut i = 0
+  while i < args.length() {
+    match args[i] {
+      "--ops" => {
+        i = i + 1
+        ops = args[i]
+      }
+      "--out" => {
+        i = i + 1
+        out = args[i]
+      }
+      "-v" => verbose = true
+      name => names.push(name)
+    }
+    i = i + 1
+  }
+  build()
+  ignore(@process.run("mkdir", ["-p", out]))
+  let scripts = @fs.readdir(ops, sort=true)
+    .filter(f => f.has_suffix(".json"))
+    .map(f => f[:f.length() - 5].to_owned())
+    .filter(n => names.is_empty() || names.contains(n))
+  let mut passed = 0
+  for name in scripts {
+    let pdf = "\{out}/\{name}.pdf"
+    let log = "\{out}/\{name}.jsonl"
+    let (code, run) = @process.collect_output_merged(oracle, [
+      "\{ops}/\{name}.json", pdf, log,
+    ])
+    if code != 0 {
+      println("FAIL \{name}: the script did not run\n  \{run.text().trim()}")
+      continue
+    }
+    let found = [
+      ..differences("diff", "tests/golden/\{name}.pdf", pdf),
+      ..differences("log", "tests/golden/\{name}.jsonl", log),
+    ]
+    if found.is_empty() {
+      passed = passed + 1
+      println("pass \{name}")
+    } else {
+      println("FAIL \{name}: \{found.length()} difference(s)")
+      let shown = if verbose { found.length() } else { 3 }
+      for d in found[:if shown < found.length() { shown } else { found.length() }] {
+        println("  \{d}")
+      }
+    }
+  }
+  println("\{passed}/\{scripts.length()} scripts match Ruby Prawn")
+}

@@ -117,3 +117,14 @@ Three pdflite 0.3.2 gaps are worked around in `internal/inspect` until fixed ups
 state starts with white instead of black, `gs` applies the whole `/ExtGState` resource dictionary
 instead of the named entry, and `gs` does not set the soft mask. Its paths and clips are also kept
 in user space, so the inspector maps them to page space itself.
+
+## The MoonBit side
+
+`cmd/oracle` runs a script through this module's `Document` (`oracle SCRIPT OUT.pdf OUT.jsonl`).
+Ops it cannot run yet are logged as `{"unsupported": NAME}` and skipped.
+`moon run --target native scripts/compare.mbtx` runs every script through it and compares the
+PDF (`compare diff`) and the log (`compare log`, numbers within 1e-6, since Ruby and MoonBit may
+round the last bits differently) with the goldens, one line per script.
+
+The comparator treats gray *g* as RGB (*g*, *g*, *g*): Prawn leaves default black in DeviceGray,
+pagelayout writes RGB.
