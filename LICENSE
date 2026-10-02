@@ -1,0 +1,37 @@
+MIT License
+
+Copyright (C) 2026 Hongbo Zhang and the contributors to asciidoctor.mbt.
+
+This module reproduces the layout of Prawn as Asciidoctor PDF
+(https://github.com/asciidoctor/asciidoctor-pdf) uses it, and includes parts
+of Asciidoctor PDF 2.3.27's extensions to Prawn:
+
+Copyright (C) 2014-present OpenDevise Inc. and the Asciidoctor Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+The SVG renderer in svg/ is a port of prawn-svg
+(https://github.com/mogest/prawn-svg), Copyright 2010-2019 Roger Nesbitt,
+distributed under its MIT license, whose text is in svg/LICENSE.
+
+Parts of table/sizing.mbt, svg/lower.mbt and svg/prawn_stack.mbt are adapted
+from Prawn 2.4.0 and prawn-table 0.2.2 (https://github.com/prawnpdf),
+copyrighted free software produced by Gregory Brown along with community
+contributions, and used under Matz's original licensing terms for Ruby, whose
+text is in LICENSES/LICENSE-prawn; see NOTICE.

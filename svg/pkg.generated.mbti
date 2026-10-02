@@ -1,0 +1,111 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/prawn/svg"
+
+import {
+  "moonbitlang/pagelayout",
+}
+
+// Values
+pub fn decode_base64(StringView) -> Bytes
+
+pub fn parse_xml(String) -> Element raise XmlError
+
+pub fn raster_info(Bytes) -> (Int, Int, String)?
+
+pub fn ruby_to_f(String) -> Double
+
+pub fn split_comma_wsp(StringView) -> Array[String]
+
+pub fn to_pixels(String, Double, font_size? : Double) -> Double
+
+// Errors
+pub suberror SvgError {
+  SvgError(String)
+}
+
+pub suberror XmlError {
+  XmlError(String)
+}
+
+// Types and methods
+pub struct AspectRatio {
+  width : Double
+  height : Double
+  x : Double
+  y : Double
+  slice : Bool
+}
+pub fn AspectRatio::new(String?, (Double, Double), (Double, Double)) -> Self
+
+pub struct Element {
+  name : String
+  mut namespace_uri : String
+  attributes : Array[(String, String)]
+  children : Array[XmlNode]
+  // private fields
+}
+pub fn Element::attr(Self, String) -> String?
+pub fn Element::copy(Self) -> Self
+pub fn Element::descendants(Self) -> Array[Self]
+pub fn Element::elements(Self) -> Array[Self]
+pub fn Element::parent(Self) -> Self?
+pub fn Element::set_attr(Self, String, String) -> Unit
+pub fn Element::text(Self) -> String
+
+pub(all) struct Environment {
+  families : Array[(String, Array[String])]
+  load_font : (String, String) -> SvgFont?
+  fallback_font : String
+  read_file : (String) -> Bytes?
+  ambient_font_size : Double
+}
+
+pub struct Sizing {
+  bounds : (Double, Double)
+  mut requested_width : Double?
+  mut requested_height : Double?
+  mut x_offset : Double
+  mut y_offset : Double
+  mut x_scale : Double
+  mut y_scale : Double
+  mut viewport_width : Double
+  mut viewport_height : Double
+  mut viewport_diagonal : Double
+  mut output_width : Double
+  mut output_height : Double
+  mut invalid : Bool
+  // private fields
+}
+pub fn Sizing::calculate(Self) -> Unit
+pub fn Sizing::new((Double, Double), width? : String, height? : String, view_box? : String, preserve_aspect_ratio? : String) -> Self
+pub fn Sizing::resize(Self, width? : Double, height? : Double) -> Unit
+
+pub struct SvgDocument {
+  root : Element
+  sizing : Sizing
+  warnings : Array[String]
+  // private fields
+}
+pub fn SvgDocument::parse(String, (Double, Double), width? : Double, height? : Double, preserve_aspect_ratio? : String) -> Self raise SvgError
+pub fn SvgDocument::render(Self, Environment, origin~ : (Double, Double), page_height~ : Double, stack~ : TransformationStack) -> Array[@pagelayout.GraphicOp]
+
+pub(all) struct SvgFont {
+  index : Int
+  advances : (String, Double) -> Array[Double]
+  height : (Double) -> Double
+}
+
+pub struct TransformationStack {
+  // private fields
+}
+pub fn TransformationStack::new() -> Self
+
+pub enum XmlNode {
+  Elem(Element)
+  Text(String)
+  CData(String)
+}
+
+// Type aliases
+
+// Traits
