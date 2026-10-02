@@ -11,6 +11,7 @@
 ROOT = File.expand_path('../..', __dir__)
 REPOS = File.join(ROOT, '.repos')
 GEMS = File.join(REPOS, 'gems')
+PRAWN_DIR = "#{File.join(REPOS, 'prawn')}/"
 $LOAD_PATH.unshift(File.join(REPOS, 'prawn', 'lib'))
 %w[pdf-core-0.10.0 ttfunk-1.8.0].each { |g| $LOAD_PATH.unshift(File.join(GEMS, g, 'lib')) }
 
@@ -66,6 +67,7 @@ class Driver
 
   def run(pdf_path)
     @doc = Prawn::Document.new(**value(@script.fetch('document', {})))
+    @receivers = [@doc]
     ops(@script.fetch('ops'))
     @doc.render_file(pdf_path)
   end
@@ -74,6 +76,13 @@ class Driver
 
   def ops(list)
     list.each { |op| op(op) }
+  end
+
+  def block_ops(receiver, list)
+    @receivers.push(receiver.equal?(self) ? @receivers.last : receiver)
+    ops(list)
+  ensure
+    @receivers.pop
   end
 
   # [name, args...]: a "?" prefix logs the return value, "!raises" expects an
@@ -102,16 +111,24 @@ class Driver
   end
 
   # Calls a method path (`bounds.width`, `font_families.update`) on the
-  # document.
+  # current receiver: the document, or inside a block Prawn instance_evals
+  # (`outline.define`), the block's self.
   def call(path, args)
     *receivers, method = path.split('.')
-    target = receivers.reduce(@doc) { |obj, m| obj.public_send(m) }
-    block_arg = args.last.is_a?(Hash) && args.last.key?('block') ? args.last['block'] : nil
-    args = args[0...-1] if block_arg
+    target = receivers.reduce(@receivers.last) { |obj, m| obj.public_send(m) }
+    block_arg = nil
+    if args.last.is_a?(Hash) && args.last.key?('block')
+      rest = args.last.reject { |k, _| k == 'block' }
+      block_arg = args.last['block']
+      args = args[0...-1] + (rest.empty? ? [] : [rest])
+    end
     positional = args.map { |a| value(a) }
     options = positional.last.is_a?(Hash) && symbol_keys?(positional.last) ? positional.pop : nil
     if block_arg
-      blk = proc { ops(block_arg) }
+      # Under instance_eval, self in the block is Prawn's object, not the
+      # driver: ops then target it.
+      driver = self
+      blk = proc { driver.send(:block_ops, self, block_arg) }
       options ? target.public_send(method, *positional, **options, &blk) : target.public_send(method, *positional, &blk)
     else
       options ? target.public_send(method, *positional, **options) : target.public_send(method, *positional)
@@ -123,9 +140,9 @@ class Driver
   end
 
   # JSON → Ruby: hash keys become symbols (a "=" prefix keeps a string key),
-  # strings starting with ":" become symbols, "$PRAWN/" and "$FIXTURES/"
-  # resolve to files in the Prawn checkout, and {"trace": ID} becomes a
-  # TraceCallback (in fragments) or a draw_text callback.
+  # strings starting with ":" become symbols ("::" escapes a literal colon),
+  # "$PRAWN/" resolves to a file in the Prawn checkout, and {"trace": ID}
+  # becomes a TraceCallback (in fragments) or a draw_text callback.
   def value(v)
     case v
     when Hash
@@ -141,7 +158,8 @@ class Driver
   end
 
   def string(s)
-    if s.start_with?(':') && s.length > 1 then s[1..].to_sym
+    if s.start_with?('::') then s[1..]
+    elsif s.start_with?(':') && s.length > 1 then s[1..].to_sym
     elsif s.start_with?('$PRAWN/') then File.join(REPOS, 'prawn', s.delete_prefix('$PRAWN/'))
     else s
     end
@@ -159,7 +177,8 @@ class Driver
   # Ruby → JSON-able observation.
   def observe(v)
     case v
-    when Integer, Float, String, true, false, nil then v
+    when String then v.start_with?(PRAWN_DIR) ? "$PRAWN/#{v.delete_prefix(PRAWN_DIR)}" : v
+    when Integer, Float, true, false, nil then v
     when Symbol then ":#{v}"
     when Array then v.map { |x| observe(x) }
     when Hash then v.to_h { |k, x| [k.to_s, observe(x)] }
@@ -189,6 +208,12 @@ if $PROGRAM_NAME == __FILE__
   abort('usage: driver.rb SCRIPT.json OUT.pdf OUT.jsonl') unless log_path
   log = Log.new(log_path)
   WarningLog.log = log
+  # Fixed warning settings, whatever RUBYOPT says: Kernel#warn reaches the
+  # log unless $VERBOSE is nil (-W0); Ruby's own deprecation and
+  # experimental warnings stay off.
+  $VERBOSE = false
+  Warning[:deprecated] = false
+  Warning[:experimental] = false
   begin
     Driver.new(JSON.parse(File.read(script_path, encoding: 'UTF-8')), log).run(pdf_path)
   ensure

@@ -28,8 +28,9 @@ Each op is an array: a method name, then its arguments.
   (`font_families.update`, `bounds.width`).
 * **Options.** A trailing object with keys is passed as the options (Ruby keyword arguments).
 * **Blocks.** A trailing `{ "block": [ops] }` becomes the method's block (`bounding_box`, `float`,
-  `indent`, `font`, `transparent`, `rotate`, `column_box`, `repeat`, …). Inside it, the ops run
-  against the same document.
+  `indent`, `font`, `transparent`, `rotate`, `column_box`, `repeat`, …); its other keys, if any,
+  are options (`{ "origin": [400, 500], "block": [...] }`). Inside the block, ops run against the
+  document, or against the block's receiver when Prawn `instance_eval`s it (`outline.define`).
 * **Queries.** A `?` before the name logs the return value: `["?cursor"]`,
   `["?width_of", "AVATAR", { "size": 18 }]`, `["?text_box", "…", { … }]` (the remainder).
 * **Expected errors.** `["!raises", "Prawn::Errors::CannotFit", OP]` runs `OP` and logs the class
@@ -44,7 +45,7 @@ JSON maps onto Ruby as follows:
 | JSON | Ruby |
 |---|---|
 | integer / number with a fraction | `Integer` / `Float` (`1` and `1.0` stay distinct) |
-| `":name"` | the symbol `:name` |
+| `":name"` | the symbol `:name`; `"::text"` is the literal string `":text"` |
 | `"$PRAWN/path"` | a file in the Prawn checkout (`.repos/prawn/path`), e.g. its `data/fonts` |
 | object keys | symbols; a `=` prefix keeps a string key (`{ "=DejaVu": { "normal": "…" } }`) |
 | `{ "trace": ID }` in a fragment's `callback` | a callback that logs `render_behind` and `render_in_front` with the fragment's text and geometry; `"phase": "behind"` or `"in_front"` logs only one |
@@ -63,13 +64,15 @@ One JSON object per line, in the order things happened:
 
 Values are numbers, strings, booleans, `null`, arrays and objects. Symbols are logged as `":name"`,
 bounding boxes as `{left, bottom, width, height, absolute_left, absolute_top}`, fragments as
-`{text, width}`, and anything else as `{class}`. Floats are logged as Ruby prints them, so `1.0`
+`{text, width}`, and anything else as `{class}`. Paths in the Prawn checkout are logged as
+`$PRAWN/…`, so logs do not depend on where the checkout is. Floats are logged as Ruby prints them, so `1.0`
 and `1` stay distinct.
 
 ## Determinism
 
 `moon run --target native scripts/oracle.mbtx -- --determinism` runs every script twice and fails
-unless the PDFs and logs are byte-identical. Scripts must not depend on the clock or randomness
+unless the PDFs and logs are byte-identical. The driver fixes Ruby's warning settings (`$VERBOSE = false`, deprecation
+and experimental warnings off), so an inherited `RUBYOPT` cannot change the log. Scripts must not depend on the clock or randomness
 (set `info` dates explicitly, never use `:random` passwords).
 
 Examples that need mocks, extension subclasses or object identity are not op scripts; they are
