@@ -1,0 +1,196 @@
+///|
+// Prawn's bounding boxes: the bounds content is set in. Coordinates here are
+// Prawn's (points, y up from the bottom of the page).
+
+///|
+/// A bounding box: its top left corner on the page, its width, and its
+/// height, or none for a stretchy box that grows with its content.
+priv struct Box {
+  mut left : Double
+  top : Double
+  mut width : Double
+  height : Double?
+  /// how far a stretchy box has grown
+  mut stretched : Double
+  /// the margin box's bottom (Flow's coordinates): where text in a
+  /// stretchy box runs to
+  margin_bottom : Double
+}
+
+///|
+/// The bounds content is set in, as Prawn's `bounds` reports them.
+pub(all) struct Bounds {
+  /// relative to the box itself: always 0
+  left : Double
+  bottom : Double
+  width : Double
+  height : Double
+  /// on the page
+  absolute_left : Double
+  absolute_top : Double
+}
+
+///|
+/// The document's position (Prawn's `y`): up from the page bottom.
+fn Document::y(self : Document) -> Double {
+  self.flow.page_h() - self.flow.y
+}
+
+///|
+fn Document::set_y(self : Document, y : Double) -> Unit {
+  self.flow.y = self.flow.page_h() - y
+}
+
+///|
+/// The innermost box: a bounding box, or the page's margin box.
+fn Document::current_box(self : Document) -> Box {
+  match self.boxes.last() {
+    Some(box) => box
+    None => {
+      let page_h = self.flow.page_h()
+      {
+        left: self.flow.left,
+        top: page_h - self.flow.top,
+        width: self.flow.right - self.flow.left,
+        height: Some(self.flow.bottom - self.flow.top),
+        stretched: 0.0,
+        margin_bottom: self.flow.bottom,
+      }
+    }
+  }
+}
+
+///|
+/// A box's height: a stretchy box's grows to the document's position.
+fn Box::height_at(self : Box, y : Double) -> Double {
+  match self.height {
+    Some(h) => h
+    None => {
+      if self.top - y > self.stretched {
+        self.stretched = self.top - y
+      }
+      self.stretched
+    }
+  }
+}
+
+///|
+/// Prawn's `bounds`.
+pub fn Document::bounds(self : Document) -> Bounds {
+  let box = self.current_box()
+  {
+    left: 0.0,
+    bottom: 0.0,
+    width: box.width,
+    height: box.height_at(self.y()),
+    absolute_left: box.left,
+    absolute_top: box.top,
+  }
+}
+
+///|
+/// Prawn's `bounding_box`: `body` set in a box whose top left corner is
+/// `at` (relative to the bottom left of the current bounds), `width` wide
+/// and `height` tall, or stretchy. Afterwards the position is below a box
+/// with a height, and where the content ended in a stretchy one.
+pub fn Document::bounding_box(
+  self : Document,
+  at : (Double, Double),
+  width : Double,
+  height? : Double,
+  body : () -> Unit raise,
+) -> Unit raise {
+  let parent = self.current_box()
+  let original_y = self.y()
+  let top = parent.top - parent.height_at(original_y) + at.1
+  let box = {
+    left: parent.left + at.0,
+    top,
+    width,
+    height,
+    stretched: 0.0,
+    margin_bottom: parent.margin_bottom,
+  }
+  let flow = self.flow
+  let (left, right, frame_top, bottom) = (
+    flow.left,
+    flow.right,
+    flow.top,
+    flow.bottom,
+  )
+  let page_h = flow.page_h()
+  self.boxes.push(box)
+  flow.left = box.left
+  flow.right = box.left + width
+  flow.top = page_h - top
+  // text runs to a box's bottom, or in a stretchy box to the margin box's
+  flow.bottom = match height {
+    Some(h) => page_h - (top - h)
+    None => box.margin_bottom
+  }
+  self.set_y(top)
+  defer {
+    self.boxes.pop() |> ignore
+    flow.left = left
+    flow.right = right
+    flow.top = frame_top
+    flow.bottom = bottom
+  }
+  body()
+  // nothing set: the position is where it was
+  if self.y() == top {
+    self.set_y(original_y)
+  }
+  match height {
+    Some(h) => self.set_y(top - h)
+    None => ()
+  }
+}
+
+///|
+/// Prawn's `indent`: `body` set with the bounds narrowed by `left` and
+/// `right`.
+pub fn Document::indent(
+  self : Document,
+  left : Double,
+  right? : Double = 0.0,
+  body : () -> Unit raise,
+) -> Unit raise {
+  let box = self.boxes.last()
+  match box {
+    Some(b) => {
+      b.left += left
+      b.width -= left + right
+    }
+    None => ()
+  }
+  self.flow.left += left
+  self.flow.right -= right
+  defer {
+    match box {
+      Some(b) => {
+        b.left -= left
+        b.width += left + right
+      }
+      None => ()
+    }
+    self.flow.left -= left
+    self.flow.right += right
+  }
+  body()
+}
+
+///|
+/// Prawn's `float`: `body`, then back to the page and position it started
+/// at.
+pub fn Document::float(self : Document, body : () -> Unit raise) -> Unit raise {
+  let page = self.flow.page
+  let y = self.flow.y
+  defer {
+    if self.flow.page != page {
+      self.flow.go_to_page(page)
+    }
+    self.flow.y = y
+  }
+  body()
+}

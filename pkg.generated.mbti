@@ -56,6 +56,15 @@ pub(all) enum Alignment {
 pub fn Alignment::equal(Self, Self) -> Bool
 pub fn Alignment::not_equal(Self, Self) -> Bool
 
+pub(all) struct Bounds {
+  left : Double
+  bottom : Double
+  width : Double
+  height : Double
+  absolute_left : Double
+  absolute_top : Double
+}
+
 pub(all) enum CodeBackground {
   Gap(Double, Bool)
   FullLine
@@ -76,9 +85,14 @@ pub struct Document {
   mut size : Double
   mut page_size : (Double, Double)
   mut layout : String
+  // private fields
 }
+pub fn Document::bounding_box(Self, (Double, Double), Double, height? : Double, () -> Unit raise) -> Unit raise
+pub fn Document::bounds(Self) -> Bounds
 pub fn Document::cursor(Self) -> Double
+pub fn Document::float(Self, () -> Unit raise) -> Unit raise
 pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
+pub fn Document::indent(Self, Double, right? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::move_down(Self, Double) -> Unit
 pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
 pub fn Document::page_count(Self) -> Int
