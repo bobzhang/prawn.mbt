@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/prawn/table"
+
+// Values
+pub fn column_widths(Array[WidthCell], Int, Double, table_width? : Double) -> Array[Double]
+
+pub fn row_heights(Array[(Int, Int, Double)], Int) -> Array[Double]
+
+// Errors
+
+// Types and methods
+pub(all) struct WidthCell {
+  row : Int
+  column : Int
+  colspan : Int
+  master : Int
+  width : Double
+  min : Double
+}
+
+// Type aliases
+
+// Traits

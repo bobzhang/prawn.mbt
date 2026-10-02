@@ -1,0 +1,258 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/prawn"
+
+import {
+  "moonbitlang/pagelayout",
+  "moonbitlang/pagelayout/fonts",
+}
+
+// Values
+pub fn build_items(Array[Fragment], TextContext, available? : Double) -> (Array[Item], Array[Face])
+
+pub fn dashed_hrule(Double, Double, Double, Double, @pagelayout.Color) -> Array[@pagelayout.PageItem]
+
+pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
+
+pub fn default_icon_font_files() -> Array[(String, String, String)]
+
+pub fn face_key(String, Bool, Bool) -> String
+
+pub fn hrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.PageItem
+
+pub fn line_extent(Line, Face, Double, Bool) -> (Double, Double, Double)
+
+pub fn line_metrics(Double, Face, Double) -> LineMetrics
+
+pub fn pdf_anchor_name(String) -> String
+
+pub fn rect_item(Double, Double, Double, Double, fill? : @pagelayout.Color, stroke? : @pagelayout.Color, stroke_width? : Double) -> @pagelayout.PageItem
+
+pub fn rgb_hex(Int) -> @pagelayout.Color
+
+pub fn source_wrap(Array[Fragment], TextContext, Double) -> Array[Fragment]?
+
+pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_width? : Double, indent_paragraphs? : Bool) -> Array[Line]
+
+pub fn vrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.PageItem
+
+// Errors
+
+// Types and methods
+pub(all) enum Alignment {
+  Left
+  Center
+  Right
+  Justify
+} derive(Eq)
+pub fn Alignment::equal(Self, Self) -> Bool
+pub fn Alignment::not_equal(Self, Self) -> Bool
+
+pub(all) enum CodeBackground {
+  Gap(Double, Bool)
+  FullLine
+} derive(Eq)
+pub fn CodeBackground::equal(Self, Self) -> Bool
+pub fn CodeBackground::not_equal(Self, Self) -> Bool
+
+pub(all) struct Columns {
+  count : Int
+  stride : Double
+  mut current : Int
+}
+
+pub(all) struct Face {
+  metrics : @fonts.FaceMetrics
+  ascender : Int
+  descender : Int
+  line_gap : Int
+  kern : Map[Int, Double]
+  standard : Bool
+}
+pub fn Face::ascender_pt(Self, Double) -> Double
+pub fn Face::descender_pt(Self, Double) -> Double
+pub fn Face::height_pt(Self, Double) -> Double
+pub fn Face::kerning(Self, Int, Int) -> Double
+pub fn Face::line_gap_pt(Self, Double) -> Double
+pub fn Face::prawn_width(Self, Int) -> Double
+
+pub(all) struct Flow {
+  catalog : FontCatalog
+  setup : PageSetup
+  hooks : Hooks
+  model : @pagelayout.PageModel
+  scratch : Bool
+  page_top : Double
+  mut top : Double
+  mut bottom : Double
+  mut page : Int
+  mut y : Double
+  mut left : Double
+  mut right : Double
+  mut columns : Columns?
+  mut last_line : (Line, Int, Double)?
+  mut last_line_first : Bool
+  mut taring : Int
+  mut inked : Bool
+  mut first_break_empty : Bool?
+  mut page_margins : ((Int) -> (Double, Double))?
+  mut margin_left : Double
+  mut margin_right : Double
+  mut page_width_now : Double
+  mut page_height_now : Double
+}
+pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
+pub fn Flow::advance_page(Self) -> Unit
+pub fn Flow::at_page_top(Self) -> Bool
+pub fn Flow::column_box(Self, Int, Double, () -> Unit) -> Unit
+pub fn Flow::cursor(Self) -> Double
+pub fn Flow::dest_x(Self) -> Double
+pub fn Flow::fits(Self, Double, y? : Double) -> Bool
+pub fn Flow::font(Self, Style) -> Face
+pub fn Flow::go_to_page(Self, Int) -> Unit
+pub fn Flow::height_of(Self, Array[Fragment], LineMetrics, Style, normalize_line_height? : Bool) -> Double
+pub fn[T] Flow::indent(Self, Double, Double, () -> T) -> T
+pub fn Flow::ink_line(Self, Line, Double, Double) -> Unit
+pub fn Flow::items(Self) -> Array[@pagelayout.PageItem]
+pub fn Flow::line_items(Self, Line, Double, Double) -> Array[@pagelayout.PageItem]
+pub fn Flow::margin(Self, Double) -> Unit
+pub fn Flow::mark(Self) -> Mark
+pub fn Flow::move_down(Self, Double) -> Unit
+pub fn Flow::new(FontCatalog, PageSetup, hooks? : Hooks, scratch? : Bool) -> Self
+pub fn Flow::on_verso(Self) -> Bool
+pub fn Flow::pad_bottom(Self, Double) -> Unit
+pub fn Flow::page_h(Self) -> Double
+pub fn Flow::push(Self, @pagelayout.PageItem) -> Unit
+pub fn Flow::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
+pub fn Flow::tared(Self, () -> Unit) -> Unit
+pub fn Flow::text(Self) -> TextContext
+pub fn Flow::to_last_column(Self) -> Unit
+pub fn Flow::typeset(Self, Array[Fragment], LineMetrics, Style, align? : Alignment, bottom_gutter? : Double, hanging_indent? : Double, normalize_line_height? : Bool, first_line_style? : Style, text_indent? : Double) -> Unit
+pub fn Flow::typeset_box(Self, Array[Fragment], LineMetrics, Style, align~ : Alignment, x~ : Double, width~ : Double, height~ : Double, text_indent~ : Double) -> (Array[Fragment], Double?)
+pub fn Flow::underlay(Self, Mark, (Double, Double, Bool, Bool) -> Array[@pagelayout.PageItem]) -> Unit
+pub fn Flow::width(Self) -> Double
+pub fn Flow::width_of(Self, String, Style) -> Double
+
+pub struct FontCatalog {
+  faces : Map[String, Face]
+  registry : @fonts.FontRegistry
+  legacy_icons : Map[String, String]
+  // private fields
+}
+pub fn FontCatalog::has_icons(Self) -> Bool
+pub fn FontCatalog::icon_glyph(Self, String, String) -> String?
+pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String, fallbacks? : Array[String]) -> Self raise
+pub fn FontCatalog::svg_families(Self) -> Array[(String, Array[String])]
+
+pub(all) struct Fragment {
+  text : String
+  style : Style
+  anchor : String?
+}
+
+pub(all) struct Hooks {
+  base_family : String
+  unknown_font : (String) -> Unit
+  image_size : (Int, Double, Double) -> (Double, Double, Bool)
+  image_items : (Flow, Int, Double, Double, Double, Double) -> Array[@pagelayout.PageItem]
+  anchor_inked : (String, Int) -> Unit
+  fragment_inked : (Int) -> Unit
+}
+pub fn Hooks::new(base_family? : String) -> Self
+
+pub(all) struct IconSet {
+  name : String
+  font : Bytes
+  legend : String
+}
+
+pub(all) struct Item {
+  unit : Int
+  fragment : Int
+  mut fit : Double
+  draw : Double
+  kern : Double
+  hard_break : Bool
+  anchor : String?
+  offset : Int
+}
+
+pub(all) struct Line {
+  runs : Array[LineRun]
+  anchors : Array[(String, Double)]
+  fit_width : Double
+  ascender : Double
+  descender : Double
+  height : Double
+  empty_links : Array[(Double, Style, Face)]
+  images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
+  marks : Array[(Double, Style, Face)]
+}
+
+pub(all) struct LineMetrics {
+  leading : Double
+  padding_top : Double
+  padding_bottom : Double
+}
+
+pub(all) struct LineRun {
+  fragment : Int
+  text : String
+  style : Style
+  face : Face
+  x : Double
+  advances : Array[Double]
+  width : Double
+}
+
+pub(all) struct Mark {
+  page : Int
+  y : Double
+  item : Int
+}
+
+pub(all) struct PageSetup {
+  width : Double
+  height : Double
+  margin_top : Double
+  margin_right : Double
+  margin_bottom : Double
+  margin_left : Double
+}
+
+pub(all) struct Style {
+  family : String
+  size : Double
+  bold : Bool
+  italic : Bool
+  color : @pagelayout.Color
+  link : @pagelayout.LinkTarget?
+  background : @pagelayout.Color?
+  script : Int
+  border_offset : Double
+  underline : Bool
+  strike : Bool
+  wj : Bool
+  image : Int
+  callback : Int
+  doc_bold : Bool
+  doc_italic : Bool
+  font_set : Bool
+  text_transform : String?
+  code_background : CodeBackground?
+  linenum : Bool
+  line_mark : Bool
+  wrap_break : Bool
+} derive(Eq)
+pub fn Style::equal(Self, Self) -> Bool
+pub fn Style::face_style(Self) -> (Bool, Bool)
+pub fn Style::not_equal(Self, Self) -> Bool
+
+pub(all) struct TextContext {
+  catalog : FontCatalog
+  hooks : Hooks
+}
+pub fn TextContext::face(Self, String, Bool, Bool) -> Face
+
+// Type aliases
+
+// Traits
