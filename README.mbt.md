@@ -5,7 +5,7 @@ library [Asciidoctor PDF](https://github.com/asciidoctor/asciidoctor-pdf)
 2.3.27 lays documents out with, for MoonBit, drawing through
 [moonbitlang/pagelayout](https://mooncakes.io/docs/moonbitlang/pagelayout).
 It reproduces Prawn's measurements and decisions closely enough that
-[bobzhang/asciidoctor-pdf](../pdf/README.mbt.md) matches Ruby Asciidoctor PDF's
+[bobzhang/asciidoctor-pdf](https://github.com/bobzhang/asciidoctor.mbt/tree/main/pdf) matches Ruby Asciidoctor PDF's
 output.
 
 | package | what it is |
@@ -25,9 +25,11 @@ flow.start_new_page()
 flow.typeset(fragments, line_metrics(1.15, flow.font(style), style.size), style)
 ```
 
-The module is developed in the asciidoctor.mbt repository together with the
-PDF backend, and checked by its comparison with Ruby Asciidoctor PDF
-(`scripts/pdf_compare.mbtx`).
+The module was factored out of the PDF backend in
+[asciidoctor.mbt](https://github.com/bobzhang/asciidoctor.mbt), whose comparison
+with Ruby Asciidoctor PDF (`scripts/pdf_compare.mbtx`) checks it end to end.
+The goal here is a MoonBit Prawn as good as the Ruby original; [PLAN.md](PLAN.md)
+has the plan.
 
 ## License
 

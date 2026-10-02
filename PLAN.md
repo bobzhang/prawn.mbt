@@ -210,6 +210,29 @@ recover the Ruby programs that made them, and many examples assert without rende
 * Malformed inputs (bad encodings, truncated images/fonts) must fail like Ruby; record any
   intentional deviation in a compatibility-limits section.
 
-## 8. Status log
+## 8. Open questions from the import
 
-(empty)
+The module now starts from the layout code factored out of asciidoctor.mbt's PDF backend
+(published as `bobzhang/prawn` 0.1.0, consumed by `bobzhang/asciidoctor-pdf` 0.2.0). That code
+measures and wraps like Prawn but draws through pagelayout/pdflite, while §1 has pdf-core own the
+bytes. To settle before milestone 1:
+
+* **Path from 0.1.0 to §1.** Grow the existing `Flow`/`typeset`/`FontCatalog` API toward Prawn's
+  `Document` with pdf-core emission as a second backend, or start the root package fresh and keep
+  0.1.0's API as a compatibility layer until asciidoctor-pdf switches. asciidoctor-pdf
+  depends on the published API, so breaking changes need a minor version bump and a matching
+  asciidoctor-pdf release.
+* **Licence.** Prawn, pdf-core and TTFunk are under Ruby's licence / GPLv2 / GPLv3, so a
+  line-by-line port cannot simply be MIT. 0.1.0 keeps adapted parts under Matz's terms with a
+  NOTICE (`NOTICE`, `LICENSES/LICENSE-prawn`).
+* **Versions.** §0 targets Prawn 2.5 / prawn-svg 0.40; asciidoctor-pdf 2.3.27 (the consumer's
+  oracle) pins Prawn 2.4.0, and `svg/` ports prawn-svg 0.34.2.
+* **0.1.0 API cleanup** (carried over from asciidoctor.mbt's TODO): move converter-only
+  `Style.text_transform` and `default_font_files` back to asciidoctor-pdf; stop exposing
+  `build_items`/`Item` (public only for a white-box test there); `Flow` is `pub(all)` for now.
+* **SVG regression coverage** (Codex nit on asciidoctor.mbt#7): SVG under different documents'
+  font scopes; bounds-dependent SVG in a section title loaded after a differently sized document.
+
+## 9. Status log
+
+* 2026-10-02: imported `prawn/` from asciidoctor.mbt with its history (46 tests pass standalone).

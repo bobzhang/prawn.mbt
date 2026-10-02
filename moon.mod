@@ -4,7 +4,7 @@ version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = "https://github.com/bobzhang/asciidoctor.mbt"
+repository = "https://github.com/bobzhang/prawn.mbt"
 
 license = "MIT"
 
