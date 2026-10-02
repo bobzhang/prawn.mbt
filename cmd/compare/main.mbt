@@ -3,6 +3,8 @@
 //
 //   compare diff EXPECTED.pdf ACTUAL.pdf
 //     Print how ACTUAL differs from EXPECTED; fail when it does.
+//   compare log EXPECTED.jsonl ACTUAL.jsonl
+//     Print how two observation logs differ (numbers within 1e-6).
 //   compare inspect FILE.pdf
 //     Print what the comparison sees: every page's glyphs and marks (JSON).
 //   compare mutate KIND IN.pdf OUT.pdf
@@ -13,7 +15,7 @@
 
 ///|
 fn usage() -> String {
-  "usage: compare diff EXPECTED ACTUAL | inspect FILE | mutate KIND IN OUT | self-test DIR"
+  "usage: compare diff EXPECTED ACTUAL | log EXPECTED ACTUAL | inspect FILE | mutate KIND IN OUT | self-test DIR"
 }
 
 ///|
@@ -53,6 +55,18 @@ async fn main {
       let differences = @inspect.compare(
         @inspect.inspect(read(args[2])),
         @inspect.inspect(read(args[3])),
+      )
+      for d in differences {
+        @stdio.stdout.write(d + "\n")
+      }
+      if !differences.is_empty() {
+        fail("\{differences.length()} difference(s)")
+      }
+    }
+    "log" if args.length() == 4 => {
+      let differences = @inspect.compare_logs(
+        @fs.read_file(args[2]).text(),
+        @fs.read_file(args[3]).text(),
       )
       for d in differences {
         @stdio.stdout.write(d + "\n")

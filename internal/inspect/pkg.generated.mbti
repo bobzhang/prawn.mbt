@@ -4,6 +4,8 @@ package "bobzhang/prawn/internal/inspect"
 // Values
 pub fn compare(Array[PageView], Array[PageView], tol? : Tolerance) -> Array[String]
 
+pub fn compare_logs(String, String, tol? : Double) -> Array[String] raise
+
 pub let default_tolerance : Tolerance
 
 pub fn inspect(Bytes) -> Array[PageView] raise

@@ -23,6 +23,10 @@ pub fn line_extent(Line, Face, Double, Bool) -> (Double, Double, Double)
 
 pub fn line_metrics(Double, Face, Double) -> LineMetrics
 
+pub fn margins_of(Array[Double]) -> (Double, Double, Double, Double)
+
+pub fn page_size_named(String) -> (Double, Double)?
+
 pub fn pdf_anchor_name(String) -> String
 
 pub fn rect_item(Double, Double, Double, Double, fill? : @pagelayout.Color, stroke? : @pagelayout.Color, stroke_width? : Double) -> @pagelayout.PageItem
@@ -59,6 +63,23 @@ pub(all) struct Columns {
   stride : Double
   mut current : Int
 }
+
+pub struct Document {
+  flow : Flow
+  catalog : FontCatalog
+  mut family : String
+  mut size : Double
+}
+pub fn Document::cursor(Self) -> Double
+pub fn Document::move_down(Self, Double) -> Unit
+pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
+pub fn Document::page_count(Self) -> Int
+pub fn Document::page_number(Self) -> Int
+pub fn Document::render(Self) -> Bytes raise
+pub fn Document::set_font(Self, String) -> Unit
+pub fn Document::set_font_size(Self, Double) -> Unit
+pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
+pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit
 
 pub(all) struct Face {
   metrics : @fonts.FaceMetrics

@@ -61,12 +61,22 @@ fn paint_text(p : Paint?) -> String {
 }
 
 ///|
+/// A gray as the RGB colour it is (gray g is RGB g, g, g: Prawn leaves
+/// default black in DeviceGray, pagelayout writes RGB).
+fn as_rgb(p : Paint) -> Paint {
+  match (p.space, p.values) {
+    ("DeviceGray", [g]) => { ..p, space: "DeviceRGB", values: [g, g, g], }
+    _ => p
+  }
+}
+
+///|
 fn paint_near(a : Paint?, b : Paint?, tol : Tolerance) -> Bool {
   match (a, b) {
     (None, None) => true
     (Some(a), Some(b)) =>
-      a.space == b.space &&
-      all_near(a.values, b.values, tol.colour) &&
+      as_rgb(a).space == as_rgb(b).space &&
+      all_near(as_rgb(a).values, as_rgb(b).values, tol.colour) &&
       near(a.alpha, b.alpha, tol.exact)
     _ => false
   }

@@ -7,4 +7,5 @@ import {
   "moonbitlang/pdflite/geometry",
   "moonbitlang/pdflite/shape",
   "moonbitlang/core/double",
+  "moonbitlang/core/json",
 }

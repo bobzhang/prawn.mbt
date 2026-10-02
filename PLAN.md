@@ -177,3 +177,7 @@ check), soft masks, blend modes, patterns/shadings, annotations and destinations
 
 * 2026-10-02: imported `prawn/` from asciidoctor.mbt with its history (46 tests pass standalone);
   repository github.com/bobzhang/prawn.mbt. Plan rebased onto pdflite/pagelayout.
+* 2026-10-02: milestone 0 merged (oracle #2, comparator #3; pdflite fixes upstream in office.mbt
+  #595). Milestone 1 started: `Document` (pages, margins, cursor, `text`), `cmd/oracle`,
+  `scripts/compare.mbtx`; 1/12 seed scripts match Ruby (`hello`; `text_wrap` but for
+  `width_of`/`height_of`).
