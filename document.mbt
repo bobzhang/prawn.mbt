@@ -207,3 +207,54 @@ pub fn Document::render(self : Document) -> Bytes raise {
     ),
   )
 }
+
+///|
+/// Prawn's `width_of`: how wide `string` is set in the current font at
+/// `size` (the current font size), with the font's kerning only when
+/// `kerning` asks for it (Prawn does not apply the document's default
+/// here).
+pub fn Document::width_of(
+  self : Document,
+  string : String,
+  size? : Double,
+  kerning? : Bool = false,
+) -> Double {
+  let style = self.style(size?)
+  let face = self.flow.font(style)
+  let chars = string.iter().map(c => c.to_int()).to_array()
+  let mut width = 0.0
+  for i, cp in chars {
+    width += face.prawn_width(cp)
+    if kerning && i + 1 < chars.length() {
+      width += face.kerning(cp, chars[i + 1])
+    }
+  }
+  width * style.size / 1000.0
+}
+
+///|
+/// Prawn's `height_of`: how tall `string` would be set by `text` in boxes
+/// `width` wide (the bounds' width), with the line gap and leading after
+/// it (Prawn's final gap).
+pub fn Document::height_of(
+  self : Document,
+  string : String,
+  size? : Double,
+  width? : Double,
+  leading? : Double = 0.0,
+) -> Double {
+  if string.is_empty() {
+    return 0.0
+  }
+  let style = self.style(size?)
+  self.flow.height_of(
+    [{ text: string, style, anchor: None, }],
+    {
+      leading,
+      padding_top: 0.0,
+      padding_bottom: self.flow.font(style).line_gap_pt(style.size) + leading,
+    },
+    style,
+    width?,
+  )
+}

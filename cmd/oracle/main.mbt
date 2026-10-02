@@ -116,6 +116,27 @@ fn Run::call(
       )
       Some(Json::null())
     }
+    "width_of" =>
+      Some(
+        doc
+        .width_of(
+          string(args[0]),
+          size?=opts.get("size").map(number),
+          kerning=opts.get("kerning") is Some(True),
+        )
+        .to_json(),
+      )
+    "height_of" =>
+      Some(
+        doc
+        .height_of(
+          string(args[0]),
+          size?=opts.get("size").map(number),
+          width?=opts.get("width").map(number),
+          leading=opts.get("leading").map(number).unwrap_or(0.0),
+        )
+        .to_json(),
+      )
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
