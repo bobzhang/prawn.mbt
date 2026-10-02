@@ -356,3 +356,52 @@ test "a wrapped highlighted line paints both its lines, in Courier too" {
     content="22+138 255,255,204; 22+138 255,255,204",
   )
 }
+
+///|
+test "a highlighted line keeps its mark where its number breaks" {
+  // 8pt: the number breaks before its blank, then a, b and c each go on a
+  // line of their own, behind a blank that breaks the same way; as in
+  // Ruby, the lines of a, b and c are highlighted, not the number's or the
+  // blanks'
+  let line = highlighted_line(mono_style())
+  line[2] = { ..line[2], text: "abc", }
+  let wrapped = source_wrap(line, mono_text(), 8.0).unwrap()
+  inspect(
+    texts(wrapped),
+    content=(
+      #|"1" | "\n" | "^" | "a" | "\n" | "~" | "\n" | "^" | "b" | "\n" | "~" | "\n" | "^" | "c"
+    ),
+  )
+  inspect(
+    rectangles(mono_text(), wrapped),
+    content="10+150 255,255,204; 10+150 255,255,204; 10+150 255,255,204",
+  )
+}
+
+///|
+test "text wider than the line after a broken number cannot fit" {
+  // Helvetica: 1 is 5.56pt, W 9.44pt, i 2.22pt; the number breaks before
+  // its blank at 6pt, then W alone does not fit (Prawn's CannotFit)
+  let helvetica = { ..mono_style(), family: "Helvetica", }
+  let builtin = { catalog: FontCatalog::load([]), hooks: Hooks::new(), }
+  let line = (text : String) => {
+    [
+      { text: "1 ", style: { ..helvetica, linenum: true, }, anchor: None, },
+      { text, style: helvetica, anchor: None, },
+    ]
+  }
+  inspect(source_wrap(line("W"), builtin, 6.0) is None, content="true")
+  inspect(
+    texts(source_wrap(line("i"), builtin, 6.0).unwrap()),
+    content=(
+      #|"1" | "\n" | "i"
+    ),
+  )
+  // a 10pt number, a 20pt x (12pt) at 8pt
+  let style = mono_style()
+  let fragments : Array[Fragment] = [
+    { text: "1 ", style: { ..style, linenum: true, }, anchor: None, },
+    { text: "x", style: { ..style, size: 20.0, }, anchor: None, },
+  ]
+  inspect(source_wrap(fragments, mono_text(), 8.0) is None, content="true")
+}

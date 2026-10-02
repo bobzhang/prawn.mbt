@@ -124,6 +124,17 @@ pub fn source_wrap(
     let mut split_number : Array[Fragment]? = None
     for index, range in ranges {
       let (start, end, hard) = range
+      // a line whose first glyph is wider than it (text a too-wide number
+      // put on a line of its own, say): Prawn's CannotFit
+      let mut first = start
+      while first < end && items[first].fit <= 0.0 {
+        first += 1
+      }
+      if first < end &&
+        !fragments[items[first].fragment].style.linenum &&
+        items[first].fit > width + 0.0001 {
+        return None
+      }
       // the number (or blank) the line starts with, when it is wider than
       // the line: Prawn breaks it before its trailing blanks, which the
       // next line strips, so the line's text goes on a line of its own (a
@@ -235,10 +246,9 @@ pub fn source_wrap(
     }
     guard number >= 0 else { return None }
     let linenum = fragments[number]
-    let mark = match fragments.get(number + 1) {
-      Some(m) if m.style.line_mark => Some(m)
-      _ => None
-    }
+    // its mark: right after the number, or after the line break where the
+    // number was too wide and broke
+    let mark = fragments[number + 1:f].iter().find_first(m => m.style.line_mark)
     let plain = plain_number_style(linenum.style)
     let next : Array[Fragment] = []
     for i in 0..<f {
