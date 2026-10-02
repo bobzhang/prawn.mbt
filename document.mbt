@@ -55,6 +55,9 @@ pub struct Document {
   mut layout : String
   /// the bounding boxes inside the margin box, innermost last
   priv boxes : Array[Box]
+  /// the graphics state and the path being built (`graphics.mbt`)
+  priv gs : GraphicState
+  priv path : Array[@pagelayout.PathSegment]
 }
 
 ///|
@@ -95,6 +98,8 @@ pub fn Document::new(
     page_size: size,
     layout,
     boxes: [],
+    gs: GraphicState::new(),
+    path: [],
   }
 }
 
@@ -106,7 +111,7 @@ fn Document::style(self : Document, size? : Double) -> Style {
     size: size.unwrap_or(self.size),
     bold: false,
     italic: false,
-    color: @pagelayout.Color::rgb(0, 0, 0),
+    color: self.gs.fill,
     link: None,
     background: None,
     script: 0,

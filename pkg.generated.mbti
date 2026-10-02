@@ -9,6 +9,8 @@ import {
 // Values
 pub fn build_items(Array[Fragment], TextContext, available? : Double) -> (Array[Item], Array[Face])
 
+pub fn color_of_hex(String) -> @pagelayout.Color?
+
 pub fn dashed_hrule(Double, Double, Double, Double, @pagelayout.Color) -> Array[@pagelayout.PageItem]
 
 pub fn default_font_files() -> Array[(String, Bool, Bool, String)]
@@ -89,19 +91,46 @@ pub struct Document {
 }
 pub fn Document::bounding_box(Self, (Double, Double), Double, height? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::bounds(Self) -> Bounds
+pub fn Document::circle(Self, (Double, Double), Double) -> Unit
+pub fn Document::close_and_stroke(Self) -> Unit
+pub fn Document::close_path(Self) -> Unit
 pub fn Document::cursor(Self) -> Double
+pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Double), (Double, Double))) -> Unit
+pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
+pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit
+pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
+pub fn Document::fill(Self, even_odd? : Bool) -> Unit
+pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise
 pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
+pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
+pub fn Document::horizontal_rule(Self) -> Unit
 pub fn Document::indent(Self, Double, right? : Double, () -> Unit raise) -> Unit raise
+pub fn Document::line(Self, (Double, Double), (Double, Double)) -> Unit
+pub fn Document::line_to(Self, Double, Double) -> Unit
 pub fn Document::move_down(Self, Double) -> Unit
+pub fn Document::move_to(Self, Double, Double) -> Unit
 pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
 pub fn Document::page_count(Self) -> Int
 pub fn Document::page_number(Self) -> Int
+pub fn Document::polygon(Self, Array[(Double, Double)]) -> Unit
+pub fn Document::rectangle(Self, (Double, Double), Double, Double) -> Unit
 pub fn Document::render(Self) -> Bytes raise
+pub fn Document::rounded_polygon(Self, Double, Array[(Double, Double)]) -> Unit
+pub fn Document::rounded_rectangle(Self, (Double, Double), Double, Double, Double) -> Unit
+pub fn Document::set_cap_style(Self, @pagelayout.LineCap) -> Unit
+pub fn Document::set_fill_color(Self, @pagelayout.Color) -> Unit
 pub fn Document::set_font(Self, String) -> Unit
 pub fn Document::set_font_size(Self, Double) -> Unit
+pub fn Document::set_join_style(Self, @pagelayout.LineJoin) -> Unit
+pub fn Document::set_line_width(Self, Double) -> Unit
+pub fn Document::set_stroke_color(Self, @pagelayout.Color) -> Unit
 pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
+pub fn Document::stroke(Self) -> Unit
+pub fn Document::stroke_bounds(Self) -> Unit
 pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit raise PrawnError
+pub fn Document::undash(Self) -> Unit
+pub fn Document::vertical_line(Self, Double, Double, at~ : Double) -> Unit
 pub fn Document::width_of(Self, String, size? : Double, kerning? : Bool) -> Double raise PrawnError
 
 pub(all) struct Face {

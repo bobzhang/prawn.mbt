@@ -193,7 +193,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
-    _ => None
+    _ => self.graphics(name, args, opts)
   }
 }
 
@@ -329,4 +329,200 @@ async fn main {
     log.write_char('\n')
   }
   @fs.write_file(args[3], log.to_string(), create_mode=CreateOrTruncate)
+}
+
+///|
+fn point(j : Json) -> (Double, Double) raise ScriptError {
+  match j {
+    Array([x, y]) => (number(x), number(y))
+    _ => raise ScriptError("not a point: \{j.stringify()}")
+  }
+}
+
+///|
+/// Control points `{"bounds": [[x1, y1], [x2, y2]]}` of a curve.
+fn curve_bounds(
+  opts : Map[String, Json],
+) -> ((Double, Double), (Double, Double)) raise ScriptError {
+  match opts.get("bounds") {
+    Some(Array([a, b])) => (point(a), point(b))
+    _ => raise ScriptError("a curve needs bounds")
+  }
+}
+
+///|
+/// The points of an op taking them one by one (`polygon`) or flat (`line`
+/// with four numbers).
+fn points(args : ArrayView[Json]) -> Array[(Double, Double)] raise ScriptError {
+  match args {
+    [Number(_), ..] => {
+      let out = []
+      let mut i = 0
+      while i + 1 < args.length() {
+        out.push((number(args[i]), number(args[i + 1])))
+        i = i + 2
+      }
+      out
+    }
+    _ => args.map(point)
+  }
+}
+
+///|
+/// Builds shape `name` (Prawn's path-building methods); whether it is one.
+fn shape(
+  doc : @prawn.Document,
+  name : String,
+  args : Array[Json],
+  opts : Map[String, Json],
+) -> Bool raise ScriptError {
+  let positional = args.filter(a => !(a is Object(_)))
+  match name {
+    "move_to" => {
+      let p = points(positional[:])[0]
+      doc.move_to(p.0, p.1)
+    }
+    "line_to" => {
+      let p = points(positional[:])[0]
+      doc.line_to(p.0, p.1)
+    }
+    "curve_to" => doc.curve_to(point(positional[0]), curve_bounds(opts))
+    "curve" =>
+      doc.curve(point(positional[0]), point(positional[1]), curve_bounds(opts))
+    "rectangle" =>
+      doc.rectangle(
+        point(positional[0]),
+        number(positional[1]),
+        number(positional[2]),
+      )
+    "rounded_rectangle" =>
+      doc.rounded_rectangle(
+        point(positional[0]),
+        number(positional[1]),
+        number(positional[2]),
+        number(positional[3]),
+      )
+    "line" => {
+      let ps = points(positional[:])
+      doc.line(ps[0], ps[1])
+    }
+    "horizontal_line" =>
+      doc.horizontal_line(
+        number(positional[0]),
+        number(positional[1]),
+        at?=opts.get("at").map(number),
+      )
+    "horizontal_rule" => doc.horizontal_rule()
+    "vertical_line" =>
+      doc.vertical_line(
+        number(positional[0]),
+        number(positional[1]),
+        at=number(opts.get("at").unwrap_or(Json::null())),
+      )
+    "circle" => doc.circle(point(positional[0]), number(positional[1]))
+    "ellipse" =>
+      doc.ellipse(
+        point(positional[0]),
+        number(positional[1]),
+        r2?=positional.get(2).map(number),
+      )
+    "polygon" => doc.polygon(points(positional[:]))
+    "rounded_polygon" =>
+      doc.rounded_polygon(number(positional[0]), points(positional[1:]))
+    _ => return false
+  }
+  true
+}
+
+///|
+/// Runs a graphics op (`graphics.mbt`); its value, or None when it is not
+/// one this module runs.
+fn Run::graphics(
+  self : Run,
+  name : String,
+  args : Array[Json],
+  opts : Map[String, Json],
+) -> Json? raise {
+  let doc = self.doc
+  let even_odd = opts.get("fill_rule").bind(symbol) == Some("even_odd")
+  let paint = fn(kind : String) {
+    match kind {
+      "stroke" => doc.stroke()
+      "close_and_stroke" => doc.close_and_stroke()
+      "fill" => doc.fill(even_odd~)
+      _ => doc.fill_and_stroke(even_odd~)
+    }
+  }
+  match name {
+    "fill_color" | "stroke_color" if args is [String(hex)] => {
+      guard @prawn.color_of_hex(hex) is Some(color) else { return None }
+      if name == "fill_color" {
+        doc.set_fill_color(color)
+      } else {
+        doc.set_stroke_color(color)
+      }
+    }
+    "line_width" if args is [Number(_)] => doc.set_line_width(number(args[0]))
+    "cap_style" =>
+      doc.set_cap_style(
+        match args.get(0).bind(symbol) {
+          Some("butt") => ButtCap
+          Some("round") => RoundCap
+          Some("projecting_square") => SquareCap
+          _ => return None
+        },
+      )
+    "join_style" =>
+      doc.set_join_style(
+        match args.get(0).bind(symbol) {
+          Some("miter") => MiterJoin
+          Some("round") => RoundJoin
+          Some("bevel") => BevelJoin
+          _ => return None
+        },
+      )
+    "dash" if only(opts, ["space", "phase"]) => {
+      let lengths = match args[0] {
+        Array(xs) => xs.map(number)
+        x => [number(x)]
+      }
+      doc.dash(
+        lengths,
+        space?=opts.get("space").map(number),
+        phase=opts.get("phase").map(number).unwrap_or(0.0),
+      )
+    }
+    "undash" => doc.undash()
+    "close_path" => doc.close_path()
+    "stroke_bounds" => doc.stroke_bounds()
+    "stroke" | "close_and_stroke" | "fill" | "fill_and_stroke" if only(opts, [
+        "fill_rule",
+      ]) => {
+      match block(args) {
+        Some(ops) => self.ops(ops)
+        None => ()
+      }
+      paint(name)
+    }
+    _ => {
+      // a shape, built (Prawn's path methods) or painted at once
+      // (`stroke_rectangle`, `fill_circle`, `fill_and_stroke_polygon`)
+      let (kind, shape_name) = if name.has_prefix("fill_and_stroke_") {
+        ("fill_and_stroke", name["fill_and_stroke_".length():].to_owned())
+      } else if name.has_prefix("stroke_") {
+        ("stroke", name["stroke_".length():].to_owned())
+      } else if name.has_prefix("fill_") {
+        ("fill", name["fill_".length():].to_owned())
+      } else {
+        ("", name)
+      }
+      if !shape(doc, shape_name, args, opts) {
+        return None
+      }
+      if kind != "" {
+        paint(kind)
+      }
+    }
+  }
+  Some(Json::null())
 }
