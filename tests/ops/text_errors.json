@@ -11,6 +11,7 @@
     ["text", ":"],
     ["?cursor"],
     ["!raises", "none", ["?width_of", "A\u007f"]],
+    ["!raises", "none", ["?height_of", "A\u007f", { "width": 9 }]],
     ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["height_of", "W中", { "width": 1 }]],
     ["!raises", "none", ["?height_of", "&", { "size": 9, "width": 6.002999999999999 }]]
   ]

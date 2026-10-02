@@ -393,7 +393,8 @@ fn winansi_text(text : String) -> String {
       0x2063 => sb.write_char('\u{ad}')
       0x25E6 => sb.write_char('-')
       0x25AA => sb.write_char('\u{b7}')
-      0x0A => sb.write_char(c)
+      // Windows-1252 has them, though WinAnsi names no glyph for DEL
+      0x0A | 0x7F => sb.write_char(c)
       _ =>
         if winansi_code_of(cp) is Some(_) {
           sb.write_char(c)
