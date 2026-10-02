@@ -1,0 +1,8 @@
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"raises":"none","error":null}
+{"query":["height_of","",{"leading":3}],"value":3}
+{"query":"cursor","value":717.0}
+{"query":"cursor","value":703.1279999999999}

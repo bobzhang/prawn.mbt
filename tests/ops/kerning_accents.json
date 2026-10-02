@@ -1,0 +1,7 @@
+{
+  "ops": [
+    ["?width_of", "Té Vé Yó", { "kerning": true }],
+    ["text", "Té Vé Yó, kerned", { "size": 20 }],
+    ["?cursor"]
+  ]
+}

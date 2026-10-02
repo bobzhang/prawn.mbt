@@ -1,0 +1,3 @@
+{"query":["width_of","Té Vé Yó",{"kerning":true}],"value":45.948}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":"cursor","value":696.88}

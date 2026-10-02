@@ -126,12 +126,15 @@ pub fn Document::text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
-) -> Unit {
-  // nothing to set: Prawn moves nothing either
+) -> Unit raise PrawnError {
+  // nothing to set: Prawn moves by the leading alone (an empty box has no
+  // line gap)
   if string.is_empty() {
+    self.flow.move_down(leading)
     return
   }
   let style = self.style(size?)
+  self.check(string, style, Some(self.flow.width()))
   self.flow.typeset(
     [{ text: string, style, anchor: None, }],
     // after the text box, the line gap and leading (`final_gap`, Prawn's
@@ -218,8 +221,9 @@ pub fn Document::width_of(
   string : String,
   size? : Double,
   kerning? : Bool = false,
-) -> Double {
+) -> Double raise PrawnError {
   let style = self.style(size?)
+  self.check(string, style, None)
   let face = self.flow.font(style)
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
@@ -242,11 +246,13 @@ pub fn Document::height_of(
   size? : Double,
   width? : Double,
   leading? : Double = 0.0,
-) -> Double {
+) -> Double raise PrawnError {
+  // an empty box: its final gap is the leading alone
   if string.is_empty() {
-    return 0.0
+    return leading
   }
   let style = self.style(size?)
+  self.check(string, style, Some(width.unwrap_or(self.flow.width())))
   self.flow.height_of(
     [{ text: string, style, anchor: None, }],
     {
@@ -257,4 +263,30 @@ pub fn Document::height_of(
     style,
     width?,
   )
+}
+
+///|
+/// What Prawn refuses before setting `string` in `style`: characters a
+/// standard font cannot encode (Windows-1252), and, given the `width`
+/// lines are set in, a character too wide for it (the line wrap cannot
+/// fit even one).
+fn Document::check(
+  self : Document,
+  string : String,
+  style : Style,
+  width : Double?,
+) -> Unit raise PrawnError {
+  let face = self.flow.font(style)
+  for c in string {
+    let cp = c.to_int()
+    if face.standard && cp >= 0x20 && winansi_code_of(cp) is None {
+      raise IncompatibleStringEncoding(string)
+    }
+    match width {
+      Some(w) if c != ' ' &&
+        c != '\n' &&
+        face.prawn_width(cp) * style.size / 1000.0 > w => raise CannotFit
+      _ => ()
+    }
+  }
 }
