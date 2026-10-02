@@ -50,20 +50,32 @@ fn symbol(j : Json) -> String? {
 }
 
 ///|
-/// The options of an op: its trailing object without `block` (as the driver
-/// takes them).
+/// The options of an op, as the driver takes them: the keys beside `block`
+/// in its trailing block object, or else the object before that, or its
+/// trailing object.
 fn options(args : Array[Json]) -> Map[String, Json] {
+  let plain = fn(j : Json?) -> Map[String, Json] {
+    match j {
+      Some(Object(map)) if !map.contains("trace") && !map.contains("block") =>
+        map
+      _ => Map([])
+    }
+  }
   match args.last() {
-    Some(Object(map)) if !map.contains("trace") => {
+    Some(Object(map)) if map.contains("block") => {
       let out = Map([])
       for k, v in map {
         if k != "block" {
           out[k] = v
         }
       }
-      out
+      if out.is_empty() && args.length() >= 2 {
+        plain(Some(args[args.length() - 2]))
+      } else {
+        out
+      }
     }
-    _ => Map([])
+    last => plain(last)
   }
 }
 
@@ -142,9 +154,66 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         )
         .to_json(),
       )
+    "bounding_box" if only(opts, ["width", "height"]) &&
+      block(args) is Some(ops) => {
+      guard args[0] is Array([x, y]) else {
+        raise ScriptError("bounding_box needs a point")
+      }
+      doc.bounding_box(
+        (number(x), number(y)),
+        number(opts.get("width").unwrap_or(Json::null())),
+        height?=match opts.get("height") {
+          None | Some(Null) => None
+          Some(h) => Some(number(h))
+        },
+        () => self.ops(ops),
+      )
+      Some(Json::null())
+    }
+    "indent" if opts.is_empty() && block(args) is Some(ops) => {
+      let right = if args.length() > 2 { number(args[1]) } else { 0.0 }
+      doc.indent(number(args[0]), right~, () => self.ops(ops))
+      Some(Json::null())
+    }
+    "float" if opts.is_empty() && block(args) is Some(ops) => {
+      doc.float(() => self.ops(ops))
+      Some(Json::null())
+    }
+    "bounds" => {
+      let b = doc.bounds()
+      Some({
+        "left": b.left.to_json(),
+        "bottom": b.bottom.to_json(),
+        "width": b.width.to_json(),
+        "height": b.height.to_json(),
+        "absolute_left": b.absolute_left.to_json(),
+        "absolute_top": b.absolute_top.to_json(),
+      })
+    }
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
+    _ => None
+  }
+}
+
+///|
+/// Runs ops in order (a block's).
+fn Run::ops(self : Run, ops : Array[Json]) -> Unit raise {
+  for op in ops {
+    self.op(op)
+  }
+}
+
+///|
+/// The ops of an op's block: its trailing `{"block": [ops]}`.
+fn block(args : Array[Json]) -> Array[Json]? {
+  match args.last() {
+    Some(Object(map)) =>
+      match map.get("block") {
+        Some(Array(ops)) => Some(ops)
+        _ => None
+      }
     _ => None
   }
 }
@@ -248,7 +317,10 @@ async fn main {
     fail("no ops")
   }
   for op in ops {
-    run.op(op)
+    run.op(op) catch {
+      ScriptError(message) => fail("\{message} in \{op.stringify()}")
+      e => raise e
+    }
   }
   @fs.write_file(args[2], doc.render(), create_mode=CreateOrTruncate)
   let log = StringBuilder()

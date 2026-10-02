@@ -1,0 +1,47 @@
+{
+  "ops": [
+    ["text", "Before the boxes."],
+    ["?bounds"],
+    ["bounding_box", [100, 650], { "width": 250, "height": 120 }, { "block": [
+      ["?bounds"],
+      ["?cursor"],
+      ["text", "A fixed box 250 wide and 120 tall, with text long enough to wrap onto a second and maybe a third line."],
+      ["?cursor"],
+      ["bounding_box", [20, 40], { "width": 120 }, { "block": [
+        ["?bounds"],
+        ["text", "Stretchy, nested at the box's bottom."],
+        ["?bounds"],
+        ["?cursor"]
+      ] }],
+      ["?cursor"]
+    ] }],
+    ["?cursor"],
+    ["bounding_box", [0, 480], { "width": 200 }, { "block": [
+      ["text", "A stretchy box at the margin."],
+      ["move_down", 10],
+      ["text", "Another line."],
+      ["?bounds"]
+    ] }],
+    ["?cursor"],
+    ["bounding_box", [300, 480], { "width": 100, "height": 50 }, { "block": [] }],
+    ["?cursor"],
+    ["float", { "block": [["move_down", 50], ["text", "floated"], ["?cursor"]] }],
+    ["?cursor"],
+    ["indent", 40, { "block": [["text", "Indented from the left by forty points, wrapping at least once at this width."], ["?bounds"]] }],
+    ["indent", 20, 60, { "block": [
+      ["text", "Indented on both sides."],
+      ["bounding_box", [10, 100], { "width": 150 }, { "block": [
+        ["indent", 15, { "block": [["text", "An indent inside a box inside an indent."], ["?bounds"]] }]
+      ] }]
+    ] }],
+    ["?cursor"],
+    ["bounding_box", [0, 300], { "width": 200, "height": null }, { "block": [
+      ["float", { "block": [["move_down", 100]] }],
+      ["?bounds"],
+      ["?cursor"],
+      ["bounding_box", [10, 20], { "width": 50, "height": 10 }, { "block": [["?bounds"]] }],
+      ["?bounds"]
+    ] }],
+    ["?cursor"]
+  ]
+}

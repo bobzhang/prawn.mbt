@@ -53,6 +53,8 @@ pub struct Document {
   /// them apart: a landscape page reverses the size, whatever its shape)
   mut page_size : (Double, Double)
   mut layout : String
+  /// the bounding boxes inside the margin box, innermost last
+  priv boxes : Array[Box]
 }
 
 ///|
@@ -85,7 +87,15 @@ pub fn Document::new(
     margin_left: left,
   })
   flow.start_new_page(size=(w, h))
-  { flow, catalog, family: "Helvetica", size: 12.0, page_size: size, layout, }
+  {
+    flow,
+    catalog,
+    family: "Helvetica",
+    size: 12.0,
+    page_size: size,
+    layout,
+    boxes: [],
+  }
 }
 
 ///|
@@ -130,7 +140,7 @@ pub fn Document::text(
   // nothing to set: Prawn moves by the leading alone (an empty box has no
   // line gap)
   if string.is_empty() {
-    self.flow.move_down(leading)
+    self.move_down(leading)
     return
   }
   let style = self.style(size?)
@@ -147,19 +157,23 @@ pub fn Document::text(
     style,
     align~,
   )
+  self.track()
 }
 
 ///|
 /// Prawn's `move_down`.
 pub fn Document::move_down(self : Document, amount : Double) -> Unit {
   self.flow.move_down(amount)
+  self.track()
 }
 
 ///|
 /// Prawn's `cursor`: how far the current position is above the bottom of
-/// the bounds.
+/// the bounds (always 0 in a stretchy box, whose bottom is the position).
 pub fn Document::cursor(self : Document) -> Double {
-  self.flow.cursor()
+  let box = self.current_box()
+  let y = self.y()
+  y - (box.top - box.height_at(y))
 }
 
 ///|
