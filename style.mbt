@@ -32,6 +32,10 @@ pub(all) struct Style {
   /// an inline image (the index of its `InlineImage` in the session), set
   /// as a placeholder as wide as the image; -1 for text
   image : Int
+  /// the document's callback for the fragment (Prawn's fragment `callback`):
+  /// `Hooks::fragment_inked` learns when a run in this style is inked on a
+  /// page outside dry runs; -1 for none
+  callback : Int
   /// the style of the document font the text is set in (Prawn's current
   /// font, as `theme_font` sets it); `bold` and `italic` are the styles of
   /// the markup (and those inherited explicitly, as headings do)

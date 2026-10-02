@@ -23,6 +23,9 @@ pub(all) struct Hooks {
   /// a named destination was inked on page `number` (from 1), outside dry
   /// runs
   anchor_inked : (String, Int) -> Unit
+  /// a run whose style's `callback` is `index` was inked, outside dry runs
+  /// (once per run: a fragment split across lines is told of each piece)
+  fragment_inked : (Int) -> Unit
 }
 
 ///|
@@ -35,6 +38,7 @@ pub fn Hooks::new(base_family? : String = "Helvetica") -> Hooks {
     image_size: (_, _, _) => (0.0, 0.0, false),
     image_items: (_, _, _, _, _, _) => [],
     anchor_inked: (_, _) => (),
+    fragment_inked: _ => (),
   }
 }
 

@@ -156,12 +156,18 @@ fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
 }
 
 ///|
-pub fn Flow::start_new_page(self : Flow, layout? : String) -> Unit {
+pub fn Flow::start_new_page(
+  self : Flow,
+  layout? : String,
+  size? : (Double, Double),
+) -> Unit {
   // a new page takes the current page's size and layout (Prawn's
-  // `start_new_page`), or the layout asked for: landscape swaps the sides
-  let (w, h) = match self.model.pages.last() {
-    Some(p) => (p.width_pt, p.height_pt)
-    None => (self.setup.width, self.setup.height)
+  // `start_new_page`), or the size (as an imported page has) and the
+  // layout asked for: landscape swaps the sides
+  let (w, h) = match (size, self.model.pages.last()) {
+    (Some(size), _) => size
+    (None, Some(p)) => (p.width_pt, p.height_pt)
+    (None, None) => (self.setup.width, self.setup.height)
   }
   let (w, h) = match layout {
     Some("landscape") if w < h => (h, w)
@@ -560,6 +566,11 @@ pub fn Flow::line_items(
   }
   for run in line.runs {
     let style = run.style
+    // the fragment's callback (Prawn's fragment `callback`), when inked
+    // for good
+    if style.callback >= 0 && !self.scratch {
+      (self.hooks.fragment_inked)(style.callback)
+    }
     let x = x0 + run.x
     let a = run.face.ascender_pt(style.size)
     let d = run.face.descender_pt(style.size)
