@@ -78,3 +78,42 @@ never use `:random` passwords).
 
 Examples that need mocks, extension subclasses or object identity are not op scripts; they are
 hand-ported as MoonBit tests.
+
+## Goldens and the comparison
+
+`scripts/oracle.mbtx` writes Ruby's outputs to `tests/golden` (`NAME.pdf`, `NAME.jsonl`), which
+are committed, so the comparison runs without Ruby. `moon run --target native scripts/check.mbtx --
+--oracle` reruns Ruby and requires the goldens to be unchanged.
+
+`cmd/compare` (on `internal/inspect`) reads PDFs with pdflite and compares what they show under
+the contract in `PLAN.md` §3:
+
+* `compare diff EXPECTED ACTUAL` prints the differences, under a rule per field:
+  - *exact:* page count, sizes and rotation, each glyph's text, font, `Tf` size and render mode,
+    colour spaces, alpha, blend modes, soft masks, path structure (segment kinds, closure,
+    winding rule), stroke style (cap, join, miter limit, number of dashes), image dictionaries and data hashes (decoded where pdflite decodes, a DCT stream's
+    own bytes otherwise; soft masks included);
+  - *within 0.01 pt in page space:* glyph origins and render matrices (which carry horizontal
+    scaling and rotation), path points, the stroke pen (the line width as the CTM shapes it,
+    the same whether the CTM is y-up or y-down) and dashes, image corners, clips;
+  - *within 1e-5:* colour components;
+  - *paint order:* glyphs and marks that overlap must be painted in the same relative order.
+
+  Inspection follows the CTM into page space, walks form XObjects (stamps) with their matrix and
+  bounding box, and canonicalizes equivalent serializations (`re` vs `m l l l l h`, empty
+  subpaths, a dash phase with no dash).
+* `compare inspect FILE` prints what the comparison sees.
+* `compare self-test DIR` runs the controls on every PDF in `DIR`. Negative mutations (text moved
+  0.02 pt, a font size changed, a page break moved, a colour changed by one 8-bit step, a path
+  moved 0.02 pt, text 1% wider, a clip grown by 1 pt) must be reported. Positive ones (text moved
+  0.004 pt, a pdflite round trip, colours written in full instead of Prawn's 5 decimals) must
+  not. Every mutation must apply to at least one PDF.
+
+Not compared yet: annotations, destinations, the outline and page labels; which pattern a
+pattern colour uses (gradients); glyph outlines (glyphs are identified by font name and Unicode
+text). Clips are compared as bounding boxes.
+
+Three pdflite 0.3.2 gaps are worked around in `internal/inspect` until fixed upstream: the content
+state starts with white instead of black, `gs` applies the whole `/ExtGState` resource dictionary
+instead of the named entry, and `gs` does not set the soft mask. Its paths and clips are also kept
+in user space, so the inspector maps them to page space itself.

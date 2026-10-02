@@ -1,0 +1,83 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/prawn/internal/inspect"
+
+// Values
+pub fn compare(Array[PageView], Array[PageView], tol? : Tolerance) -> Array[String]
+
+pub let default_tolerance : Tolerance
+
+pub fn inspect(Bytes) -> Array[PageView] raise
+
+pub fn mutate(Bytes, String) -> Bytes? raise
+
+pub let mutations : Array[(String, Control)]
+
+// Errors
+
+// Types and methods
+pub(all) enum Control {
+  Negative
+  Positive
+}
+
+pub(all) struct Glyph {
+  text : String
+  font : String
+  size : Double
+  matrix : Array[Double]
+  x : Double
+  y : Double
+  mode : Int
+  fill : Paint?
+  stroke : Paint?
+  pen : Array[Double]
+  style : Json
+  clip : Rect?
+  blend : String
+  extent : Rect
+  order : Int
+}
+
+pub(all) struct Mark {
+  kind : String
+  points : Array[Double]
+  lengths : Array[Double]
+  paints : Array[Paint]
+  exact : Json
+  clip : Rect?
+  blend : String
+  extent : Rect
+  order : Int
+}
+
+pub(all) struct PageView {
+  width : Double
+  height : Double
+  rotate : Int
+  glyphs : Array[Glyph]
+  marks : Array[Mark]
+}
+pub fn PageView::to_json(Self) -> Json
+
+pub(all) struct Paint {
+  space : String
+  values : Array[Double]
+  alpha : Double
+}
+
+pub(all) struct Rect {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+}
+
+pub(all) struct Tolerance {
+  position : Double
+  colour : Double
+  exact : Double
+}
+
+// Type aliases
+
+// Traits

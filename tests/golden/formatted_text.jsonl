@@ -1,0 +1,6 @@
+{"trace":"italic","event":"render_behind","text":"italic ","left":30.0,"baseline":705.64,"width":27.336000000000002,"height":11.100000000000023,"top":714.256,"bottom":703.156}
+{"trace":"italic","event":"render_in_front","text":"italic ","left":30.0,"baseline":705.64,"width":27.336000000000002,"height":11.100000000000023,"top":714.256,"bottom":703.156}
+{"trace":"link","event":"render_behind","text":" and a link","left":192.91600000000003,"baseline":705.64,"width":54.696,"height":11.100000000000023,"top":714.256,"bottom":703.156}
+{"query":"cursor","value":696.88}
+{"query":"cursor","value":682.6}
+{"trace":"draw","event":"draw_text","text":"Drawn by a callback","at":[0,673.984],"kerning":true}

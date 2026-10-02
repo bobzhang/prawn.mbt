@@ -1,0 +1,5 @@
+{"query":"cursor","value":697.742}
+{"query":"cursor","value":676.934}
+{"query":["width_of","AVATAR",{"size":18,"kerning":true}],"value":64.99799999999999}
+{"query":["width_of","AVATAR",{"size":18,"kerning":false}],"value":72.018}
+{"query":["height_of","a b c d e f g h i j k l m n o p",{"width":40}],"value":50.864000000000004}

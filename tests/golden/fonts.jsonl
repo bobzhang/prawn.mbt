@@ -1,0 +1,4 @@
+{"query":["width_of","DejaVu ∑"],"value":54.972}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["width_of","café"],"value":19.98}
+{"query":"cursor","value":663.9600000000002}

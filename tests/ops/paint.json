@@ -1,0 +1,30 @@
+{
+  "ops": [
+    ["fill_color", "808080"],
+    ["fill_rectangle", [36, 750], 60, 30],
+    ["fill_color", "000000"],
+    ["text_rendering_mode", ":stroke", { "block": [["text", "Stroked text", { "size": 20 }]] }],
+    ["stroke_color", "FF0000"],
+    ["fill_color", "00FF00"],
+    ["text_rendering_mode", ":fill_stroke", { "block": [["text", "Filled and stroked", { "size": 20 }]] }],
+    ["fill_color", "000000"],
+    ["horizontal_text_scaling", 150, { "block": [["text", "Wide text"]] }],
+    ["character_spacing", 2, { "block": [["text", "Spaced text"]] }],
+    ["draw_text", "Rotated", { "at": [300, 600], "rotate": 30 }],
+    ["blend_mode", ":Multiply", { "block": [["fill_color", "FFCC00"], ["fill_rectangle", [36, 500], 80, 80]] }],
+    ["fill_gradient", { "from": [150, 500], "to": [250, 500], "stops": ["FF0000", "0000FF"] }],
+    ["fill_rectangle", [150, 500], 100, 80],
+    ["fill_color", "000000"],
+    ["save_graphics_state", { "block": [
+      ["add_content", "300 420 60 60 re W n"],
+      ["fill_color", "3366CC"],
+      ["fill_rectangle", [280, 500], 120, 120]
+    ] }],
+    ["create_stamp", "approved", { "block": [["fill_color", "CC0000"], ["draw_text", "STAMP", { "at": [0, 0], "size": 18 }]] }],
+    ["stamp_at", "approved", [400, 300]],
+    ["stamp_at", "approved", [450, 250]],
+    ["fill_rectangle", [36, 200], 100, 40],
+    ["fill_color", "FFFFFF"],
+    ["draw_text", "on top", { "at": [40, 180] }]
+  ]
+}

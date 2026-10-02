@@ -1,0 +1,5 @@
+{"query":["text_box","This text is too long for its box, so text_box returns the remainder it could not fit.",{"at":[100,700],"width":120,"height":40}],"value":"it could not fit."}
+{"query":["text_box","Shrunk to fit inside the same small box, however long it is.",{"at":[100,600],"width":120,"height":40,"overflow":":shrink_to_fit"}],"value":""}
+{"query":["text_box","Truncated.",{"at":[100,500],"width":40,"height":12,"overflow":":truncate"}],"value":"ted."}
+{"query":["text_box","Bottom aligned",{"at":[300,700],"width":120,"height":60,"valign":":bottom"}],"value":""}
+{"query":["text_box","Rotated text box",{"at":[300,500],"width":120,"height":60,"rotate":30}],"value":""}

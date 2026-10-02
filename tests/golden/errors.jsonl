@@ -1,0 +1,4 @@
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"none","error":null}
+{"query":"cursor","value":706.1279999999999}
