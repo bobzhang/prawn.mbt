@@ -223,3 +223,14 @@ test "soft masks" {
   // mask that is there at all must still show
   assert_true(differs("0 0 10 10 re f", "/M1 gs 0 0 10 10 re f", resources~))
 }
+
+///|
+test "Q does not bring back a path painted inside q … Q" {
+  // the rectangle is stroked inside q … Q; the fill after is the second
+  // rectangle alone
+  assert_false(
+    differs(
+      "0 0 10 10 re q S Q 20 20 10 10 re f", "0 0 10 10 re S 20 20 10 10 re f",
+    ),
+  )
+}

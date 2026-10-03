@@ -789,6 +789,16 @@ fn Walk::ops(
       _ => ()
     }
     let result = doc.content_apply_resource_op(state, resources, op)
+    // the path under construction is not part of the graphics state, so Q
+    // does not bring back the one q saw; pdflite 0.3.3 restores it
+    let result = match op {
+      Op_Q =>
+        {
+          ..result,
+          state: { ..result.state, partial_path: state.partial_path, },
+        }
+      _ => result
+    }
     for entry in result.entries {
       match entry.object {
         PdfContentPathObject(path) => self.path(result.state, path, path_ctm)

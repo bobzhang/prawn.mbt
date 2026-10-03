@@ -115,7 +115,8 @@ pattern colour uses (gradients); glyph outlines (glyphs are identified by font n
 text). Clips are compared as bounding boxes.
 
 pdflite's content state keeps paths and clips in user space, so the inspector maps them to page
-space itself.
+space itself; and its `q`/`Q` save and restore the path under construction (not part of the
+graphics state), which the inspector undoes until pdflite does.
 
 ## The MoonBit side
 

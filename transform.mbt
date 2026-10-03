@@ -18,7 +18,9 @@ fn item_ops(item : @pagelayout.PageItem) -> Array[@pagelayout.GraphicOp]? {
   match item {
     Text(run) => Some([Text(run)])
     Image(image) => Some([Image(image)])
-    Graphic(g) if g.x_pt == 0.0 && g.y_pt == 0.0 => Some(g.ops)
+    // kept in a save and restore of its own, as pagelayout draws each graphic
+    Graphic(g) if g.x_pt == 0.0 && g.y_pt == 0.0 =>
+      Some([Save, ..g.ops, Restore])
     Graphic(g) =>
       Some(
         [
@@ -48,7 +50,7 @@ fn item_ops(item : @pagelayout.PageItem) -> Array[@pagelayout.GraphicOp]? {
 ///|
 /// `body`, with what it draws on the current page wrapped in a group that
 /// starts with `setup` (a transform, an opacity) inside save and restore,
-/// which also restore the page's graphics state (colours, line style).
+/// which also save and restore the graphics state (colours, line style).
 /// What lands on other pages is drawn as it is: a new page starts without
 /// the block's state, as in Prawn.
 fn Document::group(
@@ -58,10 +60,17 @@ fn Document::group(
 ) -> Unit raise {
   let page = self.flow.page
   let start = self.flow.model.pages[page].items.length()
-  // q … Q: what the block changes in the graphics state is undone after it
-  let saved = self.gs().copy()
+  // q: a copy of the graphics state goes on the page's stack; Q pops the
+  // stack of the page current then (pdf-core's GraphicStateStack)
+  self.stacks[page].push(self.gs().copy())
+  let saved_ctm = self.ctm
+  match setup {
+    [Transform(m)] => self.ctm = self.ctm.after(m)
+    _ => ()
+  }
   defer {
-    self.states[page] = saved
+    self.stacks[self.flow.page].pop() |> ignore
+    self.ctm = saved_ctm
     let items = self.flow.model.pages[page].items
     let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
     let kept : Array[@pagelayout.PageItem] = []
@@ -192,4 +201,57 @@ pub fn Document::save_graphics_state(
   body : () -> Unit raise,
 ) -> Unit raise {
   self.group([], body)
+}
+
+///|
+fn is_identity(m : @pagelayout.Matrix) -> Bool {
+  m == @pagelayout.identity
+}
+
+///|
+/// The inverse of an affine matrix.
+fn inverse(m : @pagelayout.Matrix) -> @pagelayout.Matrix {
+  let det = m.a * m.d - m.b * m.c
+  let a = m.d / det
+  let b = -m.b / det
+  let c = -m.c / det
+  let d = m.a / det
+  { a, b, c, d, e: -(a * m.e + c * m.f), f: -(b * m.e + d * m.f), }
+}
+
+///|
+/// A path segment mapped by `m` (a rectangle becomes its four sides, in the
+/// order pagelayout draws it, unless `m` is the identity).
+fn map_segment(
+  segment : @pagelayout.PathSegment,
+  m : @pagelayout.Matrix,
+) -> Array[@pagelayout.PathSegment] {
+  if is_identity(m) {
+    return [segment]
+  }
+  match segment {
+    MoveTo(x, y) => {
+      let (x, y) = m.apply(x, y)
+      [MoveTo(x, y)]
+    }
+    LineTo(x, y) => {
+      let (x, y) = m.apply(x, y)
+      [LineTo(x, y)]
+    }
+    CurveTo(x1, y1, x2, y2, x3, y3) => {
+      let (x1, y1) = m.apply(x1, y1)
+      let (x2, y2) = m.apply(x2, y2)
+      let (x3, y3) = m.apply(x3, y3)
+      [CurveTo(x1, y1, x2, y2, x3, y3)]
+    }
+    Rectangle(x, y, w, h) => {
+      // from the bottom left (x, y + h) counterclockwise on the page
+      let (x0, y0) = m.apply(x, y + h)
+      let (x1, y1) = m.apply(x + w, y + h)
+      let (x2, y2) = m.apply(x + w, y)
+      let (x3, y3) = m.apply(x, y)
+      [MoveTo(x0, y0), LineTo(x1, y1), LineTo(x2, y2), LineTo(x3, y3), Close]
+    }
+    Close => [Close]
+  }
 }
