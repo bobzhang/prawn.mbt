@@ -87,16 +87,40 @@ fn Document::set_box(
   let tried = string.length() - next_rest.length()
   let scale = size / 1000.0
   let face = flow.font(style)
-  for c in string[:tried] {
+  let mut too_wide : Int? = None
+  for i, c in string[:tried] {
     if !is_prawn_space(c) &&
       c != '\n' &&
       face.prawn_width(c.to_int()) * scale > width {
-      // raised before anything is set
-      drop()
-      raise CannotFit
+      too_wide = Some(i)
+      break
     }
   }
-  (rest, printed)
+  guard too_wide is Some(p) else { return (rest, printed) }
+  // Prawn sets line by line: the lines before the one that cannot fit stay
+  // set, then it raises
+  drop()
+  let start = line_start(
+    string,
+    p,
+    [{ text: string, style, anchor: None, }],
+    flow.text(),
+    width,
+    align,
+  )
+  if !dry_run && start > 0 {
+    self.set_box(
+      string[:start].to_owned(),
+      at,
+      width,
+      height,
+      size,
+      align,
+      leading,
+    )
+    |> ignore
+  }
+  raise CannotFit
 }
 
 ///|
@@ -258,4 +282,36 @@ fn strip_leading_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
     }
   }
   out
+}
+
+///|
+/// Where the line holding character `p` of `string` starts, as Prawn wraps
+/// `fragments` (`string` as fragments) `width` wide: each line stripped of
+/// its leading whitespace, then broken.
+fn line_start(
+  string : String,
+  p : Int,
+  fragments : Array[Fragment],
+  ctx : TextContext,
+  width : Double,
+  align : Alignment,
+) -> Int {
+  let mut rest = fragments
+  while !rest.is_empty() {
+    let start = string.length() - text_of_fragments(rest).length()
+    let line = strip_leading_fragments(rest)
+    if line.is_empty() {
+      return start
+    }
+    let (_, after) = split_first_line(line, line, ctx, width, align)
+    let end = string.length() - text_of_fragments(after).length()
+    // (a line that takes nothing would not move on)
+    if p < end ||
+      after.length() == 0 ||
+      text_of_fragments(after).length() >= text_of_fragments(line).length() {
+      return start
+    }
+    rest = after
+  }
+  0
 }
