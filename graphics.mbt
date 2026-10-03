@@ -39,7 +39,13 @@ fn GraphicState::copy(self : GraphicState) -> GraphicState {
 /// The current page's graphics state (each page has its own; see
 /// `Document::new`).
 fn Document::gs(self : Document) -> GraphicState {
-  self.states[self.flow.page]
+  let stack = self.stacks[self.flow.page]
+  // a stack restored past its bottom (a block that started on another
+  // page) starts again from the defaults
+  if stack.is_empty() {
+    stack.push(GraphicState::new())
+  }
+  stack[stack.length() - 1]
 }
 
 ///|
@@ -59,7 +65,9 @@ fn Document::add_segment(
   if segment is Close && path.is_empty() {
     return
   }
-  path.push(segment)
+  // kept as drawn on the page: Prawn's path is in the coordinates of the
+  // transformation it is built under
+  path.append(map_segment(segment, self.ctms[self.flow.page]))
 }
 
 ///|
@@ -391,7 +399,14 @@ fn Document::paint(
   stroke? : Bool = false,
   even_odd? : Bool = false,
 ) -> Unit {
-  let segments = self.path().copy()
+  // in the coordinates of the transformation it is painted under (the
+  // group around it applies that)
+  let back = inverse(self.ctms[self.flow.page])
+  let segments = self
+    .path()
+    .iter()
+    .flat_map(s => map_segment(s, back).iter())
+    .to_array()
   self.path().clear()
   guard segments.length() > 0 else { return }
   let gs = self.gs()

@@ -1,0 +1,14 @@
+{
+  "ops": [
+    ["start_new_page"],
+    ["translate", 50, 0, { "block": [
+      ["stroke_circle", [300, 400], 10],
+      ["go_to_page", 1],
+      ["start_new_page"],
+      ["text", "inserted"]
+    ] }],
+    ["go_to_page", 3],
+    ["stroke_rectangle", [250, 500], 30, 30],
+    ["?page_count"]
+  ]
+}

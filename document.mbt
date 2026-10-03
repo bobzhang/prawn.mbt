@@ -55,9 +55,17 @@ pub struct Document {
   mut layout : String
   /// the bounding boxes inside the margin box, innermost last
   priv boxes : Array[Box]
-  /// each page's graphics state (`graphics.mbt`); a new page inherits
-  /// the last one's
-  priv states : Array[GraphicState]
+  /// each page's stack of graphics states (`graphics.mbt`; pdf-core's
+  /// `GraphicStateStack`): a new page starts with a copy of the state of
+  /// the page it was made from
+  priv stacks : Array[Array[GraphicState]]
+  /// each page's transformation, set up by the blocks around the current
+  /// op (`transform.mbt`), in pagelayout's page space; a new page starts
+  /// without one
+  priv ctms : Array[@pagelayout.Matrix]
+  /// the pages the open transformation blocks started on, kept current as
+  /// pages are inserted before them
+  priv open_pages : Array[Ref[Int]]
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
   priv paths : Array[Array[@pagelayout.PathSegment]]
@@ -100,18 +108,29 @@ pub fn Document::new(
     page_size: size,
     layout,
     boxes: [],
-    states: [],
+    stacks: [],
+    ctms: [],
+    open_pages: [],
     paths: [],
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)
   flow.page_started = (from, to) => {
-    let state = if from >= 0 && from < doc.states.length() {
-      doc.states[from].copy()
+    let state = if from >= 0 && from < doc.stacks.length() {
+      match doc.stacks[from].last() {
+        Some(s) => s.copy()
+        None => GraphicState::new()
+      }
     } else {
       GraphicState::new()
     }
-    doc.states.insert(to, state)
+    doc.stacks.insert(to, [state])
+    doc.ctms.insert(to, @pagelayout.identity)
+    for page in doc.open_pages {
+      if page.val >= to {
+        page.val += 1
+      }
+    }
     doc.paths.insert(to, [])
   }
   flow.start_new_page(size=(w, h))

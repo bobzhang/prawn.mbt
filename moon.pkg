@@ -5,6 +5,7 @@ import {
   "moonbitlang/pdflite",
   "moonbitlang/pdflite/font/afm",
   "moonbitlang/core/cmp",
+  "moonbitlang/core/math",
   "moonbitlang/core/encoding/utf8",
 }
 

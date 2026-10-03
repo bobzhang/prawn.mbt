@@ -118,8 +118,11 @@ pub fn Document::page_number(Self) -> Int
 pub fn Document::polygon(Self, Array[(Double, Double)]) -> Unit
 pub fn Document::rectangle(Self, (Double, Double), Double, Double) -> Unit
 pub fn Document::render(Self) -> Bytes raise
+pub fn Document::rotate(Self, Double, origin? : (Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::rounded_polygon(Self, Double, Array[(Double, Double)]) -> Unit
 pub fn Document::rounded_rectangle(Self, (Double, Double), Double, Double, Double) -> Unit
+pub fn Document::save_graphics_state(Self, () -> Unit raise) -> Unit raise
+pub fn Document::scale(Self, Double, origin? : (Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::set_cap_style(Self, @pagelayout.LineCap) -> Unit
 pub fn Document::set_fill_color(Self, @pagelayout.Color) -> Unit
 pub fn Document::set_font(Self, String) -> Unit
@@ -131,6 +134,9 @@ pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)
 pub fn Document::stroke(Self) -> Unit
 pub fn Document::stroke_bounds(Self) -> Unit
 pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit raise PrawnError
+pub fn Document::transformation_matrix(Self, (Double, Double, Double, Double, Double, Double), () -> Unit raise) -> Unit raise
+pub fn Document::translate(Self, Double, Double, () -> Unit raise) -> Unit raise
+pub fn Document::transparent(Self, Double, stroke_opacity? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::undash(Self) -> Unit
 pub fn Document::vertical_line(Self, Double, Double, at~ : Double) -> Unit
 pub fn Document::width_of(Self, String, size? : Double, kerning? : Bool) -> Double raise PrawnError

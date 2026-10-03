@@ -1,0 +1,59 @@
+{
+  "ops": [
+    ["text", "Plain text first."],
+    ["rotate", 30, { "origin": [100, 500], "block": [
+      ["stroke_rectangle", [100, 500], 120, 40],
+      ["fill_color", "CC0000"],
+      ["fill_circle", [100, 500], 4]
+    ] }],
+    ["scale", 1.5, { "origin": [300, 500], "block": [
+      ["stroke_rectangle", [300, 500], 60, 40],
+      ["bounding_box", [300, 480], { "width": 60 }, { "block": [["text", "scaled text"]] }]
+    ] }],
+    ["translate", 50, -40, { "block": [
+      ["stroke_circle", [400, 600], 20],
+      ["text", "translated text"]
+    ] }],
+    ["transformation_matrix", 1, 0.2, 0.1, 1, 10, 0, { "block": [
+      ["stroke_rectangle", [50, 400], 100, 50]
+    ] }],
+    ["rotate", 10, { "block": [["fill_rectangle", [200, 300], 60, 30]] }],
+    ["transparent", 0.5, { "block": [
+      ["fill_color", "0000FF"],
+      ["fill_rectangle", [50, 250], 100, 60],
+      ["text", "half transparent"]
+    ] }],
+    ["transparent", 0.3, 0.8, { "block": [
+      ["line_width", 6],
+      ["fill_and_stroke_rectangle", [200, 250], 100, 60]
+    ] }],
+    ["transparent", 1.5, { "block": [["fill_rectangle", [350, 250], 40, 40]] }],
+    ["save_graphics_state", { "block": [
+      ["fill_color", "00AA00"],
+      ["fill_rectangle", [50, 150], 40, 40]
+    ] }],
+    ["fill_rectangle", [120, 150], 40, 40],
+    ["rotate", 45, { "origin": [450, 150], "block": [
+      ["scale", 0.5, { "origin": [450, 150], "block": [
+        ["transparent", 0.6, { "block": [["fill_rectangle", [430, 170], 40, 40]] }]
+      ] }]
+    ] }],
+    ["rectangle", [0, 60], 20, 20],
+    ["rotate", 20, { "block": [["stroke"]] }],
+    ["fill_color", "FF0000"],
+    ["translate", 0, 0, { "block": [
+      ["fill_color", "00AA00"],
+      ["start_new_page"],
+      ["fill_color", "0000FF"]
+    ] }],
+    ["fill_rectangle", [10, 700], 30, 30],
+    ["go_to_page", 1],
+    ["fill_rectangle", [60, 60], 30, 30],
+    ["go_to_page", 2],
+    ["rectangle", [200, 600], 40, 40],
+    ["go_to_page", 1],
+    ["translate", 50, 0, { "block": [["go_to_page", 2], ["stroke"]] }],
+    ["?page_count"],
+    ["?cursor"]
+  ]
+}
