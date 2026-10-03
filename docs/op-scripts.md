@@ -130,7 +130,8 @@ The comparator treats gray *g* as RGB (*g*, *g*, *g*): Prawn leaves default blac
 pagelayout writes RGB.
 
 Known divergences, each kept as a failing seed: `kerning_accents` (pdflite's standard-font data
-lacks the kerning pairs of unencoded glyphs, to fix upstream) and `transform_left_open` (a
+lacks the kerning pairs of unencoded glyphs, to fix upstream), `control_characters` (Prawn sets
+a tab or carriage return inside a line as a glyph; Flow drops it) and `transform_left_open` (a
 transformation block that ends on another page leaves its `q … cm` open on the page it began on,
 so Prawn transforms what is drawn there later; this module closes it). Prawn writes invalid PDF
 for a path left open across a transformation block's `q`/`Q` or `cm`; such cases are not compared.

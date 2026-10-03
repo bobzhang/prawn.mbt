@@ -134,6 +134,7 @@ pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)
 pub fn Document::stroke(Self) -> Unit
 pub fn Document::stroke_bounds(Self) -> Unit
 pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double) -> Unit raise PrawnError
+pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String) -> String raise
 pub fn Document::transformation_matrix(Self, (Double, Double, Double, Double, Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::translate(Self, Double, Double, () -> Unit raise) -> Unit raise
 pub fn Document::transparent(Self, Double, stroke_opacity? : Double, () -> Unit raise) -> Unit raise
@@ -292,6 +293,12 @@ pub(all) struct Mark {
   item : Int
 }
 
+pub(all) enum Overflow {
+  Truncate
+  ShrinkToFit
+  Expand
+}
+
 pub(all) struct PageSetup {
   width : Double
   height : Double
@@ -334,6 +341,12 @@ pub(all) struct TextContext {
   hooks : Hooks
 }
 pub fn TextContext::face(Self, String, Bool, Bool) -> Face
+
+pub(all) enum VerticalAlignment {
+  Top
+  Center
+  Bottom
+}
 
 // Type aliases
 
