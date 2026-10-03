@@ -4,6 +4,8 @@
     ["?text_box", "i i i i i i i i i", { "at": [50, 700], "width": 8, "height": 17, "overflow": ":shrink_to_fit" }],
     ["!raises", "Prawn::Errors::CannotFit", ["text_box", "W", { "at": [80, 700], "width": 4, "height": 12 }]],
     ["?text_box", "i i i W", { "at": [10, 650], "width": 4, "height": 12 }],
+    ["!raises", "Prawn::Errors::CannotFit", ["text_box", "\t i\nW", { "at": [90, 650], "width": 4, "height": 12 }]],
+    ["!raises", "Prawn::Errors::CannotFit", ["text_box", "i i W", { "at": [120, 650], "width": 10, "height": 100, "align": ":justify" }]],
     ["!raises", "Prawn::Errors::CannotFit", ["text_box", "i\n\tW", { "at": [60, 650], "width": 4, "height": 12 }]],
     ["?text_box", "i i i i W", { "at": [30, 650], "width": 8, "height": 17, "overflow": ":shrink_to_fit" }],
     ["?text_box", "hello\n  world", { "at": [100, 700], "width": 100, "height": 12 }],

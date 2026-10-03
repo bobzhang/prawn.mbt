@@ -49,78 +49,61 @@ fn Document::set_box(
 ) -> (Array[Fragment], Double) raise PrawnError {
   let style = self.style(size~)
   let flow = self.flow
-  let saved_y = flow.y
   let page = flow.page
   let mark = flow.model.pages[page].items.length()
-  flow.y = flow.page_h() - at.1
-  let (rest, last) = flow.typeset_box(
-    [{ text: string, style, anchor: None, }],
-    { leading, padding_top: 0.0, padding_bottom: 0.0, },
-    style,
-    align~,
-    x=at.0,
-    width~,
-    height~,
-    text_indent=0.0,
-  )
-  let printed = match last {
-    Some(baseline) =>
-      baseline - flow.y + flow.font(style).descender_pt(style.size)
-    None => 0.0
-  }
-  flow.y = saved_y
-  let drop = () => flow.model.pages[page].items.truncate(mark)
-  if dry_run {
-    drop()
-  }
-  // Prawn wraps each line before it knows whether the line fits the box:
-  // the lines set and the next one; a character on them too wide for the
-  // box is CannotFit
-  let next_rest = if rest.is_empty() {
-    ""
-  } else {
-    // the line's leading whitespace is stripped before it is wrapped
-    let next = strip_leading_fragments(rest)
-    let (_, after) = split_first_line(next, next, flow.text(), width, align)
-    text_of_fragments(after)
-  }
-  let tried = string.length() - next_rest.length()
-  let scale = size / 1000.0
+  let ctx = flow.text()
   let face = flow.font(style)
-  let mut too_wide : Int? = None
-  for i, c in string[:tried] {
-    if !is_prawn_space(c) &&
-      c != '\n' &&
-      face.prawn_width(c.to_int()) * scale > width {
-      too_wide = Some(i)
+  let scale = size / 1000.0
+  let top = flow.page_h() - at.1
+  // Prawn's `Wrap#wrap`: line by line, each stripped of its leading
+  // whitespace and wrapped, CannotFit when not even its first character
+  // fits, set when it fits the height; the first that does not is where
+  // the box ends
+  let mut remaining = ctx.apply_fallbacks([
+    { text: string, style, anchor: None, },
+  ])
+  let mut baseline = 0.0
+  let mut placed = 0
+  let mut last : Double? = None
+  while !remaining.is_empty() {
+    let line_fragments = strip_leading_fragments(remaining)
+    if line_fragments.is_empty() {
+      remaining = []
       break
     }
-  }
-  guard too_wide is Some(p) else { return (rest, printed) }
-  // Prawn sets line by line: the lines before the one that cannot fit stay
-  // set, then it raises
-  drop()
-  let start = line_start(
-    string,
-    p,
-    [{ text: string, style, anchor: None, }],
-    flow.text(),
-    width,
-    align,
-  )
-  if !dry_run && start > 0 {
-    self.set_box(
-      string[:start].to_owned(),
-      at,
-      width,
-      height,
-      size,
-      align,
-      leading,
+    let first = text_of_fragments(line_fragments)
+    match first.iter().next() {
+      Some(c) if c != '\n' && face.prawn_width(c.to_int()) * scale > width => {
+        if dry_run {
+          flow.model.pages[page].items.truncate(mark)
+        }
+        raise CannotFit
+      }
+      _ => ()
+    }
+    let (line, rest) = split_first_line(
+      line_fragments, line_fragments, ctx, width, align,
     )
-    |> ignore
+    let (a, d, h) = line_extent(line, face, size, false)
+    let next = if placed == 0 { a } else { baseline + h + leading }
+    if next + d > height + 0.0001 {
+      remaining = line_fragments
+      break
+    }
+    baseline = next
+    flow.ink_line(line, at.0, top + baseline)
+    last = Some(top + baseline)
+    placed += 1
+    remaining = rest
   }
-  raise CannotFit
+  if dry_run {
+    flow.model.pages[page].items.truncate(mark)
+  }
+  let printed = match last {
+    Some(b) => b - top + face.descender_pt(size)
+    None => 0.0
+  }
+  (remaining, printed)
 }
 
 ///|
@@ -227,9 +210,7 @@ pub fn Document::text_box(
       align,
       leading,
     )
-    // the line that did not fit was wrapped first: its leading spaces are
-    // gone (Prawn's line wrap strips them)
-    strip_leading_spaces(text_of_fragments(rest))
+    text_of_fragments(rest)
   }
   if rotate == 0.0 {
     return set()
@@ -282,36 +263,4 @@ fn strip_leading_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
     }
   }
   out
-}
-
-///|
-/// Where the line holding character `p` of `string` starts, as Prawn wraps
-/// `fragments` (`string` as fragments) `width` wide: each line stripped of
-/// its leading whitespace, then broken.
-fn line_start(
-  string : String,
-  p : Int,
-  fragments : Array[Fragment],
-  ctx : TextContext,
-  width : Double,
-  align : Alignment,
-) -> Int {
-  let mut rest = fragments
-  while !rest.is_empty() {
-    let start = string.length() - text_of_fragments(rest).length()
-    let line = strip_leading_fragments(rest)
-    if line.is_empty() {
-      return start
-    }
-    let (_, after) = split_first_line(line, line, ctx, width, align)
-    let end = string.length() - text_of_fragments(after).length()
-    // (a line that takes nothing would not move on)
-    if p < end ||
-      after.length() == 0 ||
-      text_of_fragments(after).length() >= text_of_fragments(line).length() {
-      return start
-    }
-    rest = after
-  }
-  0
 }
