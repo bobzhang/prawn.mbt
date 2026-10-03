@@ -46,7 +46,7 @@ fn Document::set_box(
   align : Alignment,
   leading : Double,
   dry_run? : Bool = false,
-) -> (Array[Fragment], Double) {
+) -> (Array[Fragment], Double) raise PrawnError {
   let style = self.style(size~)
   let flow = self.flow
   let saved_y = flow.y
@@ -69,8 +69,27 @@ fn Document::set_box(
     None => 0.0
   }
   flow.y = saved_y
+  let drop = () => flow.model.pages[page].items.truncate(mark)
   if dry_run {
-    flow.model.pages[page].items.truncate(mark)
+    drop()
+  }
+  // Prawn wraps each line before it knows whether the line fits the box:
+  // the lines set and the next one; a character on them too wide for the
+  // box is CannotFit
+  let rest_text = text_of_fragments(rest)
+  let tried = string.length() -
+    rest_text.length() +
+    first_line_length(rest_text)
+  let scale = size / 1000.0
+  let face = flow.font(style)
+  for c in string[:tried] {
+    if !is_prawn_space(c) &&
+      c != '\n' &&
+      face.prawn_width(c.to_int()) * scale > width {
+      // raised before anything is set
+      drop()
+      raise CannotFit
+    }
   }
   (rest, printed)
 }
@@ -123,8 +142,10 @@ pub fn Document::text_box(
     _ => (height.unwrap_or(default_height()), overflow)
   }
   let mut height = box_height
+  // encoding first, for the whole string; whether a character fits is
+  // checked on the lines Prawn tries to set (`set_box`)
   let style = self.style(size?)
-  self.check(string, style, Some(width))
+  self.check(string, style, None)
   let mut size = style.size
   // the box on the page
   let origin = self.absolute(at)
@@ -177,7 +198,9 @@ pub fn Document::text_box(
       align,
       leading,
     )
-    text_of_fragments(rest)
+    // the line that did not fit was wrapped first: its leading spaces are
+    // gone (Prawn's line wrap strips them)
+    strip_leading_spaces(text_of_fragments(rest))
   }
   if rotate == 0.0 {
     return set()
@@ -193,4 +216,30 @@ pub fn Document::text_box(
   let mut rest = ""
   self.rotate(rotate, origin=around, () => rest = set())
   rest
+}
+
+///|
+/// Prawn's whitespace (`LineWrap#whitespace`): space, tab, zero-width
+/// space.
+fn is_prawn_space(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\u{200B}'
+}
+
+///|
+/// How many characters `text`'s first line has (up to its line break, or
+/// all of them), the line break included.
+fn first_line_length(text : String) -> Int {
+  match text.find("\n") {
+    Some(i) => i + 1
+    None => text.length()
+  }
+}
+
+///|
+fn strip_leading_spaces(text : String) -> String {
+  let mut i = 0
+  while i < text.length() && is_prawn_space(text[i].unsafe_to_char()) {
+    i = i + 1
+  }
+  text[i:].to_owned()
 }

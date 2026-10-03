@@ -1,0 +1,7 @@
+{
+  "ops": [
+    ["?text_box", "\tHello\ttabs", { "at": [10, 600], "width": 200, "height": 20 }],
+    ["?text_box", "CRLF\r\nline two", { "at": [250, 600], "width": 200, "height": 40 }],
+    ["text", "mid\tline\ttabs"]
+  ]
+}

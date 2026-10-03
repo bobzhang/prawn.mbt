@@ -393,8 +393,9 @@ fn winansi_text(text : String) -> String {
       0x2063 => sb.write_char('\u{ad}')
       0x25E6 => sb.write_char('-')
       0x25AA => sb.write_char('\u{b7}')
-      // Windows-1252 has them, though WinAnsi names no glyph for DEL
-      0x0A | 0x7F => sb.write_char(c)
+      // Windows-1252 has them (control characters, DEL), though WinAnsi
+      // names no glyph for them: Prawn sets them as they are
+      _ if cp < 0x20 || cp == 0x7F => sb.write_char(c)
       _ =>
         if winansi_code_of(cp) is Some(_) {
           sb.write_char(c)

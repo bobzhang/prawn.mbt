@@ -260,6 +260,9 @@ pub fn Document::render(self : Document) -> Bytes raise {
     options=@pdf.RenderOptions::new(
       fonts=self.catalog.registry,
       truncate_widths=true,
+      // a character the font lacks is drawn as its .notdef glyph and kept
+      // in the text, as Prawn does
+      notdef_text=true,
     ),
   )
 }
