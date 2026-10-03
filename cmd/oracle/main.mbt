@@ -503,6 +503,34 @@ fn Run::graphics(
     "undash" => doc.undash()
     "close_path" => doc.close_path()
     "stroke_bounds" => doc.stroke_bounds()
+    "rotate" | "scale" if only(opts, ["origin"]) && block(args) is Some(ops) => {
+      let origin = opts.get("origin").map(point)
+      if name == "rotate" {
+        doc.rotate(number(args[0]), origin?, () => self.ops(ops))
+      } else {
+        doc.scale(number(args[0]), origin?, () => self.ops(ops))
+      }
+    }
+    "translate" if opts.is_empty() && block(args) is Some(ops) =>
+      doc.translate(number(args[0]), number(args[1]), () => self.ops(ops))
+    "transformation_matrix" if opts.is_empty() && block(args) is Some(ops) => {
+      let n = args[:6].to_owned().map(number)
+      doc.transformation_matrix((n[0], n[1], n[2], n[3], n[4], n[5]), () => {
+        self.ops(ops)
+      })
+    }
+    "transparent" if opts.is_empty() && block(args) is Some(ops) =>
+      doc.transparent(
+        number(args[0]),
+        stroke_opacity?=if args.length() > 2 {
+          Some(number(args[1]))
+        } else {
+          None
+        },
+        () => self.ops(ops),
+      )
+    "save_graphics_state" if opts.is_empty() && block(args) is Some(ops) =>
+      doc.save_graphics_state(() => self.ops(ops))
     "stroke" | "close_and_stroke" | "fill" | "fill_and_stroke" if only(opts, [
         "fill_rule",
       ]) => {
