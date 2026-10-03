@@ -67,7 +67,7 @@ fn Document::add_segment(
   }
   // kept as drawn on the page: Prawn's path is in the coordinates of the
   // transformation it is built under
-  path.append(map_segment(segment, self.ctm))
+  path.append(map_segment(segment, self.ctms[self.flow.page]))
 }
 
 ///|
@@ -401,7 +401,7 @@ fn Document::paint(
 ) -> Unit {
   // in the coordinates of the transformation it is painted under (the
   // group around it applies that)
-  let back = inverse(self.ctm)
+  let back = inverse(self.ctms[self.flow.page])
   let segments = self
     .path()
     .iter()

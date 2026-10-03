@@ -63,14 +63,14 @@ fn Document::group(
   // q: a copy of the graphics state goes on the page's stack; Q pops the
   // stack of the page current then (pdf-core's GraphicStateStack)
   self.stacks[page].push(self.gs().copy())
-  let saved_ctm = self.ctm
+  let saved_ctm = self.ctms[page]
   match setup {
-    [Transform(m)] => self.ctm = self.ctm.after(m)
+    [Transform(m)] => self.ctms[page] = saved_ctm.after(m)
     _ => ()
   }
   defer {
     self.stacks[self.flow.page].pop() |> ignore
-    self.ctm = saved_ctm
+    self.ctms[page] = saved_ctm
     let items = self.flow.model.pages[page].items
     let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
     let kept : Array[@pagelayout.PageItem] = []
