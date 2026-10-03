@@ -3,6 +3,8 @@
     ["?text_box", "i\ni\nW", { "at": [10, 700], "width": 4, "height": 12 }],
     ["?text_box", "i i i i i i i i i", { "at": [50, 700], "width": 8, "height": 17, "overflow": ":shrink_to_fit" }],
     ["!raises", "Prawn::Errors::CannotFit", ["text_box", "W", { "at": [80, 700], "width": 4, "height": 12 }]],
+    ["?text_box", "i i i W", { "at": [10, 650], "width": 4, "height": 12 }],
+    ["?text_box", "i i i i W", { "at": [30, 650], "width": 8, "height": 17, "overflow": ":shrink_to_fit" }],
     ["?text_box", "hello\n  world", { "at": [100, 700], "width": 100, "height": 12 }],
     ["?text_box", "hello   world", { "at": [220, 700], "width": 28, "height": 12 }],
     ["?text_box", "hello\n\n  world", { "at": [300, 700], "width": 100, "height": 12 }],

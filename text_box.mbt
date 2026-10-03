@@ -76,10 +76,13 @@ fn Document::set_box(
   // Prawn wraps each line before it knows whether the line fits the box:
   // the lines set and the next one; a character on them too wide for the
   // box is CannotFit
-  let rest_text = text_of_fragments(rest)
-  let tried = string.length() -
-    rest_text.length() +
-    first_line_length(rest_text)
+  let next_rest = if rest.is_empty() {
+    ""
+  } else {
+    let (_, after) = split_first_line(rest, rest, flow.text(), width, align)
+    text_of_fragments(after)
+  }
+  let tried = string.length() - next_rest.length()
   let scale = size / 1000.0
   let face = flow.font(style)
   for c in string[:tried] {
@@ -223,16 +226,6 @@ pub fn Document::text_box(
 /// space.
 fn is_prawn_space(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\u{200B}'
-}
-
-///|
-/// How many characters `text`'s first line has (up to its line break, or
-/// all of them), the line break included.
-fn first_line_length(text : String) -> Int {
-  match text.find("\n") {
-    Some(i) => i + 1
-    None => text.length()
-  }
 }
 
 ///|
