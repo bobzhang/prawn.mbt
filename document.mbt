@@ -63,6 +63,9 @@ pub struct Document {
   /// op (`transform.mbt`), in pagelayout's page space; a new page starts
   /// without one
   priv ctms : Array[@pagelayout.Matrix]
+  /// the pages the open transformation blocks started on, kept current as
+  /// pages are inserted before them
+  priv open_pages : Array[Ref[Int]]
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
   priv paths : Array[Array[@pagelayout.PathSegment]]
@@ -107,6 +110,7 @@ pub fn Document::new(
     boxes: [],
     stacks: [],
     ctms: [],
+    open_pages: [],
     paths: [],
   }
   // a new page starts with the graphics state of the page it was made from,
@@ -122,6 +126,11 @@ pub fn Document::new(
     }
     doc.stacks.insert(to, [state])
     doc.ctms.insert(to, @pagelayout.identity)
+    for page in doc.open_pages {
+      if page.val >= to {
+        page.val += 1
+      }
+    }
     doc.paths.insert(to, [])
   }
   flow.start_new_page(size=(w, h))

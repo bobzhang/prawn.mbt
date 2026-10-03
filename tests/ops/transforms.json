@@ -53,6 +53,7 @@
     ["rectangle", [200, 600], 40, 40],
     ["go_to_page", 1],
     ["translate", 50, 0, { "block": [["go_to_page", 2], ["stroke"]] }],
+    ["?page_count"],
     ["?cursor"]
   ]
 }

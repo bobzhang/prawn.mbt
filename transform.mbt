@@ -58,20 +58,23 @@ fn Document::group(
   setup : Array[@pagelayout.GraphicOp],
   body : () -> Unit raise,
 ) -> Unit raise {
-  let page = self.flow.page
-  let start = self.flow.model.pages[page].items.length()
+  // the page it starts on, followed through insertions before it
+  let page : Ref[Int] = { val: self.flow.page, }
+  self.open_pages.push(page)
+  let start = self.flow.model.pages[page.val].items.length()
   // q: a copy of the graphics state goes on the page's stack; Q pops the
   // stack of the page current then (pdf-core's GraphicStateStack)
-  self.stacks[page].push(self.gs().copy())
-  let saved_ctm = self.ctms[page]
+  self.stacks[page.val].push(self.gs().copy())
+  let saved_ctm = self.ctms[page.val]
   match setup {
-    [Transform(m)] => self.ctms[page] = saved_ctm.after(m)
+    [Transform(m)] => self.ctms[page.val] = saved_ctm.after(m)
     _ => ()
   }
   defer {
+    self.open_pages.pop() |> ignore
     self.stacks[self.flow.page].pop() |> ignore
-    self.ctms[page] = saved_ctm
-    let items = self.flow.model.pages[page].items
+    self.ctms[page.val] = saved_ctm
+    let items = self.flow.model.pages[page.val].items
     let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
     let kept : Array[@pagelayout.PageItem] = []
     for item in items[start:] {
