@@ -194,6 +194,40 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.go_to_page(number(args[0]).to_int())
       Some(Json::null())
     }
+    "text_box" if only(opts, [
+        "at", "width", "height", "size", "align", "valign", "overflow", "min_font_size",
+        "leading", "rotate", "rotate_around", "kerning",
+      ]) &&
+      !(opts.get("kerning") is Some(False)) => {
+      let rest = doc.text_box(
+        string(args[0]),
+        at?=opts.get("at").map(point),
+        width?=opts.get("width").map(number),
+        height?=opts.get("height").map(number),
+        size?=opts.get("size").map(number),
+        align=alignment(opts.get("align")),
+        valign=match opts.get("valign").bind(symbol) {
+          None | Some("top") => Top
+          Some("center") => Center
+          Some("bottom") => Bottom
+          Some(other) => raise ScriptError("valign \{other}")
+        },
+        overflow=match opts.get("overflow").bind(symbol) {
+          None | Some("truncate") => Truncate
+          Some("shrink_to_fit") => ShrinkToFit
+          Some("expand") => Expand
+          Some(other) => raise ScriptError("overflow \{other}")
+        },
+        min_font_size=opts.get("min_font_size").map(number).unwrap_or(5.0),
+        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        rotate=opts.get("rotate").map(number).unwrap_or(0.0),
+        rotate_around=opts
+          .get("rotate_around")
+          .bind(symbol)
+          .unwrap_or("upper_left"),
+      )
+      Some(rest.to_json())
+    }
     "cursor" => Some(doc.cursor().to_json())
     "page_number" => Some(doc.page_number().to_json())
     "page_count" => Some(doc.page_count().to_json())
