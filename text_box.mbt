@@ -79,7 +79,9 @@ fn Document::set_box(
   let next_rest = if rest.is_empty() {
     ""
   } else {
-    let (_, after) = split_first_line(rest, rest, flow.text(), width, align)
+    // the line's leading whitespace is stripped before it is wrapped
+    let next = strip_leading_fragments(rest)
+    let (_, after) = split_first_line(next, next, flow.text(), width, align)
     text_of_fragments(after)
   }
   let tried = string.length() - next_rest.length()
@@ -235,4 +237,25 @@ fn strip_leading_spaces(text : String) -> String {
     i = i + 1
   }
   text[i:].to_owned()
+}
+
+///|
+/// Fragments without the whitespace they start with (Prawn's line wrap
+/// strips a line's leading whitespace).
+fn strip_leading_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
+  let out : Array[Fragment] = []
+  let mut stripping = true
+  for f in fragments {
+    if stripping {
+      let text = strip_leading_spaces(f.text)
+      if text.is_empty() && f.anchor is None {
+        continue
+      }
+      stripping = false
+      out.push({ ..f, text, })
+    } else {
+      out.push(f)
+    }
+  }
+  out
 }

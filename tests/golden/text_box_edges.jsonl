@@ -2,6 +2,7 @@
 {"query":["text_box","i i i i i i i i i",{"at":[50,700],"width":8,"height":17,"overflow":":shrink_to_fit"}],"value":""}
 {"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
 {"query":["text_box","i i i W",{"at":[10,650],"width":4,"height":12}],"value":"i i W"}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
 {"query":["text_box","i i i i W",{"at":[30,650],"width":8,"height":17,"overflow":":shrink_to_fit"}],"value":""}
 {"query":["text_box","hello\n  world",{"at":[100,700],"width":100,"height":12}],"value":"world"}
 {"query":["text_box","hello   world",{"at":[220,700],"width":28,"height":12}],"value":"world"}
