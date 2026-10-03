@@ -53,7 +53,6 @@ fn Document::set_box(
   let mark = flow.model.pages[page].items.length()
   let ctx = flow.text()
   let face = flow.font(style)
-  let scale = size / 1000.0
   let top = flow.page_h() - at.1
   // Prawn's `Wrap#wrap`: line by line, each stripped of its leading
   // whitespace and wrapped, CannotFit when not even its first character
@@ -65,15 +64,19 @@ fn Document::set_box(
   let mut baseline = 0.0
   let mut placed = 0
   let mut last : Double? = None
+  let mut depth = 0.0
   while !remaining.is_empty() {
     let line_fragments = strip_leading_fragments(remaining)
     if line_fragments.is_empty() {
       remaining = []
       break
     }
-    let first = text_of_fragments(line_fragments)
-    match first.iter().next() {
-      Some(c) if c != '\n' && face.prawn_width(c.to_int()) * scale > width => {
+    // measured in the font it is set in (a fallback font, maybe)
+    let first = line_fragments[0]
+    let first_face = flow.font(first.style)
+    match first.text.iter().next() {
+      Some(c) if c != '\n' &&
+        first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) > width => {
         if dry_run {
           flow.model.pages[page].items.truncate(mark)
         }
@@ -93,6 +96,7 @@ fn Document::set_box(
     baseline = next
     flow.ink_line(line, at.0, top + baseline)
     last = Some(top + baseline)
+    depth = d
     placed += 1
     remaining = rest
   }
@@ -100,7 +104,7 @@ fn Document::set_box(
     flow.model.pages[page].items.truncate(mark)
   }
   let printed = match last {
-    Some(b) => b - top + face.descender_pt(size)
+    Some(b) => b - top + depth
     None => 0.0
   }
   (remaining, printed)
