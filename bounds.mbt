@@ -404,3 +404,21 @@ pub fn Document::span(
     })
   })
 }
+
+///|
+/// Prawn's `bounds.right_side`: a box's right edge on the page. A column
+/// box's is `absolute_right` (its left plus one column's width) less the
+/// columns to the right of the current one, as Prawn computes it.
+fn Box::right_side(self : Box) -> Double {
+  match self.columns {
+    None => self.left + self.width
+    Some(c) => {
+      let bare = (self.width - c.spacer * (c.count - 1).to_double()) /
+        c.count.to_double()
+      let column_width = bare - (self.total_left + self.total_right)
+      self.left +
+      column_width -
+      (bare + c.spacer) * (c.count - 1 - c.current).to_double()
+    }
+  }
+}

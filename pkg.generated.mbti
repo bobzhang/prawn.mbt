@@ -53,6 +53,7 @@ pub(all) suberror PrawnError {
   UnknownFont(String)
   BadFontFamily(String)
   EmptyGraphicStateStack
+  UnsupportedImageType(String)
   Unsupported(String)
 }
 pub fn PrawnError::ruby_class(Self) -> String
@@ -122,6 +123,7 @@ pub fn Document::go_to_page(Self, Int) -> Unit
 pub fn Document::height_of(Self, String, size? : Double, style? : FontStyle, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
 pub fn Document::horizontal_rule(Self) -> Unit
+pub fn Document::image(Self, String, at? : (Double, Double), width? : Double, height? : Double, scale? : Double, fit? : (Double, Double), position? : ImagePosition, vposition? : ImageVPosition) -> ImageInfo raise PrawnError
 pub fn Document::indent(Self, Double, right? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::line(Self, (Double, Double), (Double, Double)) -> Unit
 pub fn Document::line_to(Self, Double, Double) -> Unit
@@ -281,6 +283,26 @@ pub(all) struct IconSet {
   name : String
   font : Bytes
   legend : String
+}
+
+pub(all) struct ImageInfo {
+  kind : String
+  width : Int
+  height : Int
+}
+
+pub(all) enum ImagePosition {
+  ImageLeft
+  ImageCenter
+  ImageRight
+  ImageAt(Double)
+}
+
+pub(all) enum ImageVPosition {
+  ImageTop
+  ImageMiddle
+  ImageBottom
+  ImageDown(Double)
 }
 
 pub(all) struct Item {

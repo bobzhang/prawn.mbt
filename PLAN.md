@@ -87,6 +87,7 @@ that come up.
 | AFM glyph-name kerning and glyph bboxes | the parser drops kern pairs of `C -1` glyphs (`pdflite/font/afm/pdf_afm.mbt:178`); kerning is by code | correct std-14 kerning |
 | TrueType cmap format 12 (characters beyond the BMP) | the sfnt reader handles formats 0, 4 and 6 (`pagelayout/fonts`); a font's emoji or CJK extension glyphs are .notdef | full Unicode coverage of TrueType fonts |
 | PNG palette transparency, translucent palettes | rejected (`pdflite/pdf_png.mbt:155`) | PNG coverage |
+| PNG colour-key transparency (tRNS on grey or RGB), 16 bits a component | tRNS ignored for colour types 0/2 (Prawn writes a `/Mask`); 16-bit PNGs read but not drawn | PNG coverage |
 | JPEG bits/colour space (grey, CMYK, Adobe inversion) | builder hardcodes 8-bit DeviceRGB (`pdflite/pdf_image_object_builders.mbt:35`) | correct JPEG embedding |
 | Extension item / missing graphics in `PageItem` (§1) | no raw-content or custom-emitter variant (`pagelayout/page_model.mbt:162`) | richer drawing API |
 | Reader: character/word spacing, text rise, render mode, fill/stroke colour, alpha and ExtGState in glyph and path entries; glyph identity from the font program | `PdfContentGlyphState` omits them (`pdflite/pdf_content_state.mbt:39`); glyph boxes use ascent/descent and advance (`pdflite/pdf_content_text_layout.mbt:60`) | precise PDF inspection |

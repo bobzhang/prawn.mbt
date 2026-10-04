@@ -1,0 +1,15 @@
+{
+  "ops": [
+    ["image", "$PRAWN/data/images/stef.jpg", { "at": [36, 750], "width": 100 }],
+    ["image", "$PRAWN/data/images/letterhead.jpg", { "at": [150, 750], "width": 100 }],
+    ["image", "$PRAWN/data/images/blend_modes_bottom_layer.jpg", { "at": [264, 750], "width": 100 }],
+    ["image", "$PRAWN/data/images/prawn.png", { "at": [378, 750], "width": 100 }],
+    ["image", "$PRAWN/data/images/ruport.png", { "at": [36, 600], "width": 100 }],
+    ["image", "$PRAWN/data/images/ruport_transparent.png", { "at": [150, 600], "width": 100 }],
+    ["image", "$PRAWN/data/images/web-links.png", { "at": [264, 600], "width": 100 }],
+    ["image", "$PRAWN/data/images/page_white_text.png", { "at": [378, 600], "width": 100 }],
+    ["image", "$PRAWN/data/images/indexed_color.png", { "at": [36, 450], "width": 100 }],
+    ["image", "$PRAWN/data/images/dice.png", { "at": [150, 450], "width": 100 }],
+    ["image", "$PRAWN/data/images/pigs.jpg", { "at": [264, 450], "width": 100 }]
+  ]
+}

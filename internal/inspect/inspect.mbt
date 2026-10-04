@@ -282,8 +282,25 @@ fn object_json(
     PdfIndirect(n) =>
       object_json(doc, doc.lookup_object_or_null(n), depth=depth + 1)
     PdfNameObject(n) => ("/" + name_text(n)).to_json()
-    PdfArray(items) =>
-      Json::array(items.map(x => object_json(doc, x, depth=depth + 1)))
+    PdfArray(items) => {
+      let out = items.map(x => object_json(doc, x, depth=depth + 1))
+      // an indexed colour space's lookup table, a string or a stream: its
+      // bytes either way
+      if out.length() == 4 && out[0] == "/Indexed".to_json() {
+        match items[3] {
+          PdfString(s) =>
+            out[3] = {
+              "data": fnv(
+                Bytes::from_array(
+                  s.iter().map(c => c.to_int().to_byte()).collect(),
+                ),
+              ).to_json(),
+            }
+          _ => ()
+        }
+      }
+      Json::array(out)
+    }
     PdfDictionary(entries) => {
       let out : Map[String, Json] = Map([])
       for entry in entries {
@@ -302,6 +319,16 @@ fn object_json(
               out[key] = object_json(doc, entry.1, depth=depth + 1)
             }
           }
+        _ => ()
+      }
+      // what a stream says by default, written or not: an XObject's type,
+      // and an image's decode array when it is its colour space's default
+      if out.get("Type") == Some("/XObject".to_json()) {
+        out.remove("Type")
+      }
+      match (out.get("Decode"), out.get("ColorSpace")) {
+        (Some(decode), Some(String(space))) if decode == default_decode(space) =>
+          out.remove("Decode")
         _ => ()
       }
       let data = obj.stream_bytes() catch { _ => b"" }
@@ -920,4 +947,20 @@ fn inspect_page(
     glyphs: walk.glyphs,
     marks: walk.marks,
   }
+}
+
+///|
+/// The decode array an image in colour space `space` has by default: 0 to
+/// 1 for each component, as JSON integers.
+fn default_decode(space : String) -> Json {
+  let components = match space {
+    "/DeviceGray" => 1
+    "/DeviceRGB" => 3
+    "/DeviceCMYK" => 4
+    _ => 0
+  }
+  // a PDF integer as `object_json` gives it
+  let int = (n : Int) => Json::array(["PdfInteger".to_json(), n.to_json()])
+  let pair = [int(0), int(1)]
+  Json::array(Array::makei(components, _ => pair).flatten())
 }

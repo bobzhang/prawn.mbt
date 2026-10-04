@@ -220,6 +220,48 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       )
       Some(Json::null())
     }
+    "image" if only(opts, [
+        "at", "width", "height", "scale", "fit", "position", "vposition",
+      ]) => {
+      let info = doc.image(
+        string(args[0]),
+        at?=present(opts.get("at")).map(point),
+        width?=present(opts.get("width")).map(number),
+        height?=present(opts.get("height")).map(number),
+        scale?=present(opts.get("scale")).map(number),
+        fit?=present(opts.get("fit")).map(point),
+        position=match present(opts.get("position")) {
+          None => ImageLeft
+          Some(Number(x, ..)) => ImageAt(x)
+          Some(p) =>
+            match symbol(p) {
+              Some("left") => ImageLeft
+              Some("center") => ImageCenter
+              Some("right") => ImageRight
+              _ => raise ScriptError("image position")
+            }
+        },
+        vposition?=match present(opts.get("vposition")) {
+          None => None
+          Some(Number(y, ..)) => Some(ImageDown(y))
+          Some(p) =>
+            match symbol(p) {
+              Some("top") => Some(ImageTop)
+              Some("center") => Some(ImageMiddle)
+              Some("bottom") => Some(ImageBottom)
+              _ => raise ScriptError("image vposition")
+            }
+        },
+      )
+      // what Prawn returns, as the driver logs objects: its class
+      Some({
+        "class": (if info.kind == "png" {
+          "Prawn::Images::PNG"
+        } else {
+          "Prawn::Images::JPG"
+        }).to_json(),
+      })
+    }
     "move_up" => {
       doc.move_up(number(args[0]))
       Some(Json::null())
@@ -565,6 +607,10 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       }
       @prawn.BadFontFamily(s) => {
         raised(@prawn.BadFontFamily(s))
+        return
+      }
+      @prawn.UnsupportedImageType(s) => {
+        raised(@prawn.UnsupportedImageType(s))
         return
       }
       e => raise e
@@ -1039,6 +1085,7 @@ fn Run::draw_in_callback(
     @prawn.Unsupported(s) => raise @prawn.Unsupported(s)
     @prawn.UnknownFont(s) => raise @prawn.UnknownFont(s)
     @prawn.BadFontFamily(s) => raise @prawn.BadFontFamily(s)
+    @prawn.UnsupportedImageType(s) => raise @prawn.UnsupportedImageType(s)
     @prawn.EmptyGraphicStateStack => raise @prawn.EmptyGraphicStateStack
     e => self.log.push({ "callback_error": e.to_string().to_json() })
   }
