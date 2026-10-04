@@ -1,0 +1,8 @@
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":"cursor","value":720.0}
+{"query":"bounds","value":{"left":0,"bottom":0,"width":612.0,"height":792.0,"absolute_left":0,"absolute_top":792.0}}
+{"query":"cursor","value":742.1279999999999}
+{"query":"bounds","value":{"left":0,"bottom":0,"width":150.0,"height":19.48800000000017,"absolute_left":426.0,"absolute_top":756.0}}
+{"query":"cursor","value":658.8959999999997}
+{"query":"bounds","value":{"left":0,"bottom":0,"width":612.0,"height":792.0,"absolute_left":0,"absolute_top":792.0}}
+{"query":"page_count","value":1}

@@ -37,6 +37,8 @@ pub fn rect_item(Double, Double, Double, Double, fill? : @pagelayout.Color, stro
 
 pub fn rgb_hex(Int) -> @pagelayout.Color
 
+pub fn ruby_number(Double) -> String
+
 pub fn source_wrap(Array[Fragment], TextContext, Double) -> Array[Fragment]?
 
 pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_width? : Double, indent_paragraphs? : Bool, paragraphs? : Bool) -> Array[Line]
@@ -93,6 +95,7 @@ pub struct Document {
 }
 pub fn Document::bounding_box(Self, (Double, Double), Double, height? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::bounds(Self) -> Bounds
+pub fn Document::canvas(Self, () -> Unit raise) -> Unit raise
 pub fn Document::circle(Self, (Double, Double), Double) -> Unit
 pub fn Document::close_and_stroke(Self) -> Unit
 pub fn Document::close_path(Self) -> Unit
@@ -102,6 +105,7 @@ pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Doubl
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit raise PrawnError
 pub fn Document::default_leading(Self) -> Double
+pub fn Document::draw_text(Self, String, at~ : (Double, Double), size? : Double, style? : String, rotate? : Double, kerning? : Bool) -> Unit raise
 pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
@@ -141,8 +145,10 @@ pub fn Document::set_font_size(Self, Double) -> Unit
 pub fn Document::set_join_style(Self, @pagelayout.LineJoin) -> Unit
 pub fn Document::set_line_width(Self, Double) -> Unit
 pub fn Document::set_stroke_color(Self, @pagelayout.Color) -> Unit
+pub fn Document::span(Self, Double, position? : SpanPosition, () -> Unit raise) -> Unit raise
 pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
 pub fn Document::stroke(Self) -> Unit
+pub fn Document::stroke_axis(Self, at? : (Double, Double), width? : Double, height? : Double, step_length? : Double, negative_axes_length? : Double, color? : @pagelayout.Color) -> Unit raise
 pub fn Document::stroke_bounds(Self) -> Unit
 pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double, inline_format? : Bool, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
 pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> String raise
@@ -332,6 +338,13 @@ pub(all) struct PlacedFragment {
   height : Double
   top : Double
   bottom : Double
+}
+
+pub(all) enum SpanPosition {
+  SpanLeft
+  SpanCenter
+  SpanRight
+  SpanAt(Double)
 }
 
 pub(all) struct Style {

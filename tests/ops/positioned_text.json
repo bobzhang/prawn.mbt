@@ -1,0 +1,30 @@
+{
+  "ops": [
+    ["draw_text", "at a point", { "at": [100.0, 600.0] }],
+    ["draw_text", "AVATAR big and bold", { "at": [100.0, 560.0], "size": 24.0, "style": ":bold" }],
+    ["draw_text", "AVATAR unkerned", { "at": [100.0, 520.0], "size": 24.0, "kerning": false }],
+    ["draw_text", "turned", { "at": [400.0, 500.0], "rotate": 30.0, "style": ":bold_italic" }],
+    ["draw_text", 42, { "at": [400.0, 400.0] }],
+    ["draw_text", "dash — once", { "at": [100.0, 480.0] }],
+    ["?cursor"],
+    ["bounding_box", [50, 400], { "width": 300, "height": 200 }, { "block": [
+      ["stroke_axis"],
+      ["stroke_axis", { "at": [20, 30], "width": 150, "height": 120, "step_length": 50, "color": "FF0000" }],
+      ["draw_text", "in the box", { "at": [10.0, 10.0] }]
+    ] }],
+    ["canvas", { "block": [
+      ["stroke_bounds"],
+      ["draw_text", "page corner", { "at": [5.0, 5.0] }],
+      ["?bounds"],
+      ["text", "canvas text from the cursor"]
+    ] }],
+    ["?cursor"],
+    ["span", 200.0, { "position": ":center", "block": [["text", "a centred span of text long enough to wrap onto more lines than one"]] }],
+    ["span", 150.0, { "position": ":right", "block": [["text", "right"], ["?bounds"]] }],
+    ["span", 100.0, { "position": 30.0, "block": [["text", "thirty in"]] }],
+    ["indent", 50.0, { "block": [["span", 120.0, { "block": [["text", "left of the margin box, indented"]] }]] }],
+    ["?cursor"],
+    ["canvas", { "block": [["move_down", 700.0], ["text", "near the bottom, then over to a new page and on"], ["text", "past the end of the page so the canvas breaks onto another page and goes on"], ["?bounds"]] }],
+    ["?page_count"]
+  ]
+}

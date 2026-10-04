@@ -341,3 +341,60 @@ fn Document::move_past_bottom(self : Document) -> Unit {
       }
   }
 }
+
+///|
+/// Prawn's `canvas`: `body` in a box the size of the page, with no parent
+/// (a new page makes the margin box current again), and the position left
+/// where `body` leaves it.
+pub fn Document::canvas(self : Document, body : () -> Unit raise) -> Unit raise {
+  let page = self.model.pages[self.page_index]
+  let box : Box = {
+    left: 0.0,
+    top: page.height_pt,
+    width: page.width_pt,
+    height: Some(page.height_pt),
+    stretched: 0.0,
+    parent: None,
+    columns: None,
+    total_left: 0.0,
+    total_right: 0.0,
+  }
+  self.open_box(box, body, () => ())
+}
+
+///|
+/// Where `span` puts its column across the margin box.
+pub(all) enum SpanPosition {
+  SpanLeft
+  SpanCenter
+  SpanRight
+  /// this far from the margin box's left
+  SpanAt(Double)
+}
+
+///|
+/// Prawn's `span`: `body` in a column `width` wide across the margin box
+/// (whatever box is current), at `position`, from the current position;
+/// a stretchy box, so the position ends below what `body` set.
+pub fn Document::span(
+  self : Document,
+  width : Double,
+  position? : SpanPosition = SpanLeft,
+  body : () -> Unit raise,
+) -> Unit raise {
+  let original_y = self.y()
+  let margin = self.margin
+  let (side, margin_width) = margin.side()
+  let left = match position {
+    SpanLeft => side
+    SpanCenter => side + margin_width / 2.0 - width / 2.0
+    SpanRight => side + margin_width - width
+    SpanAt(x) => side + x
+  }
+  self.canvas(() => {
+    self.bounding_box((left, margin.top), width, () => {
+      self.set_y(original_y)
+      body()
+    })
+  })
+}

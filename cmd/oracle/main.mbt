@@ -146,6 +146,66 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.move_down(number(args[0]))
       Some(Json::null())
     }
+    "draw_text" if only(opts, ["at", "size", "style", "rotate", "kerning"]) => {
+      let text = match args[0] {
+        String(_) => string(args[0])
+        Number(n, ..) => @prawn.ruby_number(n)
+        _ => raise ScriptError("draw_text needs text")
+      }
+      guard opts.get("at") is Some(at) else {
+        raise ScriptError("draw_text needs at")
+      }
+      doc.draw_text(
+        text,
+        at=point(at),
+        size?=opts.get("size").map(number),
+        style?=opts.get("style").bind(symbol),
+        rotate=opts.get("rotate").map(number).unwrap_or(0.0),
+        kerning=!(opts.get("kerning") is Some(False)),
+      )
+      Some(Json::null())
+    }
+    "stroke_axis" if only(opts, [
+        "at", "width", "height", "step_length", "negative_axes_length", "color",
+      ]) => {
+      doc.stroke_axis(
+        at=opts.get("at").map(point).unwrap_or((0.0, 0.0)),
+        width?=opts.get("width").map(number),
+        height?=opts.get("height").map(number),
+        step_length=opts.get("step_length").map(number).unwrap_or(100.0),
+        negative_axes_length=opts
+          .get("negative_axes_length")
+          .map(number)
+          .unwrap_or(20.0),
+        color=match opts.get("color") {
+          Some(String(hex)) => @prawn.color_of_hex(hex)
+          _ => @prawn.color_of_hex("000000")
+        },
+      )
+      Some(Json::null())
+    }
+    "canvas" if opts.is_empty() && block(args) is Some(ops) => {
+      doc.canvas(() => self.ops(ops))
+      Some(Json::null())
+    }
+    "span" if only(opts, ["position"]) && block(args) is Some(ops) => {
+      doc.span(
+        number(args[0]),
+        position=match opts.get("position") {
+          None => SpanLeft
+          Some(Number(x, ..)) => SpanAt(x)
+          Some(p) =>
+            match symbol(p) {
+              Some("left") => SpanLeft
+              Some("center") => SpanCenter
+              Some("right") => SpanRight
+              _ => raise ScriptError("span position")
+            }
+        },
+        () => self.ops(ops),
+      )
+      Some(Json::null())
+    }
     "move_up" => {
       doc.move_up(number(args[0]))
       Some(Json::null())
