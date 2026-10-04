@@ -94,6 +94,12 @@ pub(all) struct Flow {
   /// what to do when content runs out of room, instead of the next column
   /// or page below (a document that keeps bounds of its own sets it)
   mut move_past_bottom : (() -> Unit)?
+  /// draws what goes over each run (x, width, baseline, style, face) in
+  /// place of the underline and strikethrough below: a document with
+  /// Prawn's own overlays (decorations, links) sets it
+  mut decorate : ((Double, Double, Double, Style, Face) -> Array[
+    @pagelayout.PageItem,
+  ])?
 }
 
 ///|
@@ -144,6 +150,7 @@ pub fn Flow::new(
     page_height_now: setup.height,
     page_started: (_, _) => (),
     move_past_bottom: None,
+    decorate: None,
   }
 }
 
@@ -662,7 +669,7 @@ pub fn Flow::line_items(
       }),
     )
     let thickness = style.size / 18.0
-    if style.underline {
+    if style.underline && self.decorate is None {
       items.push(
         hrule(
           x,
@@ -673,7 +680,7 @@ pub fn Flow::line_items(
         ),
       )
     }
-    if style.strike {
+    if style.strike && self.decorate is None {
       items.push(
         hrule(
           x,
@@ -696,6 +703,13 @@ pub fn Flow::line_items(
           }),
         )
       None => ()
+    }
+    // the document's own overlays, after the link (Prawn's order: styles,
+    // link, anchor)
+    match self.decorate {
+      Some(decorate) =>
+        items.append(decorate(x, run.width, baseline, style, run.face))
+      _ => ()
     }
   }
   items

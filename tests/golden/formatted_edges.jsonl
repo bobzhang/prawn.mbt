@@ -1,0 +1,5 @@
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"none","error":null}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"query":"cursor","value":630.9879999999998}

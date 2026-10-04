@@ -71,6 +71,9 @@ pub struct Document {
   /// the pages the open transformation blocks started on, kept current as
   /// pages are inserted before them
   priv open_pages : Array[Ref[Int]]
+  /// what Prawn knows of each fragment set that its style does not carry
+  /// (`formatted.mbt`), by the style's `callback` index
+  priv fragment_meta : Array[FragmentMeta]
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
   priv paths : Array[Array[@pagelayout.PathSegment]]
@@ -130,6 +133,7 @@ pub fn Document::new(
     open_pages: [],
     pending_gap: 0.0,
     paths: [],
+    fragment_meta: [],
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)
@@ -159,6 +163,10 @@ pub fn Document::new(
     }
     doc.geometry.insert(to, geometry)
   }
+  // underlines and strikethroughs as Prawn draws them (`formatted.mbt`)
+  flow.decorate = Some((x, w, baseline, style, face) => {
+    doc.decorations(x, w, baseline, style, face)
+  })
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
@@ -210,32 +218,16 @@ pub fn Document::text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
+  inline_format? : Bool = false,
 ) -> Unit raise PrawnError {
-  // nothing to set: Prawn moves by the leading alone (an empty box has no
-  // line gap)
-  if string.is_empty() {
-    self.move_down(leading)
-    return
+  // set as one plain fragment, or the fragments of its markup
+  // (`formatted.mbt`)
+  let fragments = if inline_format {
+    parse_inline_format(string)
+  } else {
+    [TextFragment::new(string)]
   }
-  let style = self.style(size?)
-  self.check(string, style, Some(self.flow.width()))
-  self.pending_gap = self.flow.font(style).line_gap_pt(style.size) + leading
-  defer {
-    self.pending_gap = 0.0
-  }
-  self.flow.typeset(
-    [{ text: string, style, anchor: None, }],
-    // after the text box, the line gap and leading (`final_gap`, Prawn's
-    // default)
-    {
-      leading,
-      padding_top: 0.0,
-      padding_bottom: self.flow.font(style).line_gap_pt(style.size) + leading,
-    },
-    style,
-    align~,
-  )
-  self.track()
+  self.formatted_text(fragments, size?, align~, leading~)
 }
 
 ///|

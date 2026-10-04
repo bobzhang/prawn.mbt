@@ -105,10 +105,33 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
   let opts = options(args)
   match name {
     // kerning is Prawn's default (`default_kerning`), and how Flow sets text
-    "text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+    "text" if only(opts, [
+        "size", "align", "leading", "kerning", "inline_format",
+      ]) &&
       !(opts.get("kerning") is Some(False)) => {
       doc.text(
         string(args[0]),
+        size?=opts.get("size").map(number),
+        align=alignment(opts.get("align")),
+        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        inline_format=opts.get("inline_format") is Some(True),
+      )
+      Some(Json::null())
+    }
+    "formatted_text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+      !(opts.get("kerning") is Some(False)) => {
+      guard args[0] is Array(items) else {
+        raise ScriptError("formatted_text needs fragments")
+      }
+      let fragments = []
+      for item in items {
+        match text_fragment(item) {
+          Some(f) => fragments.push(f)
+          None => return None
+        }
+      }
+      doc.formatted_text(
+        fragments,
         size?=opts.get("size").map(number),
         align=alignment(opts.get("align")),
         leading=opts.get("leading").map(number).unwrap_or(0.0),
@@ -279,6 +302,16 @@ fn block(args : Array[Json]) -> Array[Json]? {
 }
 
 ///|
+/// `call`, with what this module raises as not done yet (Prawn's
+/// `Unsupported`) taken as an op it cannot run.
+fn Run::supported(self : Run, name : String, args : Array[Json]) -> Json? raise {
+  self.call(name, args) catch {
+    @prawn.Unsupported(_) => None
+    e => raise e
+  }
+}
+
+///|
 /// Runs one op, logging what the driver logs.
 fn Run::op(self : Run, op : Json) -> Unit raise {
   guard op is Array(items) && items.length() > 0 else {
@@ -322,11 +355,11 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
     } else {
       Json::array([query.to_json(), ..shown])
     }
-    match self.call(query, args) {
+    match self.supported(query, args) {
       Some(value) => self.log.push({ "query": label, "value": value })
       None => self.log.push({ "unsupported": query.to_json() })
     }
-  } else if self.call(name, args) is None {
+  } else if self.supported(name, args) is None {
     self.log.push({ "unsupported": name.to_json() })
   }
 }
@@ -617,4 +650,40 @@ fn Run::graphics(
     }
   }
   Some(Json::null())
+}
+
+///|
+/// A fragment hash of `formatted_text`; None when it has a key this module
+/// cannot set yet (callbacks, character spacing, local links).
+fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
+  guard j is Object(map) else { raise ScriptError("not a fragment") }
+  if !only(map, ["text", "styles", "size", "color", "link", "anchor", "font"]) {
+    return None
+  }
+  let styles = match map.get("styles") {
+    Some(Array(xs)) => xs.filter_map(symbol)
+    _ => []
+  }
+  let (color, cmyk) = match map.get("color") {
+    Some(String(hex)) => (Some(hex), None)
+    Some(Array(xs)) => (None, Some(xs.map(number)))
+    Some(_) => return None
+    None => (None, None)
+  }
+  Some({
+    ..@prawn.TextFragment::new(string(map.get("text").unwrap_or("".to_json()))),
+    bold: styles.contains("bold"),
+    italic: styles.contains("italic"),
+    underline: styles.contains("underline"),
+    strikethrough: styles.contains("strikethrough"),
+    subscript: styles.contains("subscript"),
+    superscript: styles.contains("superscript"),
+    font: map.get("font").map(string),
+    size: map.get("size").map(number),
+    color,
+    cmyk,
+    character_spacing: map.get("character_spacing").map(number),
+    link: map.get("link").map(string),
+    anchor: map.get("anchor").map(string),
+  })
 }
