@@ -40,6 +40,9 @@
     ["!raises", "ArgumentError", ["canvas", { "block": [["dash", 0.0]] }]],
     ["?bounds"],
     ["!raises", "ArgumentError", ["float", { "block": [["move_down", 50.0], ["dash", 0.0]] }]],
-    ["?cursor"]
+    ["?cursor"],
+    ["!raises", "none", ["draw_text", "null size and rotation", { "at": [10.0, 60.0], "size": null, "rotate": false }]],
+    ["!raises", "ArgumentError", ["span", 100.0, { "position": ":bogus", "block": [] }]],
+    ["formatted_text", [{ "text": "bold with a callback", "styles": [":bold"], "callback": { "trace": "b", "phase": "in_front", "draw": [["draw_text", "marker", { "at": [300.0, 300.0] }], ["text", "nested"]] } }]]
   ]
 }

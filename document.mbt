@@ -58,6 +58,9 @@ pub struct Document {
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
+  /// the current font's style, bold and italic (a fragment's while it is
+  /// drawn)
+  priv mut face_style : (Bool, Bool)
   /// each page's record (`page.mbt`), as the model's pages are ordered
   priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
@@ -126,6 +129,7 @@ pub fn Document::new(
     catalog,
     text_context: { catalog, hooks: Hooks::new(), },
     family: "Helvetica",
+    face_style: (false, false),
     size: 12.0,
     pages: [],
     bbox: margin,
@@ -172,8 +176,8 @@ fn Document::style(self : Document, size? : Double) -> Style {
   {
     family: self.family,
     size: size.unwrap_or(self.size),
-    bold: false,
-    italic: false,
+    bold: self.face_style.0,
+    italic: self.face_style.1,
     color: self.gs().fill,
     link: None,
     background: None,

@@ -417,6 +417,9 @@ fn Document::fragment(
         Some((family, bold, italic)) => (family, bold, italic, true)
         None => (name, f.bold, f.italic, true)
       }
+    // no style of its own: the current face, as Prawn's arranger then sets
+    // only the size
+    None if !f.bold && !f.italic => (base.family, base.bold, base.italic, false)
     None => (base.family, f.bold, f.italic, false)
   }
   let meta = self.fragment_meta.length()
@@ -689,6 +692,7 @@ fn placed_fragment(
 priv struct FragmentScope {
   family : String
   size : Double
+  face_style : (Bool, Bool)
   fill : @pagelayout.Color
   stroke : @pagelayout.Color
   color_set : Bool
@@ -705,12 +709,14 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
   self.scopes.push({
     family: self.family,
     size: self.size,
+    face_style: self.face_style,
     fill: gs.fill,
     stroke: gs.stroke,
     color_set,
   })
   self.family = style.family
   self.size = style.size
+  self.face_style = style.face_style()
   if color_set {
     gs.fill = style.color
     gs.stroke = style.color
@@ -725,6 +731,7 @@ fn Document::end_fragment(self : Document) -> Unit {
   guard self.scopes.pop() is Some(scope) else { return }
   self.family = scope.family
   self.size = scope.size
+  self.face_style = scope.face_style
   if scope.color_set {
     let gs = self.gs()
     gs.fill = scope.fill

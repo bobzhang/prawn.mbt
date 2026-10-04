@@ -167,9 +167,9 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.draw_text(
         text,
         at=point(at),
-        size?=opts.get("size").map(number),
-        style?=opts.get("style").bind(symbol),
-        rotate=opts.get("rotate").map(number).unwrap_or(0.0),
+        size?=present(opts.get("size")).map(number),
+        style?=present(opts.get("style")).bind(symbol),
+        rotate=present(opts.get("rotate")).map(number).unwrap_or(0.0),
         kerning=!(opts.get("kerning") is Some(False)),
       )
       Some(Json::null())
@@ -210,7 +210,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
               Some("left") => SpanLeft
               Some("center") => SpanCenter
               Some("right") => SpanRight
-              _ => raise ScriptError("span position")
+              _ => raise @prawn.ArgumentError("Invalid option for :position")
             }
         },
         () => self.ops(ops),
@@ -953,5 +953,14 @@ fn Run::trace_draw_text(
 fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
   self.ops(ops) catch {
     e => self.log.push({ "callback_error": e.to_string().to_json() })
+  }
+}
+
+///|
+/// An option as Ruby tests it: nil and false are no value.
+fn present(value : Json?) -> Json? {
+  match value {
+    Some(Null) | Some(False) | None => None
+    some => some
   }
 }
