@@ -135,3 +135,7 @@ a tab or carriage return inside a line as a glyph; Flow drops it) and `transform
 transformation block that ends on another page leaves its `q … cm` open on the page it began on,
 so Prawn transforms what is drawn there later; this module closes it). Prawn writes invalid PDF
 for a path left open across a transformation block's `q`/`Q` or `cm`; such cases are not compared.
+
+Ruby's integer arithmetic is not reproduced: where Prawn divides integers (a column box's
+`(width - spacer * (columns - 1)) / columns` with integer width and spacer), Ruby floors and this
+module divides exactly. Seeds use values that divide evenly.

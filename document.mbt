@@ -133,6 +133,8 @@ pub fn Document::new(
     }
     doc.paths.insert(to, [])
   }
+  // out of room: Prawn's rules for the bounds (`bounds.mbt`)
+  flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
   doc
 }
@@ -237,6 +239,7 @@ pub fn Document::start_new_page(
   self.page_size = size.unwrap_or(self.page_size)
   self.layout = layout.unwrap_or(self.layout)
   self.flow.start_new_page(size=oriented(self.page_size, self.layout))
+  self.reframe()
 }
 
 ///|
@@ -357,5 +360,5 @@ fn Document::check(
 /// its margin box.
 pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
   self.flow.go_to_page(number - 1)
-  self.flow.y = self.flow.top
+  self.reframe()
 }
