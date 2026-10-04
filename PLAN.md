@@ -33,10 +33,13 @@ Codex's review of it are in git history and `docs/plan-review-codex.md`.
 
 ## 1. Architecture
 
-* **Grow 0.1.0, keep it working.** Add a Prawn-shaped `Document` API (pages, cursor, bounding
-  boxes, text, graphics, fonts, images, navigation) on top of and around the existing `Flow`, and
-  move asciidoctor-pdf onto it over time. `Flow` and friends stay until asciidoctor-pdf no longer
-  needs them.
+* **Grow 0.1.0, keep it working.** A Prawn-shaped `Document` API (pages, cursor, bounding boxes,
+  text, graphics, fonts, images, navigation) beside the existing `Flow`, to move asciidoctor-pdf
+  onto over time. `Document` mirrors Prawn's own state: it owns the page model, each page's record
+  (graphics state stack, path, geometry), the position (Prawn's `y`), the bounds objects, and sets
+  text as Prawn does (a loop of text boxes, each a `Wrap#wrap` line loop, each fragment drawn by
+  `draw_fragment`), sharing only fonts and line breaking (`typeset.mbt`) with `Flow`. `Flow` and
+  friends stay until asciidoctor-pdf no longer needs them.
 * **Output.** Layout produces pagelayout page items, rendered by pagelayout's `render_pdf`, which
   owns painter order, resource allocation and graphics-state scoping. Content that `PageItem`
   can't express today must not be appended after rendering (that loses interleaving). Instead, add
@@ -183,3 +186,8 @@ check), soft masks, blend modes, patterns/shadings, annotations and destinations
   #595). Milestone 1 started: `Document` (pages, margins, cursor, `text`), `cmd/oracle`,
   `scripts/compare.mbtx`; 1/12 seed scripts match Ruby (`hello`; `text_wrap` but for
   `width_of`/`height_of`).
+* 2026-10-04: 29/38 seeds match Ruby. Bounds mirror Prawn's objects (#11), formatted text and
+  callbacks (#12, #13). Architecture consolidated: one record per page (#14), text as a loop of
+  text boxes walking a position through the text (#15), the document drawing its lines fragment
+  by fragment (#16), and owning its pages and position, Flow no longer under it (#17). Next: Prawn
+  manual and spec examples as op scripts, QuickCheck differential fuzzing, then fonts and images.
