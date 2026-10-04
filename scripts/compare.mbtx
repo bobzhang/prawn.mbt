@@ -5,6 +5,7 @@
 // Usage: moon run --target native scripts/compare.mbtx -- [options] [NAME...]
 //   --ops DIR     the scripts (default tests/ops); NAME selects scripts
 //   --out DIR     where this module's outputs go (default _build/compare)
+//   --golden DIR  Ruby's outputs to compare with (default tests/golden)
 //   -v            print every difference, not just the first few
 //
 // Prints one line per script (`pass`, or what differs) and a summary. It
@@ -59,6 +60,7 @@ async fn main {
   let args = @env.args()[1:].to_owned().filter(a => a != "--")
   let mut ops = "tests/ops"
   let mut out = "_build/compare"
+  let mut golden = "tests/golden"
   let mut verbose = false
   let names : Array[String] = []
   let mut i = 0
@@ -71,6 +73,10 @@ async fn main {
       "--out" => {
         i = i + 1
         out = args[i]
+      }
+      "--golden" => {
+        i = i + 1
+        golden = args[i]
       }
       "-v" => verbose = true
       name => names.push(name)
@@ -95,8 +101,8 @@ async fn main {
       continue
     }
     let found = [
-      ..differences("diff", "tests/golden/\{name}.pdf", pdf),
-      ..differences("log", "tests/golden/\{name}.jsonl", log),
+      ..differences("diff", "\{golden}/\{name}.pdf", pdf),
+      ..differences("log", "\{golden}/\{name}.jsonl", log),
     ]
     if found.is_empty() {
       passed = passed + 1

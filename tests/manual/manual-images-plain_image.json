@@ -1,0 +1,12 @@
+{
+  "ops": [
+    [
+      "text",
+      "The image will go right below this line of text."
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/pigs.jpg"
+    ]
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "ops": [
+    [
+      "line_width=",
+      25
+    ],
+    [
+      "cap_style=",
+      ":butt"
+    ],
+    [
+      "stroke_horizontal_line",
+      100,
+      300,
+      {
+        "at": 250
+      }
+    ],
+    [
+      "stroke_circle",
+      [
+        400,
+        250
+      ],
+      15
+    ],
+    [
+      "cap_style=",
+      ":round"
+    ],
+    [
+      "stroke_horizontal_line",
+      100,
+      300,
+      {
+        "at": 150
+      }
+    ],
+    [
+      "stroke_circle",
+      [
+        400,
+        150
+      ],
+      15
+    ],
+    [
+      "cap_style=",
+      ":projecting_square"
+    ],
+    [
+      "stroke_horizontal_line",
+      100,
+      300,
+      {
+        "at": 50
+      }
+    ],
+    [
+      "stroke_circle",
+      [
+        400,
+        50
+      ],
+      15
+    ]
+  ]
+}

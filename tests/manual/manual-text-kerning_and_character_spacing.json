@@ -1,0 +1,194 @@
+{
+  "ops": [
+    [
+      "?font_size",
+      30,
+      {
+        "block": [
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "With kerning:",
+            {
+              "kerning": true,
+              "at": [
+                0,
+                716.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "Without kerning:",
+            {
+              "kerning": false,
+              "at": [
+                0,
+                676.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "Tomato",
+            {
+              "kerning": true,
+              "at": [
+                230,
+                716.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "Tomato",
+            {
+              "kerning": false,
+              "at": [
+                230,
+                676.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "WAR",
+            {
+              "kerning": true,
+              "at": [
+                360,
+                716.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "WAR",
+            {
+              "kerning": false,
+              "at": [
+                360,
+                676.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "F.",
+            {
+              "kerning": true,
+              "at": [
+                470,
+                716.0
+              ]
+            }
+          ],
+          [
+            "?y"
+          ],
+          [
+            "?text_box",
+            "F.",
+            {
+              "kerning": false,
+              "at": [
+                470,
+                676.0
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "move_down",
+      80
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: -2)",
+      {
+        "character_spacing": -2
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: -1)",
+      {
+        "character_spacing": -1
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: 0)",
+      {
+        "character_spacing": 0
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: 0.5)",
+      {
+        "character_spacing": 0.5
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: 1)",
+      {
+        "character_spacing": 1
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "What have you done to the space between the characters? (character_spacing: 2)",
+      {
+        "character_spacing": 2
+      }
+    ]
+  ]
+}

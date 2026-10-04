@@ -1,0 +1,17 @@
+{"query":"y","value":756.0}
+{"query":["text_box","With kerning:",{"kerning":true,"at":[0,716.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","Without kerning:",{"kerning":false,"at":[0,676.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","Tomato",{"kerning":true,"at":[230,716.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","Tomato",{"kerning":false,"at":[230,676.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","WAR",{"kerning":true,"at":[360,716.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","WAR",{"kerning":false,"at":[360,676.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","F.",{"kerning":true,"at":[470,716.0]}],"value":""}
+{"query":"y","value":756.0}
+{"query":["text_box","F.",{"kerning":false,"at":[470,676.0]}],"value":""}
+{"query":["font_size",30],"value":12}

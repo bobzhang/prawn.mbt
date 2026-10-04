@@ -1,0 +1,108 @@
+{
+  "ops": [
+    [
+      "stroke_rectangle",
+      [
+        50,
+        190
+      ],
+      100,
+      50
+    ],
+    [
+      "?text_box",
+      "reference rectangle",
+      {
+        "at": [
+          60,
+          180
+        ],
+        "width": 80
+      }
+    ],
+    [
+      "scale",
+      2,
+      {
+        "origin": [
+          50,
+          190
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              50,
+              190
+            ],
+            100,
+            50
+          ],
+          [
+            "?text_box",
+            "rectangle scaled from upper-left corner",
+            {
+              "at": [
+                50,
+                135
+              ],
+              "width": 100
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        350,
+        190
+      ],
+      100,
+      50
+    ],
+    [
+      "?text_box",
+      "reference rectangle",
+      {
+        "at": [
+          360,
+          180
+        ],
+        "width": 80
+      }
+    ],
+    [
+      "scale",
+      2,
+      {
+        "origin": [
+          400,
+          165
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              190
+            ],
+            100,
+            50
+          ],
+          [
+            "?text_box",
+            "rectangle scaled from center",
+            {
+              "at": [
+                350,
+                135
+              ],
+              "width": 100
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

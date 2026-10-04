@@ -1,0 +1,43 @@
+{
+  "ops": [
+    [
+      "fill_color",
+      "00ff00"
+    ],
+    [
+      "stroke_color",
+      "0000ff"
+    ],
+    [
+      "?font_size",
+      40,
+      {
+        "block": [
+          [
+            "text",
+            "This text is filled with green."
+          ],
+          [
+            "text",
+            "This text is stroked with blue",
+            {
+              "mode": ":stroke"
+            }
+          ],
+          [
+            "text_rendering_mode",
+            ":fill_stroke",
+            {
+              "block": [
+                [
+                  "text",
+                  "This text is filled with green and stroked with blue"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

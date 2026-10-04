@@ -1,0 +1,396 @@
+{
+  "ops": [
+    [
+      "fill_circle",
+      [
+        270,
+        180
+      ],
+      2
+    ],
+    [
+      "rotate",
+      0,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 0°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      30,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 30°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      60,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 60°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      90,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 90°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      120,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 120°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      150,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 150°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      180,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 180°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      210,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 210°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      240,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 240°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      270,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 270°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      300,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 300°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "rotate",
+      330,
+      {
+        "origin": [
+          270,
+          180
+        ],
+        "block": [
+          [
+            "stroke_rectangle",
+            [
+              350,
+              200
+            ],
+            80,
+            40
+          ],
+          [
+            "?text_box",
+            "Rotated 330°",
+            {
+              "size": 10,
+              "at": [
+                360,
+                185
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

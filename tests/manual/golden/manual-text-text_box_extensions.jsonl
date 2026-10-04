@@ -1,0 +1,3 @@
+{"query":"cursor","value":720.0}
+{"query":["text_box","AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",{"at":[0,720.0],"width":100,"height":100}],"value":"AAAAAAAAAAAAAAAA"}
+{"query":["formatted_text_box",[{"text":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","color":"009900"}],{"at":[200,720.0],"width":100,"height":100}],"value":[{"color":"009900","normalized_soft_hyphen":"­","text":"AAAAAAAAAAAA"},{"color":"009900","text":"AAAA"}]}

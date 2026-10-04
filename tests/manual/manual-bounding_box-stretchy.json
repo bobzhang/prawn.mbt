@@ -1,0 +1,70 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        0,
+        720.0
+      ],
+      {
+        "width": 200,
+        "height": 100,
+        "block": [
+          [
+            "text",
+            "This bounding box has a height of 100. If this text gets too large it will flow to the next page."
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "bounding_box",
+      [
+        300,
+        720.0
+      ],
+      {
+        "width": 200,
+        "block": [
+          [
+            "text",
+            "This bounding box has variable height. No matter how much text is written here, the height will expand to fit."
+          ],
+          [
+            "text",
+            " _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _"
+          ],
+          [
+            "text",
+            " * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

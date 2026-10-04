@@ -1,0 +1,143 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "stroke_rectangle",
+      [
+        0,
+        690.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was not rotated",
+      {
+        "at": [
+          0,
+          690.0
+        ],
+        "width": 100,
+        "height": 60
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        0,
+        590.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was rotated around the center",
+      {
+        "at": [
+          0,
+          590.0
+        ],
+        "width": 100,
+        "height": 60,
+        "rotate": 30,
+        "rotate_around": ":center"
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        200,
+        690.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was rotated around the lower_left corner.",
+      {
+        "at": [
+          200,
+          690.0
+        ],
+        "width": 100,
+        "height": 60,
+        "rotate": 30,
+        "rotate_around": ":lower_left"
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        400,
+        690.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was rotated around the upper_left corner.",
+      {
+        "at": [
+          400,
+          690.0
+        ],
+        "width": 100,
+        "height": 60,
+        "rotate": 30,
+        "rotate_around": ":upper_left"
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        200,
+        590.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was rotated around the lower_right corner.",
+      {
+        "at": [
+          200,
+          590.0
+        ],
+        "width": 100,
+        "height": 60,
+        "rotate": 30,
+        "rotate_around": ":lower_right"
+      }
+    ],
+    [
+      "stroke_rectangle",
+      [
+        400,
+        590.0
+      ],
+      100,
+      60
+    ],
+    [
+      "?text_box",
+      "This text was rotated around the upper_right corner.",
+      {
+        "at": [
+          400,
+          590.0
+        ],
+        "width": 100,
+        "height": 60,
+        "rotate": 30,
+        "rotate_around": ":upper_right"
+      }
+    ]
+  ]
+}

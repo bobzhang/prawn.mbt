@@ -1,0 +1,48 @@
+{
+  "ops": [
+    [
+      "font",
+      "$PRAWN/data/fonts/DejaVuSans.ttf",
+      {
+        "block": [
+          [
+            "text",
+            "Written with the DejaVu Sans TTF font."
+          ]
+        ]
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "Written with the default font."
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font",
+      "$PRAWN/data/fonts/Panic+Sans.dfont",
+      {
+        "block": [
+          [
+            "text",
+            "Written with the Panic Sans DFONT font"
+          ]
+        ]
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "Written with the default font once more."
+    ]
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        200,
+        620.0
+      ],
+      {
+        "width": 200,
+        "height": 100,
+        "block": [
+          [
+            "text",
+            "Just your regular bounding box"
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

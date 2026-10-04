@@ -1,0 +1,37 @@
+{
+  "ops": [
+    [
+      "text",
+      "Using the fit option"
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        0,
+        706.1279999999999
+      ],
+      {
+        "width": 300,
+        "height": 300,
+        "block": [
+          [
+            "image",
+            "$PRAWN/data/images/pigs.jpg",
+            {
+              "fit": [
+                300,
+                300
+              ]
+            }
+          ],
+          [
+            "stroke_bounds"
+          ]
+        ]
+      }
+    ]
+  ]
+}

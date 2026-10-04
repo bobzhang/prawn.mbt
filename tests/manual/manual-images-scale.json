@@ -1,0 +1,42 @@
+{
+  "ops": [
+    [
+      "text",
+      "Normal size"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/stef.jpg"
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Scaled to 50%"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/stef.jpg",
+      {
+        "scale": 0.5
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Scaled to 200%"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/stef.jpg",
+      {
+        "scale": 2
+      }
+    ]
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "ops": [
+    [
+      "text",
+      "No indentation on the margin box."
+    ],
+    [
+      "indent",
+      20,
+      {
+        "block": [
+          [
+            "text",
+            "Some indentation inside an indent block."
+          ]
+        ]
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        50,
+        672.2559999999999
+      ],
+      {
+        "width": 400,
+        "height": 672.2559999999999,
+        "block": [
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ],
+          [
+            "move_down",
+            10
+          ],
+          [
+            "text",
+            "No indentation inside this bounding box."
+          ],
+          [
+            "indent",
+            40,
+            {
+              "block": [
+                [
+                  "text",
+                  "Inside an indent block. And so is this horizontal line:"
+                ],
+                [
+                  "stroke_horizontal_rule"
+                ]
+              ]
+            }
+          ],
+          [
+            "move_down",
+            10
+          ],
+          [
+            "text",
+            "No indentation"
+          ],
+          [
+            "move_down",
+            20
+          ],
+          [
+            "indent",
+            60,
+            {
+              "block": [
+                [
+                  "text",
+                  "Another indent block."
+                ],
+                [
+                  "?cursor"
+                ],
+                [
+                  "bounding_box",
+                  [
+                    0,
+                    576.7679999999996
+                  ],
+                  {
+                    "width": 200,
+                    "block": [
+                      [
+                        "text",
+                        "Note that this bounding box coordinates are relative to the indent block"
+                      ],
+                      [
+                        "transparent",
+                        0.5,
+                        {
+                          "block": [
+                            [
+                              "stroke_bounds"
+                            ]
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

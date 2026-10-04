@@ -130,14 +130,27 @@ The comparator treats gray *g* as RGB (*g*, *g*, *g*): Prawn leaves default blac
 pagelayout writes RGB.
 
 Known divergences, each kept as a failing seed: `kerning_accents` (pdflite's standard-font data
-lacks the kerning pairs of unencoded glyphs, to fix upstream), `control_characters` (Prawn sets
-a tab or carriage return inside a line as a glyph; Flow drops it), `callback_whitespace` (Prawn calls
-the callbacks of a fragment piece trimmed to nothing, with empty text and no width; Flow drops
-the piece) and `transform_left_open` (a
-transformation block that ends on another page leaves its `q … cm` open on the page it began on,
-so Prawn transforms what is drawn there later; this module closes it). Prawn writes invalid PDF
-for a path left open across a transformation block's `q`/`Q` or `cm`; such cases are not compared.
+lacks the kerning pairs of unencoded glyphs, to fix upstream) and `control_characters` (Prawn sets
+a tab or carriage return inside a line as a glyph; this module drops it). Prawn writes invalid PDF
+for a path left open across a transformation block's `q`/`Q` or `cm`, and NaN for a rounded
+corner on an edge of no length; such cases are not compared.
 
 Ruby's integer arithmetic is not reproduced: where Prawn divides integers (a column box's
 `(width - spacer * (columns - 1)) / columns` with integer width and spacer), Ruby floors and this
 module divides exactly. Seeds use values that divide evenly.
+
+## The manual corpus and the fuzzer
+
+`tests/manual` holds the Prawn manual's examples as op scripts, recorded by
+`ruby scripts/oracle/record_manual.rb DIR`: each example runs on a real Prawn document through a
+recorder that writes down the calls it makes (a block's calls nested in its op, a value the
+example uses logged as a query, what Ruby computes around the calls kept as the values it
+produced). Examples an op script cannot express (a proc, an object, a hash keyed by numbers) are
+skipped, with the reason printed. Their Ruby outputs are in `tests/manual/golden`
+(`scripts/oracle.mbtx -- --ops tests/manual --out tests/manual/golden`), and
+`scripts/compare.mbtx -- --ops tests/manual --golden tests/manual/golden --out _build/compare-manual`
+compares this module with them. Most failures there are ops this module lacks (logged as
+`unsupported`): the backlog, by how often the manual uses them.
+
+`scripts/fuzz.mbtx` generates scripts at random (see `PLAN.md` §3), runs them through the driver's
+batch mode and `cmd/oracle`, and shrinks each failure to a small script, to keep as a seed.

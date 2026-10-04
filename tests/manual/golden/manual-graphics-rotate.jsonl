@@ -1,0 +1,13 @@
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["text_box","Rotated 0°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 30°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 60°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 90°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 120°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 150°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 180°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 210°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 240°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 270°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 300°",{"size":10,"at":[360,185]}],"value":""}
+{"query":["text_box","Rotated 330°",{"size":10,"at":[360,185]}],"value":""}

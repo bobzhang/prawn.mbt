@@ -1,0 +1,38 @@
+{
+  "ops": [
+    [
+      "stroke_color",
+      "ff0000"
+    ],
+    [
+      "stroke",
+      {
+        "block": [
+          [
+            "move_down",
+            50
+          ],
+          [
+            "horizontal_rule"
+          ],
+          [
+            "vertical_line",
+            100,
+            300,
+            {
+              "at": 50
+            }
+          ],
+          [
+            "horizontal_line",
+            200,
+            500,
+            {
+              "at": 150
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

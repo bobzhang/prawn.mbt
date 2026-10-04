@@ -1,0 +1,171 @@
+{
+  "ops": [
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "Margin box bounds:"
+    ],
+    [
+      "move_down",
+      5
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "top: 720.0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "bottom: 0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "left: 0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "right: 540.0"
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "absolute top: 756.0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "absolute bottom: 36.0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "absolute left: 36.0"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "text",
+      "absolute right: 576.0"
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        250,
+        700.1519999999994
+      ],
+      {
+        "width": 200,
+        "height": 150,
+        "block": [
+          [
+            "text",
+            "This bounding box bounds:"
+          ],
+          [
+            "move_down",
+            5
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "top: 150"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "bottom: 0"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "left: 0"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "right: 200"
+          ],
+          [
+            "move_down",
+            10
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "absolute top: 736.15"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "absolute bottom: 586.15"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "absolute left: 286.0"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "text",
+            "absolute right: 486.0"
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

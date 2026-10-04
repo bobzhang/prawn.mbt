@@ -1,0 +1,25 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "The image won't go below this line of text."
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/fractal.jpg",
+      {
+        "at": [
+          200,
+          720.0
+        ]
+      }
+    ],
+    [
+      "text",
+      "And this line of text will go just below the previous one."
+    ]
+  ]
+}
