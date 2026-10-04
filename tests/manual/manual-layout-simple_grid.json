@@ -17,6 +17,9 @@
     ],
     [
       "grid"
+    ],
+    [
+      "?grid.show_all"
     ]
   ]
 }

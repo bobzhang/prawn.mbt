@@ -1,5 +1,7 @@
 {"query":"cursor","value":720.0}
 {"query":"cursor","value":186.12799999999993}
 {"query":"bounds","value":{"left":0,"bottom":0,"width":300,"height":13.872000000000071,"absolute_left":106,"absolute_top":722.1279999999999}}
+{"query":"bounds.top","value":13.872000000000071}
 {"query":"bounds","value":{"left":0,"bottom":0,"width":300,"height":33.87200000000007,"absolute_left":106,"absolute_top":722.1279999999999}}
+{"query":"bounds.top","value":33.87200000000007}
 {"query":"cursor","value":96.12799999999993}

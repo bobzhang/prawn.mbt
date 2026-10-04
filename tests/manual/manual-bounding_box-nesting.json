@@ -48,6 +48,9 @@
                   "?bounds"
                 ],
                 [
+                  "?bounds.top"
+                ],
+                [
                   "bounding_box",
                   [
                     20,
@@ -83,6 +86,9 @@
                 ],
                 [
                   "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",

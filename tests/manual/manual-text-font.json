@@ -4,6 +4,9 @@
       "font"
     ],
     [
+      "?font.inspect"
+    ],
+    [
       "text",
       "Let's see which font we are using: Prawn::Fonts::AFM< Helvetica: 12 >"
     ],
@@ -33,6 +36,9 @@
     ],
     [
       "font"
+    ],
+    [
+      "?font.inspect"
     ],
     [
       "text",

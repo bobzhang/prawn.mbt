@@ -1,4 +1,6 @@
 {"query":"cursor","value":720.0}
 {"query":"bounds","value":{"left":0,"bottom":0,"width":500,"height":450,"absolute_left":36,"absolute_top":756.0}}
+{"query":"bounds.width","value":500}
 {"query":"bounds","value":{"left":0,"bottom":0,"width":500,"height":450,"absolute_left":36,"absolute_top":756.0}}
+{"query":"bounds.top","value":450}
 {"query":["text_box","The next image has a 100 point offset from the top boundary",{"at":[390,440],"width":100}],"value":""}

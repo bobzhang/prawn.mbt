@@ -8,7 +8,13 @@
             "?bounds"
           ],
           [
+            "?bounds.left"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "fill_circle",
@@ -22,7 +28,13 @@
             "?bounds"
           ],
           [
+            "?bounds.right"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "fill_circle",
@@ -36,7 +48,13 @@
             "?bounds"
           ],
           [
+            "?bounds.right"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.bottom"
           ],
           [
             "fill_circle",

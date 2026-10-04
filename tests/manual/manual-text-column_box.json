@@ -31,6 +31,9 @@
       "?bounds"
     ],
     [
+      "?bounds.width"
+    ],
+    [
       "column_box",
       [
         0,

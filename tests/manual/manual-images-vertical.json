@@ -65,7 +65,13 @@
             "?bounds"
           ],
           [
+            "?bounds.width"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "?text_box",

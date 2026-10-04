@@ -16,11 +16,17 @@
       "?bounds"
     ],
     [
+      "?bounds.top"
+    ],
+    [
       "text",
       "top: 720.0"
     ],
     [
       "?bounds"
+    ],
+    [
+      "?bounds.bottom"
     ],
     [
       "text",
@@ -30,11 +36,17 @@
       "?bounds"
     ],
     [
+      "?bounds.left"
+    ],
+    [
       "text",
       "left: 0"
     ],
     [
       "?bounds"
+    ],
+    [
+      "?bounds.right"
     ],
     [
       "text",
@@ -48,11 +60,17 @@
       "?bounds"
     ],
     [
+      "?bounds.absolute_top"
+    ],
+    [
       "text",
       "absolute top: 756.0"
     ],
     [
       "?bounds"
+    ],
+    [
+      "?bounds.absolute_bottom"
     ],
     [
       "text",
@@ -62,11 +80,17 @@
       "?bounds"
     ],
     [
+      "?bounds.absolute_left"
+    ],
+    [
       "text",
       "absolute left: 36.0"
     ],
     [
       "?bounds"
+    ],
+    [
+      "?bounds.absolute_right"
     ],
     [
       "text",
@@ -97,11 +121,17 @@
             "?bounds"
           ],
           [
+            "?bounds.top"
+          ],
+          [
             "text",
             "top: 150"
           ],
           [
             "?bounds"
+          ],
+          [
+            "?bounds.bottom"
           ],
           [
             "text",
@@ -111,11 +141,17 @@
             "?bounds"
           ],
           [
+            "?bounds.left"
+          ],
+          [
             "text",
             "left: 0"
           ],
           [
             "?bounds"
+          ],
+          [
+            "?bounds.right"
           ],
           [
             "text",
@@ -129,11 +165,17 @@
             "?bounds"
           ],
           [
+            "?bounds.absolute_top"
+          ],
+          [
             "text",
             "absolute top: 736.15"
           ],
           [
             "?bounds"
+          ],
+          [
+            "?bounds.absolute_bottom"
           ],
           [
             "text",
@@ -143,11 +185,17 @@
             "?bounds"
           ],
           [
+            "?bounds.absolute_left"
+          ],
+          [
             "text",
             "absolute left: 286.0"
           ],
           [
             "?bounds"
+          ],
+          [
+            "?bounds.absolute_right"
           ],
           [
             "text",

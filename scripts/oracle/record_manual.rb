@@ -160,8 +160,48 @@ class Recorder < BasicObject
     else
       op << trailing if trailing
       list << op
-      @doc.__send__(name, *args, **options)
+      ::ReturnedRecorder.wrap(@doc.__send__(name, *args, **options), name, args.empty? && options.empty?, list)
     end
+  end
+
+  def respond_to_missing?(*)
+    true
+  end
+end
+
+# What a call returned to the example: a plain value as it is; an object
+# (the bounds, a grid cell) records the calls made on it, as dotted ops on
+# the document when the call that returned it took no arguments
+# (`grid.show_all`, `?bounds.width`); otherwise it cannot be replayed.
+class ReturnedRecorder < BasicObject
+  PLAIN = [::Numeric, ::String, ::Symbol, ::TrueClass, ::FalseClass, ::NilClass].freeze
+
+  def self.plain?(value)
+    PLAIN.any? { |c| value.is_a?(c) } ||
+      (value.is_a?(::Array) && value.all? { |v| plain?(v) })
+  end
+
+  def self.wrap(value, name, replayable, list)
+    plain?(value) ? value : new(value, name, replayable, list)
+  end
+
+  def initialize(object, path, replayable, list)
+    @object = object
+    @path = path
+    @replayable = replayable
+    @list = list
+  end
+
+  def method_missing(name, *args, **options, &block)
+    ::Kernel.raise ::Unrecordable, "a call on what #{@path} returned" unless @replayable
+    ::Kernel.raise ::Unrecordable, "a block given to #{@path}.#{name}" if block
+
+    result = @object.__send__(name, *args, **options)
+    query = ::ReturnedRecorder.plain?(result) && !result.nil?
+    op = ["#{query ? '?' : ''}#{@path}.#{name}", *args.map { |a| ::OpValues.json(a) }]
+    op << ::OpValues.json(options) unless options.empty?
+    @list << op
+    ::ReturnedRecorder.wrap(result, "#{@path}.#{name}", args.empty? && options.empty?, @list)
   end
 
   def respond_to_missing?(*)
@@ -181,6 +221,19 @@ class FamiliesRecorder
     @families.update(families)
   end
 end
+
+# Notices text box extensions in use (Prawn reads them for every box).
+module ExtensionWatch
+  class << self
+    attr_accessor :used
+  end
+
+  def extensions
+    super.tap { |list| ExtensionWatch.used = true unless list.empty? }
+  end
+end
+Prawn::Text::Box.singleton_class.prepend(ExtensionWatch)
+Prawn::Text::Formatted::Box.singleton_class.prepend(ExtensionWatch)
 
 out = ARGV[0] or abort('usage: record_manual.rb OUT_DIR')
 FileUtils.mkdir_p(out)
@@ -205,8 +258,11 @@ Dir[File.join(PRAWN_DIR, 'manual', '*', '*.rb')].sort.each do |path|
     end
     doc = Prawn::Document.new
     recorder = Recorder.new(doc)
+    ExtensionWatch.used = false
     begin
       Dir.chdir(PRAWN_DIR) { recorder.instance_eval(&block) }
+      # text box extensions change Prawn itself, past the recorder
+      raise Unrecordable, 'text box extensions' if ExtensionWatch.used
       doc.render
     rescue Unrecordable => e
       skipped << "#{id}: #{e.message}"

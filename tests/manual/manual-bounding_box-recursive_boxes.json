@@ -4,13 +4,25 @@
       "?bounds"
     ],
     [
-      "?bounds"
+      "?bounds.width"
     ],
     [
       "?bounds"
     ],
     [
+      "?bounds.height"
+    ],
+    [
       "?bounds"
+    ],
+    [
+      "?bounds.right"
+    ],
+    [
+      "?bounds"
+    ],
+    [
+      "?bounds.top"
     ],
     [
       "bounding_box",
@@ -29,13 +41,25 @@
             "?bounds"
           ],
           [
-            "?bounds"
+            "?bounds.width"
           ],
           [
             "?bounds"
           ],
           [
+            "?bounds.height"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.right"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "bounding_box",
@@ -54,13 +78,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -79,13 +115,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -171,13 +219,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -263,13 +323,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -355,13 +427,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -450,13 +534,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -475,13 +571,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -567,13 +675,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -659,13 +779,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -751,13 +883,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -846,13 +990,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -871,13 +1027,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -963,13 +1131,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1055,13 +1235,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1147,13 +1339,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1242,13 +1446,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -1267,13 +1483,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1359,13 +1587,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1451,13 +1691,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1543,13 +1795,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1641,13 +1905,25 @@
             "?bounds"
           ],
           [
-            "?bounds"
+            "?bounds.width"
           ],
           [
             "?bounds"
           ],
           [
+            "?bounds.height"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.right"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "bounding_box",
@@ -1666,13 +1942,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -1691,13 +1979,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1783,13 +2083,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1875,13 +2187,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -1967,13 +2291,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2062,13 +2398,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -2087,13 +2435,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2179,13 +2539,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2271,13 +2643,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2363,13 +2747,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2458,13 +2854,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -2483,13 +2891,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2575,13 +2995,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2667,13 +3099,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2759,13 +3203,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2854,13 +3310,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -2879,13 +3347,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -2971,13 +3451,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3063,13 +3555,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3155,13 +3659,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3253,13 +3769,25 @@
             "?bounds"
           ],
           [
-            "?bounds"
+            "?bounds.width"
           ],
           [
             "?bounds"
           ],
           [
+            "?bounds.height"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.right"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "bounding_box",
@@ -3278,13 +3806,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -3303,13 +3843,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3395,13 +3947,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3487,13 +4051,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3579,13 +4155,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3674,13 +4262,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -3699,13 +4299,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3791,13 +4403,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3883,13 +4507,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -3975,13 +4611,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4070,13 +4718,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -4095,13 +4755,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4187,13 +4859,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4279,13 +4963,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4371,13 +5067,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4466,13 +5174,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -4491,13 +5211,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4583,13 +5315,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4675,13 +5419,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4767,13 +5523,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -4865,13 +5633,25 @@
             "?bounds"
           ],
           [
-            "?bounds"
+            "?bounds.width"
           ],
           [
             "?bounds"
           ],
           [
+            "?bounds.height"
+          ],
+          [
             "?bounds"
+          ],
+          [
+            "?bounds.right"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.top"
           ],
           [
             "bounding_box",
@@ -4890,13 +5670,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -4915,13 +5707,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5007,13 +5811,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5099,13 +5915,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5191,13 +6019,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5286,13 +6126,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -5311,13 +6163,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5403,13 +6267,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5495,13 +6371,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5587,13 +6475,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5682,13 +6582,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -5707,13 +6619,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5799,13 +6723,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5891,13 +6827,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -5983,13 +6931,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -6078,13 +7038,25 @@
                   "?bounds"
                 ],
                 [
-                  "?bounds"
+                  "?bounds.width"
                 ],
                 [
                   "?bounds"
                 ],
                 [
+                  "?bounds.height"
+                ],
+                [
                   "?bounds"
+                ],
+                [
+                  "?bounds.right"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
                 ],
                 [
                   "bounding_box",
@@ -6103,13 +7075,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -6195,13 +7179,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -6287,13 +7283,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
@@ -6379,13 +7387,25 @@
                         "?bounds"
                       ],
                       [
-                        "?bounds"
+                        "?bounds.width"
                       ],
                       [
                         "?bounds"
                       ],
                       [
+                        "?bounds.height"
+                      ],
+                      [
                         "?bounds"
+                      ],
+                      [
+                        "?bounds.right"
+                      ],
+                      [
+                        "?bounds"
+                      ],
+                      [
+                        "?bounds.top"
                       ],
                       [
                         "bounding_box",
