@@ -567,12 +567,40 @@ fn Document::decorations(
 }
 
 ///|
-/// Ruby's `Float()` of a string: an optional sign, digits (with single
-/// underscores between them), an optional fraction and exponent, and
-/// surrounding whitespace; anything else is an ArgumentError.
+/// Ruby's `Float()` of a string: an optional sign, then digits (with
+/// single underscores between them) with an optional fraction (`.5` too)
+/// and exponent, or a hex integer (`0x10`), with surrounding whitespace;
+/// anything else is an ArgumentError.
 fn ruby_float(s : String) -> Double raise PrawnError {
   let bad = ArgumentError("invalid value for Float(): \"\{s}\"")
   let t = s.trim(chars=" \t\n\r\u{0B}\u{0C}").to_owned()
+  // hex: [sign] 0x digits
+  let unsigned = if t.has_prefix("+") || t.has_prefix("-") {
+    t[1:].to_owned()
+  } else {
+    t
+  }
+  if unsigned.has_prefix("0x") || unsigned.has_prefix("0X") {
+    let hex = unsigned[2:].to_owned()
+    if hex.is_empty() ||
+      hex.has_prefix("_") ||
+      hex.has_suffix("_") ||
+      hex.contains("__") {
+      raise bad
+    }
+    let mut value = 0.0
+    for c in hex {
+      let digit = match c {
+        '0'..='9' => c.to_int() - '0'.to_int()
+        'a'..='f' => c.to_int() - 'a'.to_int() + 10
+        'A'..='F' => c.to_int() - 'A'.to_int() + 10
+        '_' => continue
+        _ => raise bad
+      }
+      value = value * 16.0 + digit.to_double()
+    }
+    return if t.has_prefix("-") { -value } else { value }
+  }
   let digits = fn(from : Int) -> Int {
     // how far a run of digits with single underscores between them goes
     let mut i = from
@@ -594,14 +622,17 @@ fn ruby_float(s : String) -> Double raise PrawnError {
   if i < t.length() && (t[i] == '+' || t[i] == '-') {
     i = i + 1
   }
-  let int_end = digits(i)
-  if int_end == i {
+  let start = i
+  let int_end = digits(start)
+  // no integer part only before a fraction (`.5`)
+  if int_end == start && !(start < t.length() && t[start] == '.') {
     raise bad
   }
   i = int_end
   if i < t.length() && t[i] == '.' {
     let frac_end = digits(i + 1)
-    if frac_end == i + 1 {
+    // `1.` is 1.0, `.` alone is nothing
+    if frac_end == i + 1 && int_end == start {
       raise bad
     }
     i = frac_end
@@ -620,7 +651,20 @@ fn ruby_float(s : String) -> Double raise PrawnError {
   if i != t.length() {
     raise bad
   }
-  @string.parse_double(t.replace_all(old="_", new="")) catch {
+  // in a form parse_double takes: digits on both sides of the point
+  let n = t
+    .replace_all(old="_", new="")
+    .replace_all(old=".e", new=".0e")
+    .replace_all(old=".E", new=".0E")
+  let n = if n.has_suffix(".") { n + "0" } else { n }
+  let n = if n.has_prefix(".") {
+    "0" + n
+  } else if n.has_prefix("+.") || n.has_prefix("-.") {
+    n[:1].to_owned() + "0" + n[1:].to_owned()
+  } else {
+    n
+  }
+  @string.parse_double(n) catch {
     _ => raise bad
   }
 }

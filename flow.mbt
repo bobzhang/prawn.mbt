@@ -668,11 +668,6 @@ pub fn Flow::line_items(
         color: style.color,
       }),
     )
-    match self.decorate {
-      Some(decorate) =>
-        items.append(decorate(x, run.width, baseline, style, run.face))
-      _ => ()
-    }
     let thickness = style.size / 18.0
     if style.underline && self.decorate is None {
       items.push(
@@ -708,6 +703,13 @@ pub fn Flow::line_items(
           }),
         )
       None => ()
+    }
+    // the document's own overlays, after the link (Prawn's order: styles,
+    // link, anchor)
+    match self.decorate {
+      Some(decorate) =>
+        items.append(decorate(x, run.width, baseline, style, run.face))
+      _ => ()
     }
   }
   items

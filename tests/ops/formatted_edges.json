@@ -10,6 +10,9 @@
     ["formatted_text", [{ "text": "both link and anchor", "link": "https://example.com", "anchor": "dest" }]],
     ["text", "<link href='u'>x<a anchor='d'>y</a></link> <b><b>bold</b>plain</b> <sup><sub>sub wins</sub></sup> line<br\n/>break", { "inline_format": true }],
     ["!raises", "ArgumentError", ["text", "<font size='oops'>x</font>", { "inline_format": true }]],
+    ["!raises", "none", ["text", "<font size='1.'>x</font>", { "inline_format": true }]],
+    ["!raises", "ArgumentError", ["text", "<font size='.'>x</font>", { "inline_format": true }]],
+    ["text", "<font size='0x10'>hex 16</font> <font size='+.5e1'>five</font> <font size=' 1_2 '>twelve</font>", { "inline_format": true }],
     ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["formatted_text", [{ "text": "W" }, { "text": "中" }], { "size": 200 }]],
     ["?cursor"]
   ]
