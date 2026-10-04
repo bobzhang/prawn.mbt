@@ -1,28 +1,34 @@
 ///|
 /// Prawn's `draw_text`: `text` on one line, its baseline starting at `at`
 /// (a point of the bounds), in the current font at `size` (the current
-/// size), in `style` ("bold", "italic", "bold_italic"; the current one by
-/// default), kerned unless `kerning` is false, turned `rotate` degrees
+/// size), in `style` (by default the current one), kerned unless `kerning` is false, turned `rotate` degrees
 /// about `at`. No wrapping, no page break; the cursor does not move.
 pub fn Document::draw_text(
   self : Document,
   text : String,
   at~ : (Double, Double),
   size? : Double,
-  style? : String,
+  style? : FontStyle,
   rotate? : Double = 0.0,
   kerning? : Bool = true,
 ) -> Unit raise {
-  let base = self.style(size?)
-  let base = match style {
-    None | Some("normal") => base
-    Some("bold") => { ..base, bold: true, }
-    Some("italic") => { ..base, italic: true, }
-    Some("bold_italic") => { ..base, bold: true, italic: true, }
-    Some(other) => raise ArgumentError("style \{other}")
+  // Prawn's `process_text_options`: the current font in `style`, which a
+  // font of no family cannot take
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
   }
-  // in a family's face in that style, read as needed
-  self.ensure_style(base.family, base.face_style())
+  match style {
+    Some(style) => {
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.ensure_font(self.family, style.flags())
+      self.face_style = style.flags()
+    }
+    None => ()
+  }
+  let base = self.style(size?)
   // the whole string is encoded first (Prawn's `normalize_encoding`), in
   // its own font only: draw_text looks in no fallback
   self.check(text, base, None, fallbacks=false)

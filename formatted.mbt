@@ -375,6 +375,12 @@ fn fragment_of(
 /// the destination it links to besides a URI.
 priv struct FragmentMeta {
   color_set : Bool
+  /// the font it is set in, by name and style (the current font while it
+  /// is drawn), and the styles it asks for itself (which its fallback
+  /// fonts are found in)
+  font_name : String
+  font_flags : (Bool, Bool)
+  styles : (Bool, Bool)
   /// whether the font the fragment is set in has a family (None: it keeps
   /// the current font, setting only the size)
   family_known : Bool?
@@ -419,27 +425,30 @@ fn Document::fragment(
   if (f.font is Some(_) || f.bold || f.italic) && !self.font_family_known {
     raise BadFontFamily("Prawn::Text::Formatted::Arranger::BadFontFamily")
   }
-  let (family, bold, italic, font_set) = match f.font {
+  // the font it is set in, by name and style
+  let (name, flags, font_set) = match f.font {
     Some(name) =>
       match standard_face(name) {
-        Some((family, bold, italic)) => (family, bold, italic, true)
+        Some((family, bold, italic)) => (family, (bold, italic), true)
         // a font file of its own is its only face
-        None if is_font_file(name) => (name, false, false, true)
-        None => (name, f.bold, f.italic, true)
+        None if is_font_file(name) => (name, (false, false), true)
+        None => (name, (f.bold, f.italic), true)
       }
-    // no style of its own: the current face, as Prawn's arranger then sets
+    // no style of its own: the current font, as Prawn's arranger then sets
     // only the size
-    None if !f.bold && !f.italic => (base.family, base.bold, base.italic, false)
-    None => (base.family, f.bold, f.italic, false)
+    None if !f.bold && !f.italic => (self.family, self.face_style, false)
+    None => (self.family, (f.bold, f.italic), false)
   }
-  // its face read when it is one of a TrueType family, or a file
-  match f.font {
-    Some(name) if is_font_file(name) => self.load_face(name, Normal, name)
-    _ => self.ensure_style(family, (bold, italic))
-  }
+  // read when a TrueType family's face or a file, and the catalog's face
+  // of it
+  self.ensure_font(name, flags)
+  let (family, bold, italic) = self.catalog_key(name, flags)
   let meta = self.fragment_meta.length()
   self.fragment_meta.push({
     color_set: f.color is Some(_),
+    font_name: name,
+    font_flags: flags,
+    styles: (f.bold, f.italic),
     family_known: match f.font {
       Some(name) => Some(standard_face(name) is None)
       None if f.bold || f.italic => Some(true)
@@ -515,7 +524,7 @@ pub fn Document::formatted_text(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
-      self.ensure_style(self.family, style.flags())
+      self.ensure_font(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -754,9 +763,17 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
     stroke: gs.stroke,
     color_set,
   })
-  self.family = style.family
   self.size = style.size
-  self.face_style = style.face_style()
+  match self.fragment_meta.get(style.callback) {
+    Some(meta) => {
+      self.family = meta.font_name
+      self.face_style = meta.font_flags
+    }
+    None => {
+      self.family = style.family
+      self.face_style = style.face_style()
+    }
+  }
   match self.fragment_meta.get(style.callback) {
     Some({ family_known: Some(known), .. }) => self.font_family_known = known
     _ => ()

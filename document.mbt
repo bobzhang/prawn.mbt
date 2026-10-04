@@ -58,7 +58,7 @@ pub struct Document {
   /// made from; the fallback families (`fallback_fonts`); and where files
   /// are read from (`ttf.mbt`)
   priv families : Map[String, Array[(FontStyle, String)]]
-  priv mut font_files : Array[(String, Bool, Bool, Bytes, String)]
+  priv mut font_files : Array[(String, Bytes)]
   priv mut fallbacks : Array[String]
   priv assets : (String) -> Bytes?
   /// what text is set with: the fonts
@@ -191,11 +191,13 @@ fn Document::face_of(self : Document, style : Style) -> Face {
 ///|
 /// The style text is set in: the current font and size, black.
 fn Document::style(self : Document, size? : Double) -> Style {
+  // the catalog's face of the current font (a TrueType one is its file)
+  let (family, bold, italic) = self.catalog_key(self.family, self.face_style)
   {
-    family: self.family,
+    family,
     size: size.unwrap_or(self.size),
-    bold: self.face_style.0,
-    italic: self.face_style.1,
+    bold,
+    italic,
     color: self.gs().fill,
     link: None,
     background: None,
@@ -242,7 +244,7 @@ pub fn Document::text(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
-      self.ensure_style(self.family, style.flags())
+      self.ensure_font(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -362,7 +364,7 @@ pub fn Document::width_of(
       if !self.font_family_known {
         raise UnknownFont(" is not a known font.")
       }
-      self.ensure_style(self.family, style.flags())
+      self.ensure_font(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -410,7 +412,7 @@ pub fn Document::height_of(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
-      self.ensure_style(self.family, style.flags())
+      self.ensure_font(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -454,9 +456,10 @@ fn Document::check(
   // each character in the font it is set in: its own, or the first
   // fallback that has it (Prawn splits the text across them before it
   // encodes it; `width_of` and `draw_text` do not)
+  let styles = self.own_styles(style)
   let face_for = fn(cp : Int) raise PrawnError {
     if fallbacks {
-      self.char_face(style, cp)
+      self.face_by_key(self.char_key(style, styles, cp))
     } else {
       face
     }

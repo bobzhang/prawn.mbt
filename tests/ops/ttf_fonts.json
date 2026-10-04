@@ -43,5 +43,21 @@
     ["font", "Helvetica"],
     ["fallback_fonts", ["DV"]],
     ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["draw_text", "αβγ", { "at": [300.0, 60.0] }]]
+,
+    ["fallback_fonts", ["DV"]],
+    ["!raises", "Prawn::Errors::CannotFit", ["?text_box", "α", { "at": [0.0, 300.0], "width": 7.5, "style": ":bold" }]],
+    ["text", "bold <b>α</b> in a bold fragment", { "inline_format": true }],
+    ["font", "Kai"],
+    ["fallback_fonts", ["Times-Bold"]],
+    ["?text_box", "€", { "at": [0.0, 250.0], "width": 7.0 }],
+    ["fallback_fonts", []],
+    ["font_families.update", { "=DV3": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf" } }],
+    ["font", "DV3"],
+    ["text", "DV3 before its file changes"],
+    ["font_families.update", { "=DV3": { "normal": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "DV3"],
+    ["text", "DV3 after its file changes"],
+    ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["draw_text", "x", { "at": [0.0, 100.0], "style": ":bold" }]]
   ]
 }

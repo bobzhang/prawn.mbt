@@ -55,8 +55,8 @@ fn Document::set_box(
   }
   let page = self.page()
   let mark = page.items.length()
-  // the fallback families' faces in the styles the text is set in
-  self.prepare_fallbacks(fragments)
+  // split across the fallback fonts first (Prawn's fallback processing)
+  let fragments = self.split_fallbacks(fragments)
   let ctx = self.text_context
   let face = self.face_of(base)
   // the box's top left in the bounds (where Prawn keeps a box's `at`):
@@ -71,7 +71,7 @@ fn Document::set_box(
   // the box ends
   // the text, as Prawn's arranger takes it in (an empty fragment is none)
   let text = ctx
-    .apply_fallbacks(fragments, split_first=true)
+    .apply_fallbacks(fragments)
     .filter(f => !f.text.is_empty() || f.anchor is Some(_) || f.style.image >= 0)
   // where the text not yet set starts: a fragment, and an offset in it
   let mut at_fragment = 0
@@ -205,7 +205,7 @@ pub fn Document::text_box(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
-      self.ensure_style(self.family, style.flags())
+      self.ensure_font(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()

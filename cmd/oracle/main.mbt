@@ -171,7 +171,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         text,
         at=point(at),
         size?=present(opts.get("size")).map(number),
-        style?=present(opts.get("style")).bind(symbol),
+        style?=font_style(opts.get("style")),
         rotate=present(opts.get("rotate")).map(number).unwrap_or(0.0),
         kerning=!(opts.get("kerning") is Some(False)),
       )

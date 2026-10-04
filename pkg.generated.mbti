@@ -106,9 +106,9 @@ pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Doubl
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit raise PrawnError
 pub fn Document::default_leading(Self) -> Double
-pub fn Document::draw_text(Self, String, at~ : (Double, Double), size? : Double, style? : String, rotate? : Double, kerning? : Bool) -> Unit raise
+pub fn Document::draw_text(Self, String, at~ : (Double, Double), size? : Double, style? : FontStyle, rotate? : Double, kerning? : Bool) -> Unit raise
 pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
-pub fn Document::fallback_fonts(Self, Array[String]) -> Unit raise PrawnError
+pub fn Document::fallback_fonts(Self, Array[String]) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise

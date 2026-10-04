@@ -15,3 +15,7 @@
 {"query":["width_of","Hello"],"value":35.434}
 {"query":["width_of","Hello"],"value":40.39}
 {"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["text_box","€",{"at":[0.0,250.0],"width":7.0}],"value":""}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
