@@ -1,0 +1,48 @@
+{
+  "ops": [
+    ["draw_text", "at a point", { "at": [100.0, 600.0] }],
+    ["draw_text", "AVATAR big and bold", { "at": [100.0, 560.0], "size": 24.0, "style": ":bold" }],
+    ["draw_text", "AVATAR unkerned", { "at": [100.0, 520.0], "size": 24.0, "kerning": false }],
+    ["draw_text", "turned", { "at": [400.0, 500.0], "rotate": 30.0, "style": ":bold_italic" }],
+    ["draw_text", 42, { "at": [400.0, 400.0] }],
+    ["draw_text", "dash — once", { "at": [100.0, 480.0] }],
+    ["?cursor"],
+    ["bounding_box", [50, 400], { "width": 300, "height": 200 }, { "block": [
+      ["stroke_axis"],
+      ["stroke_axis", { "at": [20, 30], "width": 150, "height": 120, "step_length": 50, "color": "FF0000" }],
+      ["draw_text", "in the box", { "at": [10.0, 10.0] }]
+    ] }],
+    ["canvas", { "block": [
+      ["stroke_bounds"],
+      ["draw_text", "page corner", { "at": [5.0, 5.0] }],
+      ["?bounds"],
+      ["text", "canvas text from the cursor"]
+    ] }],
+    ["?cursor"],
+    ["span", 200.0, { "position": ":center", "block": [["text", "a centred span of text long enough to wrap onto more lines than one"]] }],
+    ["span", 150.0, { "position": ":right", "block": [["text", "right"], ["?bounds"]] }],
+    ["span", 100.0, { "position": 30.0, "block": [["text", "thirty in"]] }],
+    ["indent", 50.0, { "block": [["span", 120.0, { "block": [["text", "left of the margin box, indented"]] }]] }],
+    ["?cursor"],
+    ["canvas", { "block": [["move_down", 700.0], ["text", "near the bottom, then over to a new page and on"], ["text", "past the end of the page so the canvas breaks onto another page and goes on"], ["?bounds"]] }],
+    ["?page_count"],
+    ["move_down", 100.0],
+    ["canvas", { "block": [["draw_text", "no move", { "at": [300.0, 300.0] }]] }],
+    ["?cursor"],
+    ["!raises", "ArgumentError", ["draw_text", "no point", {}]],
+    ["!raises", "ArgumentError", ["draw_text", "aligned", { "at": [0.0, 0.0], "align": ":center" }]],
+    ["!raises", "ArgumentError", ["stroke_axis", { "step_length": 0.0 }]],
+    ["!raises", "ArgumentError", ["draw_text", "null point", { "at": null }]],
+    ["!raises", "none", ["draw_text", "no align", { "at": [10.0, 10.0], "align": null }]],
+    ["!raises", "none", ["draw_text", "false align", { "at": [10.0, 30.0], "align": false }]],
+    ["start_new_page"],
+    ["stroke_axis", { "width": 102.5, "height": 0.0, "step_length": 10.25 }],
+    ["!raises", "ArgumentError", ["canvas", { "block": [["dash", 0.0]] }]],
+    ["?bounds"],
+    ["!raises", "ArgumentError", ["float", { "block": [["move_down", 50.0], ["dash", 0.0]] }]],
+    ["?cursor"],
+    ["!raises", "none", ["draw_text", "null size and rotation", { "at": [10.0, 60.0], "size": null, "rotate": false }]],
+    ["!raises", "ArgumentError", ["span", 100.0, { "position": ":bogus", "block": [] }]],
+    ["formatted_text", [{ "text": "bold with a callback", "styles": [":bold"], "callback": { "trace": "b", "phase": "in_front", "draw": [["draw_text", "marker", { "at": [300.0, 300.0] }], ["text", "nested"]] } }]]
+  ]
+}

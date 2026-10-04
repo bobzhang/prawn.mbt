@@ -146,6 +146,77 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.move_down(number(args[0]))
       Some(Json::null())
     }
+    "draw_text" if only(opts, [
+        "at", "size", "style", "rotate", "kerning", "align",
+      ]) => {
+      let text = match args[0] {
+        String(_) => string(args[0])
+        Number(n, ..) => @prawn.ruby_number(n)
+        _ => raise ScriptError("draw_text needs text")
+      }
+      // Prawn's `inspect_options_for_draw_text`
+      // (Ruby's truth: nil and false are none)
+      guard opts.get("at") is Some(at) && !(at is Null) else {
+        raise @prawn.ArgumentError("The :at option is required for draw_text")
+      }
+      if opts.get("align") is Some(align) && !(align is (Null | False)) {
+        raise @prawn.ArgumentError(
+          "The :align option does not work with draw_text",
+        )
+      }
+      doc.draw_text(
+        text,
+        at=point(at),
+        size?=present(opts.get("size")).map(number),
+        style?=present(opts.get("style")).bind(symbol),
+        rotate=present(opts.get("rotate")).map(number).unwrap_or(0.0),
+        kerning=!(opts.get("kerning") is Some(False)),
+      )
+      Some(Json::null())
+    }
+    "stroke_axis" if only(opts, [
+        "at", "width", "height", "step_length", "negative_axes_length", "color",
+      ]) => {
+      doc.stroke_axis(
+        at=opts.get("at").map(point).unwrap_or((0.0, 0.0)),
+        width?=opts.get("width").map(number),
+        height?=opts.get("height").map(number),
+        step_length=opts.get("step_length").map(number).unwrap_or(100.0),
+        negative_axes_length=opts
+          .get("negative_axes_length")
+          .map(number)
+          .unwrap_or(20.0),
+        color=match opts.get("color") {
+          Some(String(hex)) => @prawn.color_of_hex(hex)
+          None => @prawn.color_of_hex("000000")
+          // CMYK: not yet
+          _ => return None
+        },
+      )
+      Some(Json::null())
+    }
+    "canvas" if opts.is_empty() && block(args) is Some(ops) => {
+      doc.canvas(() => self.ops(ops))
+      Some(Json::null())
+    }
+    "span" if only(opts, ["position"]) && block(args) is Some(ops) => {
+      doc.span(
+        number(args[0]),
+        position=match opts.get("position") {
+          None => SpanLeft
+          Some(Number(x, ..)) => SpanAt(x)
+          Some(p) =>
+            match symbol(p) {
+              Some("left") => SpanLeft
+              Some("center") => SpanCenter
+              Some("right") => SpanRight
+              _ => raise @prawn.ArgumentError("Invalid option for :position")
+            }
+        },
+        () => self.ops(ops),
+      )
+      Some(Json::null())
+    }
     "move_up" => {
       doc.move_up(number(args[0]))
       Some(Json::null())
@@ -882,5 +953,14 @@ fn Run::trace_draw_text(
 fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
   self.ops(ops) catch {
     e => self.log.push({ "callback_error": e.to_string().to_json() })
+  }
+}
+
+///|
+/// An option as Ruby tests it: nil and false are no value.
+fn present(value : Json?) -> Json? {
+  match value {
+    Some(Null) | Some(False) | None => None
+    some => some
   }
 }
