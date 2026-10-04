@@ -10,3 +10,5 @@
 {"query":"page_count","value":2}
 {"query":"cursor","value":100.0}
 {"raises":"Prawn::Errors::UnsupportedImageType","error":"Prawn::Errors::UnsupportedImageType"}
+{"raises":"Prawn::Errors::UnsupportedImageType","error":"Prawn::Errors::UnsupportedImageType"}
+{"query":"cursor","value":584.4}

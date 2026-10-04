@@ -47,20 +47,51 @@ fn be32(data : Bytes, at : Int) -> Int {
 }
 
 ///|
-/// The type and pixel size of an image file, or None when it is neither a
-/// PNG nor a JPEG.
-fn image_info(data : Bytes) -> ImageInfo? {
+/// What Prawn knows of the image in `data` (from `file`), checked as Prawn
+/// checks it (UnsupportedImageType) and as far as pdflite can embed it
+/// faithfully (Unsupported otherwise, rather than drawing it wrongly or
+/// not at all).
+fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
   let n = data.length()
-  // PNG: its signature, then the IHDR chunk with the size
-  if n >= 24 &&
-    data[0] == b'\x89' &&
-    data[1] == b'P' &&
-    data[2] == b'N' &&
-    data[3] == b'G' {
-    return Some({ kind: "png", width: be32(data, 16), height: be32(data, 20), })
+  let png_signature = b"\x89PNG\r\n\x1a\n"
+  if n >= 8 && data[0:8] == png_signature[:] {
+    // the IHDR chunk: size, bit depth, colour type, compression, filter,
+    // interlace
+    if n < 33 {
+      raise UnsupportedImageType("the PNG \{file} is truncated")
+    }
+    let colour_type = data[25].to_int()
+    if data[26] != b'\x00' {
+      raise UnsupportedImageType("PNG uses an unsupported compression method")
+    }
+    if data[27] != b'\x00' {
+      raise UnsupportedImageType("PNG uses an unsupported filter method")
+    }
+    if data[28] != b'\x00' {
+      raise UnsupportedImageType("PNG uses unsupported interlace method")
+    }
+    if ![0, 2, 3, 4, 6].contains(colour_type) {
+      raise UnsupportedImageType("PNG uses an unsupported number of colors")
+    }
+    // what pdflite cannot embed yet: 16 bits a component (read, not drawn),
+    // a transparent colour key (dropped), palette transparency (refused)
+    if data[24] == b'\x10' {
+      raise Unsupported("the image \{file} (a 16-bit PNG)")
+    }
+    if (colour_type == 0 || colour_type == 2) && png_has_chunk(data, "tRNS") {
+      raise Unsupported("the image \{file} (a PNG with a colour key)")
+    }
+    try @pdflite.pdf_read_png_view(data[:]) catch {
+      _ => raise Unsupported("the image \{file} (a PNG pdflite cannot read)")
+    } noraise {
+      _ => ()
+    }
+    return { kind: "png", width: be32(data, 16), height: be32(data, 20), }
   }
   // JPEG: markers up to a start of frame (SOF0–SOF15 but DHT, JPG, DAC)
-  guard n >= 4 && data[0] == b'\xFF' && data[1] == b'\xD8' else { return None }
+  guard n >= 4 && data[0] == b'\xFF' && data[1] == b'\xD8' else {
+    raise UnsupportedImageType("image file is an unrecognised format")
+  }
   let mut i = 2
   while i + 9 < n {
     if data[i] != b'\xFF' {
@@ -77,15 +108,40 @@ fn image_info(data : Bytes) -> ImageInfo? {
       marker != 0xC4 &&
       marker != 0xC8 &&
       marker != 0xCC {
-      return Some({
+      // pdflite embeds 8-bit RGB JPEGs only (and those it can read)
+      if data[i + 4] != b'\x08' || data[i + 9] != b'\x03' {
+        raise Unsupported("the image \{file} (a JPEG not of 8-bit RGB)")
+      }
+      try @pdflite.pdf_image_object_of_jpeg_data(data[:]) catch {
+        _ => raise Unsupported("the image \{file} (a JPEG pdflite cannot read)")
+      } noraise {
+        _ => ()
+      }
+      return {
         kind: "jpeg",
         height: be16(data, i + 5),
         width: be16(data, i + 7),
-      })
+      }
     }
     i += 2 + be16(data, i + 2)
   }
-  None
+  raise UnsupportedImageType("the JPEG \{file} has no frame")
+}
+
+///|
+/// Whether a PNG has a chunk of `name`.
+fn png_has_chunk(data : Bytes, name : String) -> Bool {
+  let mut i = 8
+  while i + 8 <= data.length() {
+    let length = be32(data, i)
+    let matches = name.length() == 4 &&
+      (0).until(4).all(k => data[i + 4 + k].to_int() == name[k].to_int())
+    if matches {
+      return true
+    }
+    i += 12 + length
+  }
+  false
 }
 
 ///|
@@ -100,11 +156,13 @@ fn ImageInfo::dimensions(
 ) -> (Double, Double) {
   let iw = self.width.to_double()
   let ih = self.height.to_double()
+  // in Prawn's order: a width or a height alone, then a scale, then a fit
+  // (with both a width and a height given too), then as given
   match (width, height, scale, fit) {
     (Some(w), None, _, _) => (iw * (w / iw), ih * (w / iw))
     (None, Some(h), _, _) => (iw * (h / ih), ih * (h / ih))
-    (None, None, Some(s), _) => (iw * s, ih * s)
-    (None, None, None, Some((bw, bh))) => {
+    (_, _, Some(s), _) => (iw * s, ih * s)
+    (_, _, None, Some((bw, bh))) => {
       let bp = bw / bh
       let ip = iw / ih
       if ip > bp {
@@ -139,25 +197,7 @@ pub fn Document::image(
   guard (self.assets)(file) is Some(data) else {
     raise ArgumentError("\{file} not found")
   }
-  guard image_info(data) is Some(info) else {
-    raise UnsupportedImageType("image file is an unrecognised format")
-  }
-  // a PNG pdflite cannot embed yet (palette transparency, 16 bits a
-  // component): refused rather than left out of the page
-  if info.kind == "png" {
-    // (16 bits a component: pdflite reads it, but it is not drawn)
-    if data[24] == b'\x10' {
-      raise Unsupported(
-        "the image \{file} (a 16-bit PNG pdflite cannot draw yet)",
-      )
-    }
-    try @pdflite.pdf_read_png_view(data[:]) catch {
-      _ =>
-        raise Unsupported("the image \{file} (a PNG pdflite cannot read yet)")
-    } noraise {
-      _ => ()
-    }
-  }
+  let info = read_image(file, data)
   let (w, h) = info.dimensions(width, height, scale, fit)
   let (x, y) = match at {
     // a point of the bounds (Prawn's `map_to_absolute`)
@@ -221,7 +261,7 @@ fn Document::image_position(
   let x = match position {
     ImageLeft => side
     ImageCenter => side + (bounds_width - width) / 2.0
-    ImageRight => side + bounds_width - width
+    ImageRight => self.bbox.right_side() - width
     ImageAt(dx) => side + dx
   }
   (x, y)
