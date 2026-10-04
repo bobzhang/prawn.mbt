@@ -685,17 +685,30 @@ fn place_line(
   // text), which prints; what is hidden takes no room
   let mut printed_hyphen = -1
   if wraps {
+    // the last character of the last fragment Ruby's `rstrip` leaves
+    // anything in, once its zero-width spaces are gone: fragments of
+    // spaces and tabs alone are passed over, one with a zero-width space
+    // is not (`strip` keeps it), and what decides is in that fragment
+    let mut deciding = -1
     let mut k = visible_end - 1
-    while k >= from &&
-          (
-            items[k].unit == 0x200B ||
-            items[k].unit == pad_unit ||
-            items[k].anchor is Some(_)
-          ) {
-      k -= 1
-    }
-    if k >= from && items[k].unit == 0xAD {
-      printed_hyphen = k
+    while k >= from {
+      let item = items[k]
+      if deciding >= 0 && item.fragment != deciding {
+        break
+      }
+      if item.unit == pad_unit || item.anchor is Some(_) {
+        k -= 1
+      } else if item.unit == 0x20 || item.unit == 0x09 {
+        k -= 1
+      } else if item.unit == 0x200B {
+        deciding = item.fragment
+        k -= 1
+      } else {
+        if item.unit == 0xAD {
+          printed_hyphen = k
+        }
+        break
+      }
     }
   }
   let hidden = fn(i : Int) {
