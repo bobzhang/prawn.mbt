@@ -1,0 +1,7 @@
+{"trace":"lead","event":"render_in_front","text":"one","left":0,"baseline":71.384,"width":20.016000000000002,"height":11.099999999999994,"top":80.0,"bottom":68.9}
+{"trace":"lead","event":"render_in_front","text":"two","left":0,"baseline":57.512,"width":18.552,"height":11.100000000000001,"top":66.128,"bottom":55.028}
+{"trace":"lead","event":"render_in_front","text":"three","left":0,"baseline":43.64,"width":27.348,"height":11.100000000000001,"top":52.256,"bottom":41.156}
+{"query":"page_count","value":3}
+{"query":"cursor","value":46.12800000000001}
+{"query":["default_leading",0.0],"value":0.0}
+{"query":["default_leading=",3.0],"value":3.0}

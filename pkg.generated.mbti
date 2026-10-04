@@ -101,6 +101,7 @@ pub fn Document::cursor(Self) -> Double
 pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> Unit raise PrawnError
+pub fn Document::default_leading(Self) -> Double
 pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
@@ -113,10 +114,15 @@ pub fn Document::horizontal_rule(Self) -> Unit
 pub fn Document::indent(Self, Double, right? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::line(Self, (Double, Double), (Double, Double)) -> Unit
 pub fn Document::line_to(Self, Double, Double) -> Unit
+pub fn Document::move_cursor_to(Self, Double) -> Unit
 pub fn Document::move_down(Self, Double) -> Unit
 pub fn Document::move_to(Self, Double, Double) -> Unit
+pub fn Document::move_up(Self, Double) -> Unit
 pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
 pub fn Document::on_warning(Self, (String) -> Unit) -> Unit
+pub fn Document::pad(Self, Double, () -> Unit raise) -> Unit raise
+pub fn Document::pad_bottom(Self, Double, () -> Unit raise) -> Unit raise
+pub fn Document::pad_top(Self, Double, () -> Unit raise) -> Unit raise
 pub fn Document::page_count(Self) -> Int
 pub fn Document::page_number(Self) -> Int
 pub fn Document::polygon(Self, Array[(Double, Double)]) -> Unit
@@ -128,6 +134,7 @@ pub fn Document::rounded_rectangle(Self, (Double, Double), Double, Double, Doubl
 pub fn Document::save_graphics_state(Self, () -> Unit raise) -> Unit raise
 pub fn Document::scale(Self, Double, origin? : (Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::set_cap_style(Self, @pagelayout.LineCap) -> Unit
+pub fn Document::set_default_leading(Self, Double) -> Unit
 pub fn Document::set_fill_color(Self, @pagelayout.Color) -> Unit
 pub fn Document::set_font(Self, String) -> Unit
 pub fn Document::set_font_size(Self, Double) -> Unit

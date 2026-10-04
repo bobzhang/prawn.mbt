@@ -79,6 +79,8 @@ pub struct Document {
   /// whether the one about built-in fonts and text beyond ASCII was given:
   /// once per document here; Prawn's flag (`Prawn::Fonts::AFM
   /// .hide_m17n_warning`) lasts the process, which no library state should
+  /// the leading text is set with when none is given (`default_leading`)
+  priv mut default_leading : Double
   priv mut warn : (String) -> Unit
   priv mut m17n_warned : Bool
 }
@@ -132,6 +134,7 @@ pub fn Document::new(
     dry_run: false,
     draw_text_callback: None,
     scopes: [],
+    default_leading: 0.0,
     warn: _ => (),
     m17n_warned: false,
   }
@@ -200,7 +203,7 @@ pub fn Document::text(
   string : String,
   size? : Double,
   align? : Alignment = Left,
-  leading? : Double = 0.0,
+  leading? : Double,
   inline_format? : Bool = false,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
@@ -211,7 +214,7 @@ pub fn Document::text(
   } else {
     [TextFragment::new(string)]
   }
-  self.formatted_text(fragments, size?, align~, leading~, draw_text_callback?)
+  self.formatted_text(fragments, size?, align~, leading?, draw_text_callback?)
 }
 
 ///|
@@ -331,8 +334,10 @@ pub fn Document::height_of(
   string : String,
   size? : Double,
   width? : Double,
-  leading? : Double = 0.0,
+  leading? : Double,
 ) -> Double raise PrawnError {
+  // the document's default leading unless given (Prawn's `default_leading`)
+  let leading = leading.unwrap_or(self.default_leading)
   // an empty box: its final gap is the leading alone
   if string.is_empty() {
     return leading
@@ -390,4 +395,66 @@ fn Document::check(
 pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
   self.page_index = number - 1
   self.page_changed()
+}
+
+///|
+/// Prawn's `default_leading=`: the leading text is set with when none is
+/// given.
+pub fn Document::set_default_leading(self : Document, leading : Double) -> Unit {
+  self.default_leading = leading
+}
+
+///|
+/// Prawn's `default_leading` (without a value).
+pub fn Document::default_leading(self : Document) -> Double {
+  self.default_leading
+}
+
+///|
+/// Prawn's `move_up`.
+pub fn Document::move_up(self : Document, amount : Double) -> Unit {
+  self.move_down(-amount)
+}
+
+///|
+/// Prawn's `move_cursor_to`: the cursor at `cursor` points above the bottom
+/// of the bounds (as they are before the move).
+pub fn Document::move_cursor_to(self : Document, cursor : Double) -> Unit {
+  let box = self.current_box()
+  let y = self.y()
+  self.set_y(cursor + (box.top - box.height_at(y)))
+}
+
+///|
+/// Prawn's `pad_top`: down by `amount`, then `body`.
+pub fn Document::pad_top(
+  self : Document,
+  amount : Double,
+  body : () -> Unit raise,
+) -> Unit raise {
+  self.move_down(amount)
+  body()
+}
+
+///|
+/// Prawn's `pad_bottom`: `body`, then down by `amount`.
+pub fn Document::pad_bottom(
+  self : Document,
+  amount : Double,
+  body : () -> Unit raise,
+) -> Unit raise {
+  body()
+  self.move_down(amount)
+}
+
+///|
+/// Prawn's `pad`: down by `amount` before and after `body`.
+pub fn Document::pad(
+  self : Document,
+  amount : Double,
+  body : () -> Unit raise,
+) -> Unit raise {
+  self.move_down(amount)
+  body()
+  self.move_down(amount)
 }

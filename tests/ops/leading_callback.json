@@ -1,0 +1,13 @@
+{
+  "document": { "page_size": [200, 100], "margin": 10 },
+  "ops": [
+    ["formatted_text", [
+      { "text": "one\ntwo\nthree\n", "callback": { "trace": "lead", "phase": "in_front", "draw": [["default_leading", 20.0]] } },
+      { "text": "four\nfive\nsix\nseven\neight\nnine" }
+    ]],
+    ["?page_count"],
+    ["?cursor"],
+    ["?default_leading", 0.0],
+    ["?default_leading=", 3.0]
+  ]
+}

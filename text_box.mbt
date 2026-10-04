@@ -185,11 +185,13 @@ pub fn Document::text_box(
   valign? : VerticalAlignment = Top,
   overflow? : Overflow = Truncate,
   min_font_size? : Double = 5.0,
-  leading? : Double = 0.0,
+  leading? : Double,
   rotate? : Double = 0.0,
   rotate_around? : String = "upper_left",
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> String raise {
+  // the document's default leading unless given (Prawn's `default_leading`)
+  let leading = leading.unwrap_or(self.default_leading)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
   // a text box does not move the position; callbacks may, and it stays
