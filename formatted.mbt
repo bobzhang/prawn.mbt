@@ -506,9 +506,11 @@ pub fn Document::formatted_text(
   let mut remaining = self.fill_box(set, base, align, leading)
   while !remaining.is_empty() {
     self.move_past_bottom()
-    let before = text_of_fragments(remaining)
+    let before = remaining
     remaining = self.fill_box(remaining, base, align, leading)
-    if text_of_fragments(remaining) == before {
+    // Prawn compares the fragments, empty ones too
+    if remaining.length() == before.length() &&
+      remaining.iter().zip(before.iter()).all(p => p.0.text == p.1.text) {
       break
     }
   }
