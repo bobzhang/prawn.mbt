@@ -357,6 +357,9 @@ fn line_window(
   let mut breaks = 0
   // the whitespace the line starts with is stripped: it takes no room
   let mut leading = true
+  // the window holds a character past it whatever the width (one wider
+  // than the line is Prawn's CannotFit)
+  let mut taken = false
   for i in start..<text.length() {
     let f = text[i]
     let from = if i == start { offset } else { 0 }
@@ -378,11 +381,12 @@ fn line_window(
       }
       // never between the halves of a surrogate pair
       let low = u >= 0xDC00 && u <= 0xDFFF
-      if w > 4.0 * width && !low {
+      if taken && w > 4.0 * width && !low {
         cut = j
         break
       }
-      if w > 2.0 * width &&
+      if taken &&
+        w > 2.0 * width &&
         (
           u == ' '.to_int() ||
           u == '\t'.to_int() ||
@@ -400,6 +404,7 @@ fn line_window(
       if u != 0xAD {
         w += face.prawn_width(u) * scale
       }
+      taken = true
     }
     let to = if cut >= 0 { cut } else { s.length() }
     window.push(

@@ -1,0 +1,5 @@
+{"query":"bounds","value":{"left":0.0,"bottom":0,"width":102.0,"height":0.0,"absolute_left":76.0,"absolute_top":506.0}}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"query":["text_box","fits",{"at":[10.0,420.0]}],"value":""}
+{"query":"cursor","value":470.0}
