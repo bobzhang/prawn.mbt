@@ -552,103 +552,6 @@ fn Document::fill_box(
 }
 
 ///|
-/// Prawn's underline and strikethrough (`draw_fragment_overlay_styles`):
-/// lines stroked as `stroke_line` strokes them, in the current stroke
-/// colour and line style, 1.25 points below the fragment's baseline and
-/// 0.3 of its ascender above it (the baseline a sub- or superscript is
-/// raised or dropped to).
-fn Document::decorations(
-  self : Document,
-  x : Double,
-  width : Double,
-  baseline : Double,
-  style : Style,
-  face : Face,
-  text : String,
-) -> Array[@pagelayout.PageItem] {
-  let a = face.ascender_pt(style.size)
-  let d = face.descender_pt(style.size)
-  let rise = match style.script {
-    1 => 0.85 * a
-    -1 => -d
-    _ => 0.0
-  }
-  let base = baseline - rise
-  let gs = self.gs()
-  let meta = self.fragment_meta.get(style.callback)
-  // the stroke colour current now: a fragment's own colour while it is
-  // drawn (`begin_fragment`), or what a callback set
-  let stroke = gs.stroke
-  let line = fn(y : Double) -> @pagelayout.PageItem {
-    Graphic({
-      x_pt: 0.0,
-      y_pt: 0.0,
-      ops: [
-        Path({
-          segments: [MoveTo(x, y), LineTo(x + width, y)],
-          fill: None,
-          fill_rule: NonZero,
-          stroke: Some(Solid(stroke)),
-          stroke_style: {
-            width: if gs.line_width == 0.0 {
-              Hairline
-            } else {
-              Width(gs.line_width)
-            },
-            cap: gs.cap,
-            join: gs.join,
-            miter_limit: 10.0,
-            dash: gs.dash.copy(),
-            dash_phase: gs.dash_phase,
-          },
-        }),
-      ],
-    })
-  }
-  let out = []
-  if style.underline {
-    out.push(line(base + 1.25))
-  }
-  if style.strike {
-    out.push(line(base - a * 0.3))
-  }
-  // a link and an anchor both: the destination's annotation after the
-  // URI's, as Prawn draws them
-  match meta {
-    Some({ anchor: Some(name), .. }) =>
-      out.push(
-        Link({
-          x_pt: x,
-          y_pt: base - a,
-          w_pt: width,
-          h_pt: a + d,
-          target: Named(name),
-        }),
-      )
-    _ => ()
-  }
-  // then the fragment's `render_in_front` callbacks (not in dry runs)
-  match meta {
-    Some(m) if !self.dry_run && !m.callbacks.is_empty() => {
-      let fragment = self.placed(x, width, baseline, style, face, text)
-      out.append(
-        self.capture(() => {
-          for callback in m.callbacks {
-            match callback.render_in_front {
-              Some(f) => f(fragment)
-              None => ()
-            }
-          }
-        }),
-      )
-    }
-    _ => ()
-  }
-  self.end_fragment()
-  out
-}
-
-///|
 /// Ruby's `Float()` of a string: an optional sign, then digits (with
 /// single underscores between them) with an optional fraction (`.5` too)
 /// and exponent, or a hex integer (`0x10`), with surrounding whitespace;
@@ -752,11 +655,11 @@ fn ruby_float(s : String) -> Double raise PrawnError {
 }
 
 ///|
-/// A run as Prawn's fragment: in the coordinates of the current bounds,
-/// the baseline at the run's rise (a sub- or superscript's).
-fn Document::placed(
-  self : Document,
-  x : Double,
+/// A fragment as Prawn's callbacks see it: `left` and `baseline` in the
+/// coordinates of the bounds, the baseline raised to a sub- or
+/// superscript's.
+fn placed_fragment(
+  left : Double,
   width : Double,
   baseline : Double,
   style : Style,
@@ -765,103 +668,16 @@ fn Document::placed(
 ) -> PlacedFragment {
   let a = face.ascender_pt(style.size)
   let d = face.descender_pt(style.size)
-  let rise = match style.script {
-    1 => 0.85 * a
-    -1 => -d
-    _ => 0.0
-  }
-  let box = self.current_box()
-  let base = self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y())
+  let base = baseline + script_rise(style, face)
   {
     text,
-    left: x - box.left,
+    left,
     baseline: base,
     width,
     height: a + d,
     top: base + a,
     bottom: base - d,
   }
-}
-
-///|
-/// What goes behind a run: its fragment's `render_behind` callbacks (not in
-/// dry runs).
-fn Document::underlays(
-  self : Document,
-  x : Double,
-  width : Double,
-  baseline : Double,
-  style : Style,
-  face : Face,
-  text : String,
-) -> Array[@pagelayout.PageItem] {
-  // the fragment's state from here to its overlays (`decorations`)
-  self.begin_fragment(style)
-  match self.fragment_meta.get(style.callback) {
-    Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
-      let fragment = self.placed(x, width, baseline, style, face, text)
-      self.capture(() => {
-        for callback in meta.callbacks {
-          match callback.render_behind {
-            Some(f) => f(fragment)
-            None => ()
-          }
-        }
-      })
-    }
-    _ => []
-  }
-}
-
-///|
-/// A run drawn by the `draw_text_callback` of the text being set, when it
-/// has one: the text and where it goes (`at`, in the coordinates of the
-/// bounds) with Prawn's default kerning.
-fn Document::draw_text_instead(
-  self : Document,
-  text : String,
-  x : Double,
-  baseline : Double,
-  _style : Style,
-) -> Array[@pagelayout.PageItem]? {
-  match self.draw_text_callback {
-    Some(draw) => {
-      // a dry run draws nothing either way
-      if self.dry_run {
-        return Some([])
-      }
-      let box = self.current_box()
-      let at = (
-        x - box.left,
-        self.flow.page_h() - baseline - box.bottom_at(self.y()),
-      )
-      Some(self.capture(() => draw(text, at, true)))
-    }
-    None => None
-  }
-}
-
-///|
-/// Runs a callback and returns what it drew on the page it started on,
-/// taken off that page so the run can put it where Prawn would: behind or
-/// in front of the text.
-fn Document::capture(
-  self : Document,
-  body : () -> Unit,
-) -> Array[@pagelayout.PageItem] {
-  // the page it starts on (its record holds it through insertions)
-  let page = self.page()
-  let mark = page.items.length()
-  // the callback runs at the document's position, which setting a box
-  // does not move, and may move it
-  body()
-  let items = page.items
-  if mark > items.length() {
-    return []
-  }
-  let drawn = items[mark:].to_owned()
-  items.truncate(mark)
-  drawn
 }
 
 ///|

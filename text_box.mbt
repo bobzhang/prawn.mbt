@@ -58,7 +58,12 @@ fn Document::set_box(
   let mark = page.items.length()
   let ctx = flow.text()
   let face = flow.font(base)
-  let top = flow.page_h() - at.1
+  // the box's top left in the bounds (where Prawn keeps a box's `at`):
+  // each line is drawn on the page current then, which a callback may
+  // change
+  let box = self.current_box()
+  let left = at.0 - box.left
+  let top = at.1 - box.bottom_at(self.y())
   // Prawn's `Wrap#wrap`: line by line, each stripped of its leading
   // whitespace and wrapped, CannotFit when not even its first character
   // fits, set when it fits the height; the first that does not is where
@@ -119,7 +124,7 @@ fn Document::set_box(
       break
     }
     baseline = next
-    flow.ink_line(line, at.0, top + baseline)
+    self.ink_line(line, left, top - baseline)
     placed += 1
     // the text after the line, in the text's terms
     let (w, offset) = match after {

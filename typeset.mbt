@@ -75,6 +75,10 @@ pub(all) struct Line {
   /// the line marks of highlighted source lines (`Style::line_mark`): x,
   /// their fragment's style and face
   marks : Array[(Double, Style, Face)]
+  /// every fragment the line holds, in order (Prawn draws each, one with
+  /// nothing to show on the line too): its index, the x it starts at, its
+  /// style and face
+  held : Array[(Int, Double, Style, Face)]
 }
 
 ///|
@@ -270,6 +274,7 @@ pub fn typeset_lines(
   align : Alignment,
   first_width? : Double = width,
   indent_paragraphs? : Bool = false,
+  paragraphs? : Bool = false,
 ) -> Array[Line] {
   typeset_paragraph_lines(
     fragments,
@@ -278,6 +283,7 @@ pub fn typeset_lines(
     align,
     first_width~,
     indent_paragraphs~,
+    paragraphs~,
   ).0
 }
 
@@ -291,6 +297,7 @@ fn typeset_paragraph_lines(
   align : Alignment,
   first_width? : Double = width,
   indent_paragraphs? : Bool = false,
+  paragraphs? : Bool = false,
 ) -> (Array[Line], Array[Bool]) {
   let fragments = ctx.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
@@ -319,6 +326,7 @@ fn typeset_paragraph_lines(
         align,
         align == Justify && !is_last && !hard,
         hard,
+        paragraphs=paragraphs || indent_paragraphs,
       ),
     )
     starts.push(start)
@@ -645,20 +653,22 @@ fn place_line(
   align : Alignment,
   justify : Bool,
   hard : Bool,
+  paragraphs? : Bool = false,
 ) -> Line {
-  // trailing spaces are not part of the line, nor are the spaces before
-  // anchors that end it: Prawn's `omit_trailing_whitespace_from_line_width`
-  // takes a fragment whose text Ruby's `strip` empties as white space, and
+  // the spaces a line ends with are not part of it, nor are anchors that
+  // end it: Prawn's `omit_trailing_whitespace_from_line_width` takes a
+  // fragment whose text Ruby's `strip` empties as white space, and
   // asciidoctor-pdf's anchor text is a NUL, which `strip` removes; so is
-  // the highlight mark of a source line, but Prawn stops at a line break,
-  // so only a line that wraps (source_wrap's breaks included) or ends the
-  // text loses the blanks before it
+  // the highlight mark of a source line. But Prawn stops at a line break:
+  // only a line that wraps (source_wrap's breaks included) or ends the
+  // text loses the spaces and marks it ends with
   let wraps = !hard ||
+    paragraphs ||
     (to < items.length() && fragments[items[to].fragment].style.wrap_break)
   let mut visible_end = to
   while visible_end > from &&
         (
-          is_break_space(items[visible_end - 1].unit) ||
+          (wraps && is_break_space(items[visible_end - 1].unit)) ||
           items[visible_end - 1].anchor is Some(_) ||
           (wraps && fragments[items[visible_end - 1].fragment].style.line_mark)
         ) {
@@ -831,12 +841,18 @@ fn place_line(
   // zero wide where the fragment sits, as Prawn annotates every fragment
   // of the line
   let empty_links : Array[(Double, Style, Face)] = []
+  let held : Array[(Int, Double, Style, Face)] = []
   let mut seen = -1
   let mut position = offset
   for k in from..<to {
     let item = items[k]
     let f = item.fragment
     let style = fragments[f].style
+    if f != seen {
+      held.push(
+        (f, if k < visible_end { position } else { x }, style, faces[f]),
+      )
+    }
     if f != seen &&
       style.link is Some(_) &&
       style.image < 0 &&
@@ -861,6 +877,7 @@ fn place_line(
     empty_links,
     images,
     marks,
+    held,
   }
 }
 

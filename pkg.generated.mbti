@@ -39,7 +39,7 @@ pub fn rgb_hex(Int) -> @pagelayout.Color
 
 pub fn source_wrap(Array[Fragment], TextContext, Double) -> Array[Fragment]?
 
-pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_width? : Double, indent_paragraphs? : Bool) -> Array[Line]
+pub fn typeset_lines(Array[Fragment], TextContext, Double, Alignment, first_width? : Double, indent_paragraphs? : Bool, paragraphs? : Bool) -> Array[Line]
 
 pub fn vrule(Double, Double, Double, Double, @pagelayout.Color) -> @pagelayout.PageItem
 
@@ -185,11 +185,6 @@ pub(all) struct Flow {
   mut page_width_now : Double
   mut page_height_now : Double
   mut page_started : (Int, Int) -> Unit
-  mut move_past_bottom : (() -> Unit)?
-  mut decorate : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
-  mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
-  mut draw_text : ((String, Double, Double, Style) -> Array[@pagelayout.PageItem]?)?
-  mut ink_color : ((Style) -> @pagelayout.Color)?
 }
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit
@@ -282,6 +277,7 @@ pub(all) struct Line {
   empty_links : Array[(Double, Style, Face)]
   images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
   marks : Array[(Double, Style, Face)]
+  held : Array[(Int, Double, Style, Face)]
 }
 
 pub(all) struct LineMetrics {
