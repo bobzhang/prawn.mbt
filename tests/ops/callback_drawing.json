@@ -13,6 +13,10 @@
       { "text": "red, recoloured behind", "color": "FF0000", "styles": [":underline"], "callback": { "trace": "chg", "phase": "behind", "draw": [["fill_color", "00AA00"], ["stroke_color", "0000FF"]] } },
       { "text": " then plain" }
     ]],
+    ["formatted_text", [
+      { "text": "outer", "color": "FF0000", "font": "Courier", "size": 20, "callback": { "trace": "nest", "phase": "in_front", "draw": [["formatted_text", [{ "text": "inner", "color": "0000FF", "size": 10 }]]] } }
+    ]],
+    ["text", "plain after the nesting"],
     ["?cursor"]
   ]
 }

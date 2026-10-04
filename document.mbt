@@ -78,8 +78,12 @@ pub struct Document {
   /// called
   priv mut dry_run : Bool
   /// during a `draw_text_callback` text: what draws its pieces instead
-  /// the fragment being drawn (`formatted.mbt`)
-  priv mut scope : FragmentScope?
+  /// the fragments being drawn, innermost last: text set from inside a
+  /// callback nests (`formatted.mbt`)
+  priv scopes : Array[FragmentScope]
+  /// how far callbacks have moved the position while the current text
+  /// is set (Prawn moves down from where they leave it)
+  priv mut callback_shift : Double
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
@@ -143,7 +147,8 @@ pub fn Document::new(
     fragment_meta: [],
     dry_run: false,
     draw_text_callback: None,
-    scope: None,
+    scopes: [],
+    callback_shift: 0.0,
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)

@@ -482,8 +482,12 @@ pub fn Document::formatted_text(
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
+  // the shift of this text's callbacks, apart from an outer text's
+  let outer_shift = self.callback_shift
+  self.callback_shift = 0.0
   defer {
     self.draw_text_callback = saved_callback
+    self.callback_shift = outer_shift
   }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
@@ -520,6 +524,10 @@ pub fn Document::formatted_text(
     None => 0.0
   }
   self.move_down(gap + leading)
+  // and from wherever the callbacks moved the position (Prawn moves down
+  // relative to it)
+  self.flow.y += self.callback_shift
+  self.track()
 }
 
 ///|
@@ -824,7 +832,14 @@ fn Document::capture(
   let page : Ref[Int] = { val: self.flow.page, }
   self.open_pages.push(page)
   let mark = self.flow.model.pages[page.val].items.length()
+  // where Flow is, which the callback may move: Flow carries on from here,
+  // and the text applies the move once it is set
+  let (y, on_page) = (self.flow.y, self.flow.page)
   body()
+  if self.flow.page == on_page {
+    self.callback_shift += self.flow.y - y
+    self.flow.y = y
+  }
   self.open_pages.pop() |> ignore
   let items = self.flow.model.pages[page.val].items
   if mark > items.length() {
@@ -854,7 +869,7 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
   let gs = self.gs()
   let color_set = self.fragment_meta.get(style.callback)
     is Some({ color_set: true, .. })
-  self.scope = Some({
+  self.scopes.push({
     family: self.family,
     size: self.size,
     fill: gs.fill,
@@ -874,8 +889,7 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
 /// taken off again on the page current now (a colour a callback set in a
 /// fragment without one stays, as with Prawn's arranger).
 fn Document::end_fragment(self : Document) -> Unit {
-  guard self.scope is Some(scope) else { return }
-  self.scope = None
+  guard self.scopes.pop() is Some(scope) else { return }
   self.family = scope.family
   self.size = scope.size
   if scope.color_set {
