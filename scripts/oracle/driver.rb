@@ -3,6 +3,7 @@
 # Runs one operation script (docs/op-scripts.md) through Ruby Prawn.
 #
 #   ruby scripts/oracle/driver.rb SCRIPT.json OUT.pdf OUT.jsonl
+#   ruby scripts/oracle/driver.rb --batch LIST   (see the end of this file)
 #
 # Writes the rendered PDF and the observation log: one JSON object per line,
 # in the order the observations happened (query results, callback traces,
@@ -220,20 +221,52 @@ module WarningLog
 end
 Warning.singleton_class.prepend(WarningLog)
 
-if $PROGRAM_NAME == __FILE__
-  script_path, pdf_path, log_path = ARGV
-  abort('usage: driver.rb SCRIPT.json OUT.pdf OUT.jsonl') unless log_path
+# Runs the script at script_path, writing pdf_path and log_path, from what a
+# fresh process starts with: Prawn's process-wide state (the warning about
+# built-in fonts given once, the count naming repeaters' stamps) is reset.
+def run_script(script_path, pdf_path, log_path)
+  Prawn::Fonts::AFM.hide_m17n_warning = false
+  Prawn::Repeater.count = 0
   log = Log.new(log_path)
   WarningLog.log = log
+  begin
+    Driver.new(JSON.parse(File.read(script_path, encoding: 'UTF-8')), log).run(pdf_path)
+  ensure
+    WarningLog.log = nil
+    log.close
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
   # Fixed warning settings, whatever RUBYOPT says: Kernel#warn reaches the
   # log unless $VERBOSE is nil (-W0); Ruby's own deprecation and
   # experimental warnings stay off.
   $VERBOSE = false
   Warning[:deprecated] = false
   Warning[:experimental] = false
-  begin
-    Driver.new(JSON.parse(File.read(script_path, encoding: 'UTF-8')), log).run(pdf_path)
-  ensure
-    log.close
+  if ARGV[0] == '--batch'
+    # Many scripts in one process (Prawn loads once): each line of LIST is
+    # SCRIPT.json, OUT.pdf and OUT.jsonl separated by tabs; one line per
+    # script goes to stdout, `ok` or `error` and what was raised.
+    abort('usage: driver.rb --batch LIST') unless ARGV[1]
+    File.readlines(ARGV[1], chomp: true).each do |line|
+      next if line.empty?
+
+      script_path, pdf_path, log_path = line.split("\t")
+      begin
+        run_script(script_path, pdf_path, log_path)
+        puts "ok\t#{script_path}"
+      rescue SystemCallError, IOError
+        # writing or reading files failed: the harness, not the script
+        raise
+      rescue StandardError => e
+        puts "error\t#{script_path}\t#{e.class}: #{e.message.lines.first&.chomp}"
+      end
+      $stdout.flush
+    end
+  else
+    script_path, pdf_path, log_path = ARGV
+    abort('usage: driver.rb SCRIPT.json OUT.pdf OUT.jsonl') unless log_path
+    run_script(script_path, pdf_path, log_path)
   end
 end

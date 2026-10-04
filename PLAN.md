@@ -130,6 +130,11 @@ check), soft masks, blend modes, patterns/shadings, annotations and destinations
   need mocks or extension subclasses are hand-ported as MoonBit tests.
 * **Generators** for boundaries (widths within ε of measured values, Unicode scalars, fallback
   switches, page breaks), with shrinking; minimized failures kept as regression scripts.
+  `scripts/fuzz.mbtx` generates op scripts with core's quickcheck (text, formatted text, text
+  boxes, queries, nested bounding/column boxes, indents, floats, page breaks), runs them through
+  the Ruby driver's batch mode (one process, Prawn's process-wide state reset per script) and
+  `cmd/oracle`, compares them as above, and shrinks each failure to a small script that fails the
+  same way (differs, or raises on one side only).
 * **asciidoctor-pdf** remains an end-to-end check: its comparison failures that trace to Prawn
   become prawn.mbt issues with an op-script reproduction.
 * Gates exit non-zero on unexpected differences; known failures are categorized; record counts

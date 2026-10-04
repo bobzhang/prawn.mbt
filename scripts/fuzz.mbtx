@@ -1,0 +1,869 @@
+// Differential fuzzing (PLAN.md §3): random operation scripts
+// (docs/op-scripts.md) run through Ruby Prawn and through this module and
+// compared as the goldens are; a script on which they differ is shrunk to
+// a small one that still differs, ready to become a seed in tests/ops.
+//
+// Usage: moon run --target native scripts/fuzz.mbtx -- [options]
+//   --count N   how many scripts to try (default 100)
+//   --seed S    the random seed (default: from the clock; printed)
+//   --size N    how large scripts get (default 12)
+//   --out DIR   where scripts, outputs and failures go (default _build/fuzz)
+//   --ruby RUBY the Ruby to use (as scripts/oracle.mbtx finds it)
+//   --no-shrink report failures as generated
+//
+// Writes each failure, shrunk, to DIR/failures/NAME.json and prints it
+// with its first differences. Exits non-zero when any script differs.
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/process",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/env",
+  "moonbitlang/core/quickcheck",
+  "moonbitlang/core/quickcheck/splitmix",
+  "moonbitlang/core/string",
+}
+
+///|
+let oracle : String = "_build/native/release/build/cmd/oracle/oracle.exe"
+
+///|
+let compare : String = "_build/native/release/build/cmd/compare/compare.exe"
+
+///|
+let driver : String = "scripts/oracle/driver.rb"
+
+///|
+let ruby_candidates : Array[String] = [
+  "/opt/homebrew/opt/ruby/bin/ruby", "/usr/local/opt/ruby/bin/ruby",
+]
+
+// ---------------------------------------------------------------------
+// Generating scripts: the ops both sides run (cmd/oracle), with values
+// that keep Prawn from refusing them (boxes wide enough for any glyph).
+
+///|
+using @quickcheck {type Generator}
+
+///|
+/// A generator from a function of the size and the random state.
+fn[T] gen(f : (Int, @splitmix.RandomState) -> T) -> Generator[T] {
+  @quickcheck.Generator::Generator(f)
+}
+
+///|
+let words : Array[String] = [
+  "the", "quick", "brown", "fox", "jumps", "over", "a", "lazy", "dog", "I", "x",
+  "Prawn", "MoonBit", "AVATAR", "Typography", "WAVE", "To", "fi", "well-known",
+  "hyphen-ated-compound", "supercalifragilisticexpialidocious", "1234567890",
+  "(parens)", "\"quoted\"", "end.", "comma,", "—dash—", "50%",
+]
+
+///|
+/// What goes between words: mostly a space, sometimes more, or a break.
+let separators : Array[(UInt, String)] = [
+  (12, " "),
+  (2, "  "),
+  (2, "\n"),
+  (1, " \n"),
+  (1, "\n\n"),
+  (1, "\n "),
+]
+
+///|
+/// A dimension, spelled as a float even when whole (`200.0`): Ruby would
+/// take `200` as an Integer and divide it as one (column widths), which this
+/// module deliberately does not.
+fn number(x : Double) -> Json {
+  let s = x.to_string()
+  Json::number(x, repr=if s.contains(".") || s.contains("e") { s } else { s + ".0" })
+}
+
+///|
+fn symbol(name : String) -> Json {
+  (":" + name).to_json()
+}
+
+///|
+/// Text of up to `size` words.
+fn text_gen(size : Int) -> Generator[String] {
+  let sep = @quickcheck.frequency(
+    separators.map(s => (s.0, @quickcheck.pure(s.1))),
+  )
+  let word = @quickcheck.elements(words)
+  @quickcheck.int_range(0, size + 1).flat_map(n => gen((sz, rs) => {
+    let sb = StringBuilder()
+    for i in 0..<n {
+      if i > 0 {
+        sb.write_string(sep.run(sz, rs))
+      }
+      sb.write_string(word.run(sz, rs))
+    }
+    sb.to_string()
+  }))
+}
+
+///|
+fn maybe(g : Generator[Json], weight? : UInt = 1) -> Generator[Json?] {
+  @quickcheck.frequency([
+    (weight, g.map(x => Some(x))),
+    (2, @quickcheck.pure(None)),
+  ])
+}
+
+///|
+/// An options object from optional entries.
+fn options(entries : Array[(String, Generator[Json?])]) -> Generator[Json] {
+  gen((sz, rs) => {
+    let map : Map[String, Json] = Map([])
+    for entry in entries {
+      match entry.1.run(sz, rs) {
+        Some(v) => map[entry.0] = v
+        None => ()
+      }
+    }
+    Json::object(map)
+  })
+}
+
+///|
+fn size_gen() -> Generator[Json] {
+  @quickcheck.elements([6.0, 8.0, 10.0, 12.0, 14.0, 18.0, 24.0, 36.0]).map(
+    number,
+  )
+}
+
+///|
+fn align_gen() -> Generator[Json] {
+  @quickcheck.elements(["left", "center", "right", "justify"]).map(symbol)
+}
+
+///|
+fn leading_gen() -> Generator[Json] {
+  @quickcheck.elements([0.0, 2.0, 5.0, 12.0]).map(number)
+}
+
+///|
+fn range_gen(lo : Int, hi : Int, step : Int) -> Generator[Json] {
+  @quickcheck.int_range(lo / step, hi / step + 1).map(n => number(
+    (n * step).to_double(),
+  ))
+}
+
+///|
+fn fragment_gen(size : Int) -> Generator[Json] {
+  let styles = gen((_, rs) => {
+    let all = [
+      "bold", "italic", "underline", "strikethrough", "superscript", "subscript",
+    ]
+    let picked : Array[Json] = []
+    for s in all {
+      if rs.next_uint(limit=5) == 0 {
+        picked.push(symbol(s))
+      }
+    }
+    Json::array(picked)
+  })
+  gen((sz, rs) => {
+    let map : Map[String, Json] = {
+      "text": text_gen(size / 2 + 1).run(sz, rs).to_json(),
+    }
+    if rs.next_uint(limit=2) == 0 {
+      map["styles"] = styles.run(sz, rs)
+    }
+    if rs.next_uint(limit=3) == 0 {
+      map["size"] = size_gen().run(sz, rs)
+    }
+    if rs.next_uint(limit=4) == 0 {
+      map["color"] = @quickcheck.elements(["FF0000", "0000FF", "008800"])
+        .run(sz, rs)
+        .to_json()
+    }
+    if rs.next_uint(limit=6) == 0 {
+      map["link"] = "https://example.com".to_json()
+    }
+    Json::object(map)
+  })
+}
+
+///|
+fn text_op(size : Int) -> Generator[Json] {
+  text_gen(size).zip_with(
+    options([
+      ("size", maybe(size_gen())),
+      ("align", maybe(align_gen())),
+      ("leading", maybe(leading_gen())),
+    ]),
+    (s, o) => Json::array(["text".to_json(), s.to_json(), o]),
+  )
+}
+
+///|
+fn formatted_text_op(size : Int) -> Generator[Json] {
+  @quickcheck.int_range(1, 5)
+  .flat_map(n => fragment_gen(size).array_with_size(n))
+  .zip_with(
+    options([
+      ("size", maybe(size_gen())),
+      ("align", maybe(align_gen())),
+      ("leading", maybe(leading_gen())),
+    ]),
+    (fs, o) => Json::array(["formatted_text".to_json(), Json::array(fs), o]),
+  )
+}
+
+///|
+fn text_box_op(size : Int) -> Generator[Json] {
+  let at = range_gen(0, 300, 10).zip_with(range_gen(100, 700, 10), (x, y) => Json::array([
+    x, y,
+  ]))
+  text_gen(size).zip_with(
+    options([
+      ("at", maybe(at, weight=4)),
+      ("width", maybe(range_gen(60, 400, 10), weight=4)),
+      ("height", maybe(range_gen(20, 300, 10), weight=4)),
+      ("size", maybe(size_gen())),
+      ("align", maybe(align_gen())),
+      (
+        "valign",
+        maybe(@quickcheck.elements(["top", "center", "bottom"]).map(symbol)),
+      ),
+      (
+        "overflow",
+        maybe(
+          @quickcheck.elements(["truncate", "shrink_to_fit", "expand"]).map(
+            symbol,
+          ),
+        ),
+      ),
+      ("leading", maybe(leading_gen())),
+    ]),
+    (s, o) => Json::array(["?text_box".to_json(), s.to_json(), o]),
+  )
+}
+
+///|
+fn query_op(size : Int) -> Generator[Json] {
+  @quickcheck.one_of([
+    @quickcheck.pure(Json::array(["?cursor".to_json()])),
+    @quickcheck.pure(Json::array(["?bounds".to_json()])),
+    @quickcheck.pure(Json::array(["?page_count".to_json()])),
+    @quickcheck.pure(Json::array(["?page_number".to_json()])),
+    text_gen(size).zip_with(
+      options([
+        ("size", maybe(size_gen())),
+        ("width", maybe(range_gen(60, 400, 10))),
+        ("leading", maybe(leading_gen())),
+      ]),
+      (s, o) => Json::array(["?height_of".to_json(), s.to_json(), o]),
+    ),
+    text_gen(size).zip_with(options([("size", maybe(size_gen()))]), (s, o) => Json::array([
+      "?width_of".to_json(),
+      s.to_json(),
+      o,
+    ])),
+  ])
+}
+
+///|
+fn block(ops : Array[Json]) -> Json {
+  Json::object({ "block": Json::array(ops) })
+}
+
+///|
+/// An op; `depth` bounds how deep boxes nest.
+fn op_gen(size : Int, depth : Int) -> Generator[Json] {
+  let simple : Array[(UInt, Generator[Json])] = [
+    (6, text_op(size)),
+    (4, formatted_text_op(size)),
+    (2, text_box_op(size)),
+    (3, query_op(size)),
+    (
+      2,
+      range_gen(0, 120, 5).map(n => Json::array(["move_down".to_json(), n])),
+    ),
+    (1, @quickcheck.pure(Json::array(["start_new_page".to_json()]))),
+  ]
+  if depth <= 0 {
+    return @quickcheck.frequency(simple)
+  }
+  let inner = gen((sz, rs) => ops_gen(size / 2 + 1, depth - 1).run(sz, rs))
+  let boxes : Array[(UInt, Generator[Json])] = [
+    (
+      2,
+      gen((sz, rs) => {
+        let opts : Map[String, Json] = {
+          "width": range_gen(80, 450, 10).run(sz, rs),
+        }
+        if rs.next_uint(limit=2) == 0 {
+          opts["height"] = range_gen(40, 400, 10).run(sz, rs)
+        }
+        Json::array([
+          "bounding_box".to_json(),
+          Json::array([range_gen(0, 100, 10).run(sz, rs), range_gen(200, 720, 10).run(sz, rs)]),
+          Json::object(opts),
+          block(inner.run(sz, rs)),
+        ])
+      }),
+    ),
+    (
+      1,
+      gen((sz, rs) => {
+        let opts : Map[String, Json] = {
+          "width": range_gen(200, 540, 10).run(sz, rs),
+          "columns": Json::number(rs.next_uint(limit=3).reinterpret_as_int().to_double() + 1.0),
+        }
+        if rs.next_uint(limit=2) == 0 {
+          opts["height"] = range_gen(60, 400, 10).run(sz, rs)
+        }
+        if rs.next_uint(limit=3) == 0 {
+          opts["spacer"] = range_gen(0, 30, 5).run(sz, rs)
+        }
+        Json::array([
+          "column_box".to_json(),
+          Json::array([range_gen(0, 50, 10).run(sz, rs), range_gen(200, 720, 10).run(sz, rs)]),
+          Json::object(opts),
+          block(inner.run(sz, rs)),
+        ])
+      }),
+    ),
+    (
+      1,
+      gen((sz, rs) => {
+        Json::array([
+          "indent".to_json(),
+          range_gen(0, 60, 10).run(sz, rs),
+          range_gen(0, 60, 10).run(sz, rs),
+          block(inner.run(sz, rs)),
+        ])
+      }),
+    ),
+    (
+      1,
+      gen((sz, rs) => Json::array(["float".to_json(), block(inner.run(sz, rs))])),
+    ),
+  ]
+  @quickcheck.frequency([..simple, ..boxes])
+}
+
+///|
+fn ops_gen(size : Int, depth : Int) -> Generator[Array[Json]] {
+  @quickcheck.int_range(1, size / 2 + 2).flat_map(n => op_gen(size, depth).array_with_size(
+    n,
+  ))
+}
+
+///|
+fn script_gen(size : Int) -> Generator[Json] {
+  ops_gen(size, 2).map(ops => {
+    // the position and page count at the end, always observed
+    let all = [
+      ..ops,
+      Json::array(["?cursor".to_json()]),
+      Json::array(["?page_count".to_json()]),
+    ]
+    Json::object({ "ops": Json::array(all) })
+  })
+}
+
+// ---------------------------------------------------------------------
+// Running scripts on both sides and comparing.
+
+///|
+/// What became of a script.
+enum Outcome {
+  /// both ran and agree
+  Agree
+  /// both ran and differ (the differences)
+  Differ(Array[String])
+  /// Prawn raised (its error); this module did not
+  RubyRaised(String)
+  /// this module raised (its error); Prawn did not
+  ModuleRaised(String)
+  /// both raised, different errors (Prawn's, this module's)
+  RaisedDifferently(String, String)
+  /// both raised the same error
+  BothRaised
+  /// not a script both can run: the driver or the runner refused it (why)
+  Invalid(String)
+}
+
+///|
+/// What kind of failure an outcome is (a shrunk script must fail the same
+/// way), or None when it is not one.
+fn failure_kind(outcome : Outcome) -> String? {
+  match outcome {
+    Differ(_) => Some("differ")
+    RubyRaised(_) => Some("ruby raised")
+    ModuleRaised(_) => Some("module raised")
+    RaisedDifferently(_, _) => Some("raised differently")
+    Agree | BothRaised | Invalid(_) => None
+  }
+}
+
+///|
+async fn exists(path : String) -> Bool {
+  @fs.exists(path) catch {
+    _ => false
+  }
+}
+
+///|
+async fn find_ruby(flag : String?) -> String {
+  match flag {
+    Some(ruby) => return ruby
+    None => ()
+  }
+  match @env.get_env_var("PRAWN_RUBY") {
+    Some(ruby) if ruby != "" => return ruby
+    _ => ()
+  }
+  for candidate in ruby_candidates {
+    if exists(candidate) {
+      return candidate
+    }
+  }
+  "ruby"
+}
+
+///|
+async fn differences(mode : String, a : String, b : String) -> Array[String] {
+  let (code, out) = @process.collect_output_merged(compare, [mode, a, b])
+  let lines = out
+    .text()
+    .split("\n")
+    .filter(l => !l.is_empty() && !l.has_prefix("Failure("))
+    .map(l => l.to_owned())
+    .to_array()
+  if code == 0 {
+    []
+  } else if lines.is_empty() {
+    ["compare \{mode} failed"]
+  } else {
+    lines
+  }
+}
+
+///|
+/// Runs `scripts` (name → script) under `dir` on both sides; each one's
+/// outcome.
+async fn run_all(
+  ruby : String,
+  dir : String,
+  scripts : Array[(String, Json)],
+) -> Array[Outcome] {
+  // nothing left from an earlier batch (shrinking reuses names)
+  ignore(@process.run("rm", ["-rf", dir]))
+  for sub in ["ops", "ruby", "mbt"] {
+    ignore(@process.run("mkdir", ["-p", "\{dir}/\{sub}"]))
+  }
+  let list = StringBuilder()
+  for entry in scripts {
+    let (name, script) = entry
+    @fs.write_file(
+      "\{dir}/ops/\{name}.json",
+      script.stringify(indent=2),
+      create_mode=CreateOrTruncate,
+    )
+    list.write_string(
+      "\{dir}/ops/\{name}.json\t\{dir}/ruby/\{name}.pdf\t\{dir}/ruby/\{name}.jsonl\n",
+    )
+  }
+  @fs.write_file("\{dir}/list", list.to_string(), create_mode=CreateOrTruncate)
+  let (ruby_code, out) = @process.collect_output_merged(ruby, [
+    driver, "--batch", "\{dir}/list",
+  ])
+  // Ruby's verdict on each script, by its path: Ok, or what it raised
+  let verdicts : Map[String, Result[Unit, String]] = Map([])
+  for line in out.text().split("\n") {
+    let parts = line.split("\t").map(p => p.to_owned()).to_array()
+    match parts {
+      ["ok", path, ..] => verdicts[path] = Ok(())
+      ["error", path, ..] =>
+        verdicts[path] = Err(if parts.length() > 2 { parts[2] } else { "" })
+      _ => ()
+    }
+  }
+  // every script needs Ruby's verdict: without one nothing was compared
+  let missing = scripts.filter(s => !verdicts.contains("\{dir}/ops/\{s.0}.json"))
+  if ruby_code != 0 || !missing.is_empty() {
+    fail(
+      "the Ruby driver (exit \{ruby_code}) gave no verdict on \{missing.length()} script(s):\n\{out.text()}",
+    )
+  }
+  let outcomes = []
+  for entry in scripts {
+    let name = entry.0
+    let path = "\{dir}/ops/\{name}.json"
+    let (code, run) = @process.collect_output_merged(oracle, [
+      path,
+      "\{dir}/mbt/\{name}.pdf",
+      "\{dir}/mbt/\{name}.jsonl",
+    ])
+    let mbt_log = @fs.read_file("\{dir}/mbt/\{name}.jsonl").text() catch {
+      _ => ""
+    }
+    // Prawn's errors by name (Ruby's `Prawn::Errors::CannotFit: …` or an
+    // ArgumentError, this module's `PrawnError.CannotFit`); anything else
+    // Ruby raises means the driver refused the script
+    let ruby_error = match verdicts.get(path) {
+      None | Some(Ok(_)) => None
+      Some(Err(e)) =>
+        if e.has_prefix("Prawn::Errors::") {
+          Some(Ok(e["Prawn::Errors::".length():].to_owned().split(":").next().unwrap().to_owned()))
+        } else if e.has_prefix("ArgumentError") {
+          Some(Ok("ArgumentError"))
+        } else {
+          Some(Err(e))
+        }
+    }
+    let text = run.text()
+    let last_line = text
+      .split("\n")
+      .filter(l => !l.trim().is_empty())
+      .to_array()
+      .last()
+      .map(l => l.to_owned())
+      .unwrap_or("")
+    // the runner refusing the script (`script error:`), a Prawn error, or a
+    // crash
+    let module_error = if code == 0 {
+      None
+    } else if text.contains("script error:") {
+      Some(Err(last_line))
+    } else {
+      match text.find("PrawnError.") {
+        Some(at) =>
+          Some(
+            Ok(
+              text[at + "PrawnError.".length():]
+              .to_owned()
+              .split("\n")
+              .next()
+              .unwrap()
+              .split("(")
+              .next()
+              .unwrap()
+              .trim()
+              .to_owned(),
+            ),
+          )
+        None => Some(Ok("a crash: \{last_line}"))
+      }
+    }
+    outcomes.push(
+      match (ruby_error, module_error) {
+        (Some(Err(why)), _) => Invalid("the driver: \{why}")
+        (_, Some(Err(why))) => Invalid("the runner: \{why}")
+        _ if mbt_log.contains("\"unsupported\"") =>
+          Invalid("this module cannot run an op yet")
+        (Some(Ok(a)), Some(Ok(b))) =>
+          if a == b {
+            BothRaised
+          } else {
+            RaisedDifferently(a, b)
+          }
+        (Some(Ok(a)), None) => RubyRaised(a)
+        (None, Some(Ok(b))) => ModuleRaised(b)
+        (None, None) => {
+          let found = [
+            ..differences(
+              "diff",
+              "\{dir}/ruby/\{name}.pdf",
+              "\{dir}/mbt/\{name}.pdf",
+            ),
+            ..differences(
+              "log",
+              "\{dir}/ruby/\{name}.jsonl",
+              "\{dir}/mbt/\{name}.jsonl",
+            ),
+          ]
+          if found.is_empty() {
+            Agree
+          } else {
+            Differ(found)
+          }
+        }
+      },
+    )
+  }
+  outcomes
+}
+
+// ---------------------------------------------------------------------
+// Shrinking: smaller scripts, each one step from the given one.
+
+///|
+/// Smaller versions of `text`: without its last word, its first half.
+fn smaller_texts(text : String) -> Array[String] {
+  let out = []
+  let words = text.split(" ").map(w => w.to_owned()).to_array()
+  if words.length() > 1 {
+    out.push(words[:words.length() - 1].iter().join(" "))
+    out.push(words[1:].iter().join(" "))
+    out.push(words[:words.length() / 2].iter().join(" "))
+  } else if text.length() > 1 {
+    out.push(text[:text.length() / 2].to_owned())
+  }
+  if text.contains("\n") {
+    out.push(text.replace_all(old="\n", new=" "))
+  }
+  out
+}
+
+///|
+/// Smaller versions of a value inside an op: shorter strings, objects with
+/// an entry fewer, arrays with an element fewer (fragments), blocks of ops
+/// shrunk.
+fn smaller_values(v : Json) -> Array[Json] {
+  match v {
+    String(s) => smaller_texts(s).map(t => t.to_json())
+    Object(map) => {
+      let out = []
+      for key, value in map {
+        if key == "block" {
+          guard value is Array(ops) else { continue }
+          for smaller in smaller_ops(ops) {
+            let m = map.copy()
+            m[key] = Json::array(smaller)
+            out.push(Json::object(m))
+          }
+        } else {
+          // what an op needs stays (a fragment's text, a box's width)
+          if key != "text" && key != "width" {
+            let without = map.copy()
+            without.remove(key)
+            out.push(Json::object(without))
+          }
+          for smaller in smaller_values(value) {
+            let m = map.copy()
+            m[key] = smaller
+            out.push(Json::object(m))
+          }
+        }
+      }
+      out
+    }
+    Array(items) => {
+      let out = []
+      if items.length() > 1 {
+        for i in 0..<items.length() {
+          let fewer = items.copy()
+          fewer.remove(i) |> ignore
+          out.push(Json::array(fewer))
+        }
+      }
+      for i, item in items {
+        for smaller in smaller_values(item) {
+          let changed = items.copy()
+          changed[i] = smaller
+          out.push(Json::array(changed))
+        }
+      }
+      out
+    }
+    _ => []
+  }
+}
+
+///|
+/// Smaller lists of ops: one op fewer, a box replaced by its block, one op
+/// made smaller.
+fn smaller_ops(ops : Array[Json]) -> Array[Array[Json]] {
+  let out = []
+  for i in 0..<ops.length() {
+    let fewer = ops.copy()
+    fewer.remove(i) |> ignore
+    out.push(fewer)
+  }
+  for i, op in ops {
+    guard op is Array(parts) && parts.length() > 0 else { continue }
+    // a box (an op with a block) replaced by what is in it
+    match parts.last() {
+      Some(Object(map)) =>
+        match map.get("block") {
+          Some(Array(inner)) => {
+            let flat = [..ops[:i], ..inner, ..ops[i + 1:]]
+            out.push(flat)
+          }
+          _ => ()
+        }
+      _ => ()
+    }
+    // its arguments, one at a time (the name stays)
+    for k in 1..<parts.length() {
+      for smaller in smaller_values(parts[k]) {
+        let changed = parts.copy()
+        changed[k] = smaller
+        let next = ops.copy()
+        next[i] = Json::array(changed)
+        out.push(next)
+      }
+    }
+  }
+  out
+}
+
+///|
+fn script_ops(script : Json) -> Array[Json] {
+  match script {
+    Object(map) =>
+      match map.get("ops") {
+        Some(Array(ops)) => ops
+        _ => []
+      }
+    _ => []
+  }
+}
+
+///|
+/// Shrinks a failing `script`: tries the smaller scripts a step away, in
+/// batches, and goes on from the first that still fails, until none does.
+async fn shrink(
+  ruby : String,
+  dir : String,
+  script : Json,
+  outcome : Outcome,
+) -> (Json, Outcome) {
+  let mut best = script
+  let mut best_outcome = outcome
+  let mut rounds = 0
+  while rounds < 200 {
+    rounds = rounds + 1
+    let candidates = smaller_ops(script_ops(best))
+      .filter(ops => !ops.is_empty())
+      .map(ops => Json::object({ "ops": Json::array(ops) }))
+    if candidates.is_empty() {
+      break
+    }
+    let mut found = None
+    // a batch at a time, so a failure early on stops the round early
+    let mut start = 0
+    while start < candidates.length() && found is None {
+      let end = @cmp.minimum(start + 64, candidates.length())
+      let batch = candidates[start:end]
+        .iter()
+        .mapi((i, s) => ("s\{start + i}", s))
+        .to_array()
+      let outcomes = run_all(ruby, dir, batch)
+      for i, o in outcomes {
+        if failure_kind(o) == failure_kind(outcome) {
+          found = Some((batch[i].1, o))
+          break
+        }
+      }
+      start = end
+    }
+    match found {
+      Some((s, o)) => {
+        best = s
+        best_outcome = o
+      }
+      None => break
+    }
+  }
+  (best, best_outcome)
+}
+
+// ---------------------------------------------------------------------
+
+///|
+async fn build() -> Unit {
+  for pkg in ["cmd/oracle", "cmd/compare"] {
+    let code = @process.run("moon", [
+      "build", "--target", "native", "--release", pkg,
+    ])
+    if code != 0 {
+      fail("building \{pkg} failed")
+    }
+  }
+}
+
+///|
+fn describe(outcome : Outcome) -> Array[String] {
+  match outcome {
+    Differ(found) => found
+    RubyRaised(e) => ["Ruby Prawn raised \{e}; this module did not"]
+    ModuleRaised(e) => ["this module raised \{e}; Ruby Prawn did not"]
+    RaisedDifferently(a, b) => ["Ruby Prawn raised \{a}, this module \{b}"]
+    Agree | BothRaised | Invalid(_) => []
+  }
+}
+
+///|
+async fn main {
+  let args = @env.args()[1:].to_owned().filter(a => a != "--")
+  let mut count = 100
+  let mut seed = @env.now()
+  let mut size = 12
+  let mut out = "_build/fuzz"
+  let mut ruby_flag = None
+  let mut shrinking = true
+  let mut i = 0
+  while i < args.length() {
+    let arg = args[i]
+    let value = () => {
+      i = i + 1
+      if i >= args.length() {
+        fail("\{arg} needs a value")
+      }
+      args[i]
+    }
+    match arg {
+      "--count" => count = @string.parse_int(value())
+      "--seed" => seed = @string.parse_int64(value()).reinterpret_as_uint64()
+      "--size" => size = @string.parse_int(value())
+      "--out" => out = value()
+      "--ruby" => ruby_flag = Some(value())
+      "--no-shrink" => shrinking = false
+      _ => fail("unknown option \{arg}")
+    }
+    i = i + 1
+  }
+  build()
+  let ruby = find_ruby(ruby_flag)
+  println("seed \{seed}, \{count} scripts, size \{size}")
+  let rs = @splitmix.new(seed~)
+  let gen = script_gen(size)
+  let scripts = Array::makei(count, k => ("fuzz\{k}", gen.run(size, rs)))
+  let outcomes = run_all(ruby, "\{out}/run", scripts)
+  let mut agree = 0
+  let mut both_raised = 0
+  let invalid = []
+  let failures = []
+  for k, outcome in outcomes {
+    match outcome {
+      Agree => agree = agree + 1
+      BothRaised => both_raised = both_raised + 1
+      Invalid(why) => invalid.push("\{scripts[k].0}: \{why}")
+      _ => failures.push((scripts[k], outcome))
+    }
+  }
+  println(
+    "\{agree} agree, \{failures.length()} differ, \{both_raised} raised the same error on both sides, \{invalid.length()} invalid",
+  )
+  // an invalid script is the generator's mistake (or an op this module
+  // lacks): say which
+  for why in invalid.iter().take(5) {
+    println("  invalid \{why}")
+  }
+  ignore(@process.run("mkdir", ["-p", "\{out}/failures"]))
+  for failure in failures {
+    let ((name, script), outcome) = failure
+    let (small, small_outcome) = if shrinking {
+      shrink(ruby, "\{out}/shrink", script, outcome)
+    } else {
+      (script, outcome)
+    }
+    let path = "\{out}/failures/\{seed}-\{name}.json"
+    @fs.write_file(path, small.stringify(indent=2), create_mode=CreateOrTruncate)
+    println("\nFAIL \{path}")
+    println(small.stringify())
+    for d in describe(small_outcome).iter().take(4) {
+      println("  \{d}")
+    }
+  }
+  if !failures.is_empty() {
+    fail("\{failures.length()} script(s) differ")
+  }
+}
