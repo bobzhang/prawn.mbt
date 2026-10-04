@@ -10,3 +10,10 @@
 {"raises":"ArgumentError","error":"ArgumentError"}
 {"raises":"ArgumentError","error":"ArgumentError"}
 {"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"none","error":null}
+{"raises":"none","error":null}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"query":"bounds","value":{"left":0,"bottom":0,"width":612.0,"height":792.0,"absolute_left":0,"absolute_top":792.0}}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"query":"cursor","value":742.0}

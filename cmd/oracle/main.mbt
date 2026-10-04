@@ -155,10 +155,11 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         _ => raise ScriptError("draw_text needs text")
       }
       // Prawn's `inspect_options_for_draw_text`
-      guard opts.get("at") is Some(at) else {
+      // (Ruby's truth: nil and false are none)
+      guard opts.get("at") is Some(at) && !(at is Null) else {
         raise @prawn.ArgumentError("The :at option is required for draw_text")
       }
-      if opts.get("align") is Some(_) {
+      if opts.get("align") is Some(align) && !(align is (Null | False)) {
         raise @prawn.ArgumentError(
           "The :align option does not work with draw_text",
         )
@@ -187,7 +188,9 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           .unwrap_or(20.0),
         color=match opts.get("color") {
           Some(String(hex)) => @prawn.color_of_hex(hex)
-          _ => @prawn.color_of_hex("000000")
+          None => @prawn.color_of_hex("000000")
+          // CMYK: not yet
+          _ => return None
         },
       )
       Some(Json::null())

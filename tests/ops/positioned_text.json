@@ -31,6 +31,15 @@
     ["?cursor"],
     ["!raises", "ArgumentError", ["draw_text", "no point", {}]],
     ["!raises", "ArgumentError", ["draw_text", "aligned", { "at": [0.0, 0.0], "align": ":center" }]],
-    ["!raises", "ArgumentError", ["stroke_axis", { "step_length": 0.0 }]]
+    ["!raises", "ArgumentError", ["stroke_axis", { "step_length": 0.0 }]],
+    ["!raises", "ArgumentError", ["draw_text", "null point", { "at": null }]],
+    ["!raises", "none", ["draw_text", "no align", { "at": [10.0, 10.0], "align": null }]],
+    ["!raises", "none", ["draw_text", "false align", { "at": [10.0, 30.0], "align": false }]],
+    ["start_new_page"],
+    ["stroke_axis", { "width": 102.5, "height": 0.0, "step_length": 10.25 }],
+    ["!raises", "ArgumentError", ["canvas", { "block": [["dash", 0.0]] }]],
+    ["?bounds"],
+    ["!raises", "ArgumentError", ["float", { "block": [["move_down", 50.0], ["dash", 0.0]] }]],
+    ["?cursor"]
   ]
 }

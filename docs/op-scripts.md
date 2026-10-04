@@ -139,7 +139,10 @@ Ruby's integer arithmetic is not reproduced: where Prawn divides integers (a col
 `(width - spacer * (columns - 1)) / columns` with integer width and spacer), Ruby floors and this
 module divides exactly. Seeds use values that divide evenly. Likewise Ruby prints a Float with a
 fraction (`stroke_axis` labels `100.0` along a box whose width is a Float); this module, which
-has no separate integers, prints a whole number without one, as Ruby prints an Integer.
+has no separate integers, prints a whole number without one, as Ruby prints an Integer. Where
+Ruby steps a Float range (`stroke_axis` with a fractional step), its C may fuse `i * step + from`
+into one rounding, depending on how it was compiled, so a step with no exact binary value may
+label differently in the last digit.
 
 ## The manual corpus and the fuzzer
 

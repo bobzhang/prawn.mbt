@@ -105,29 +105,34 @@ pub fn Document::stroke_axis(
         "step can't be \{if step_length == 0.0 { "0" } else { "negative" }}",
       )
     }
-    // Ruby's `(step..width).step(step)`: every step up to the end, which
-    // is labelled as Ruby prints it
-    let mut point = step_length
-    while point <= width {
+    // Ruby's `(step..width).step(step)`: every step up to the end, each
+    // labelled as Ruby prints it
+    // a range with a fraction anywhere is one of Floats, which Ruby prints
+    // with one (`51.0`)
+    let label = fn(point : Double, to : Double) {
+      if [step_length, to].iter().any(x => x != x.floor()) {
+        ruby_float_string(point)
+      } else {
+        ruby_number(point)
+      }
+    }
+    for point in ruby_steps(step_length, width, step_length) {
       self.circle((at.0 + point, at.1), 1.0)
       self.fill()
       self.draw_text(
-        ruby_number(point),
+        label(point, width),
         at=(at.0 + point - 5.0, at.1 - 10.0),
         size=7.0,
       )
-      point += step_length
     }
-    point = step_length
-    while point <= height {
+    for point in ruby_steps(step_length, height, step_length) {
       self.circle((at.0, at.1 + point), 1.0)
       self.fill()
       self.draw_text(
-        ruby_number(point),
+        label(point, height),
         at=(at.0 - 17.0, at.1 + point - 2.0),
         size=7.0,
       )
-      point += step_length
     }
   })
 }
@@ -139,5 +144,42 @@ pub fn ruby_number(x : Double) -> String {
     x.to_int64().to_string()
   } else {
     x.to_string()
+  }
+}
+
+///|
+/// The values Ruby's `(from..to).step(by)` yields for floats: each
+/// `from + i * by`, as many as fit with a little slack for rounding, the
+/// last one no further than `to` (Ruby's `ruby_float_step`).
+fn ruby_steps(from : Double, to : Double, by : Double) -> Array[Double] {
+  let n = (to - from) / by
+  let mut err = (from.abs() + to.abs() + (to - from).abs()) /
+    by.abs() *
+    2.220446049250313e-16
+  if err > 0.5 {
+    err = 0.5
+  }
+  let count = (n + err).floor()
+  let out = []
+  let mut i = 0.0
+  while i <= count {
+    // (Ruby's C may fuse this into one rounding, depending on how it was
+    // compiled: a step with no exact binary value may then differ in its
+    // last digit)
+    let d = i * by + from
+    out.push(if by >= 0.0 && to < d { to } else { d })
+    i += 1.0
+  }
+  out
+}
+
+///|
+/// A Float as Ruby prints it: a whole one with `.0`.
+fn ruby_float_string(x : Double) -> String {
+  let s = x.to_string()
+  if s.contains(".") || s.contains("e") || s.contains("N") || s.contains("I") {
+    s
+  } else {
+    s + ".0"
   }
 }

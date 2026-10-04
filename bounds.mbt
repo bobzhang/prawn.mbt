@@ -197,11 +197,11 @@ fn Document::open_box(
   let parent = self.bbox
   self.bbox = box
   self.set_y(box.top)
-  defer {
-    self.bbox = parent
-  }
+  // the parent is current again only when `body` returns: Prawn has no
+  // `ensure` here, so a block that raises leaves its box current
   body()
   after()
+  self.bbox = parent
 }
 
 ///|
@@ -298,14 +298,13 @@ pub fn Document::indent(
 pub fn Document::float(self : Document, body : () -> Unit raise) -> Unit raise {
   let page = self.page_index
   let y = self.y()
-  defer {
-    if self.page_index != page {
-      self.page_index = page
-      self.page_changed()
-    }
-    self.set_y(y)
-  }
   body()
+  // back only when `body` returns (Prawn has no `ensure` here)
+  if self.page_index != page {
+    self.page_index = page
+    self.page_changed()
+  }
+  self.set_y(y)
 }
 
 ///|
