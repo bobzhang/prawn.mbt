@@ -139,19 +139,15 @@ pub fn Document::text_box(
   let default_height = () => {
     let y = self.y()
     let box = self.current_box()
-    let mut frame : Box? = None
-    for i = self.boxes.length() - 1; i >= 0; i = i - 1 {
-      if self.boxes[i].height is Some(_) {
-        frame = Some(self.boxes[i])
-        break
+    // out through stretchy boxes to one that has a bottom
+    let mut frame = box
+    while frame.height is None {
+      match frame.parent {
+        Some(p) => frame = p
+        None => break
       }
     }
-    let frame_bottom = match frame {
-      Some(f) => f.top - f.height_at(y)
-      // every box stretchy: the margin box
-      None => self.flow.page_h() - box.margin_bottom
-    }
-    at.1 + (box.top - box.height_at(y)) - frame_bottom
+    at.1 + box.bottom_at(y) - frame.bottom_at(y)
   }
   let (box_height, overflow) = match overflow {
     Expand => (default_height(), Truncate)

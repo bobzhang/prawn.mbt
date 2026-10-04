@@ -91,6 +91,9 @@ pub(all) struct Flow {
   /// before it becomes current: what carries over from page to page
   /// (Prawn's graphics state) is copied then
   mut page_started : (Int, Int) -> Unit
+  /// what to do when content runs out of room, instead of the next column
+  /// or page below (a document that keeps bounds of its own sets it)
+  mut move_past_bottom : (() -> Unit)?
 }
 
 ///|
@@ -140,6 +143,7 @@ pub fn Flow::new(
     page_width_now: setup.width,
     page_height_now: setup.height,
     page_started: (_, _) => (),
+    move_past_bottom: None,
   }
 }
 
@@ -224,6 +228,13 @@ fn Flow::fit_page_size(self : Flow) -> Unit {
 /// (a block's background revisits pages its content spilled onto); in a
 /// column box, to the next column first (Prawn's `move_past_bottom`).
 pub fn Flow::advance_page(self : Flow) -> Unit {
+  match self.move_past_bottom {
+    Some(move_on) => {
+      move_on()
+      return
+    }
+    None => ()
+  }
   match self.columns {
     Some(columns) if columns.current < columns.count - 1 => {
       columns.current += 1

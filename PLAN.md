@@ -152,6 +152,8 @@ check), soft masks, blend modes, patterns/shadings, annotations and destinations
 
 * Ruby number semantics where they reach layout: `/` and `%` floor, `round` half away from zero,
   `Float#floor` returns Integer; keep Ruby's floating-point operation order in measurements.
+* Decided: Prawn's integer divisions (column widths from integer widths and spacers) are exact
+  here; Ruby floors them. Documented in `docs/op-scripts.md`.
 * Prawn facts already found: glyph widths truncated to 1/1000 em; line wrap pulls back only the
   previous fragment's last word; name-tree duplicates resolve to the last added.
 * Transcendental functions in rotations: check native/wasm/js agree with Ruby's libm on test

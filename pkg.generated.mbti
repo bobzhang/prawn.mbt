@@ -86,8 +86,6 @@ pub struct Document {
   catalog : FontCatalog
   mut family : String
   mut size : Double
-  mut page_size : (Double, Double)
-  mut layout : String
   // private fields
 }
 pub fn Document::bounding_box(Self, (Double, Double), Double, height? : Double, () -> Unit raise) -> Unit raise
@@ -95,6 +93,7 @@ pub fn Document::bounds(Self) -> Bounds
 pub fn Document::circle(Self, (Double, Double), Double) -> Unit
 pub fn Document::close_and_stroke(Self) -> Unit
 pub fn Document::close_path(Self) -> Unit
+pub fn Document::column_box(Self, (Double, Double), Double, height? : Double, columns? : Int, spacer? : Double, reflow_margins? : Bool, () -> Unit raise) -> Unit raise
 pub fn Document::cursor(Self) -> Double
 pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
@@ -182,6 +181,7 @@ pub(all) struct Flow {
   mut page_width_now : Double
   mut page_height_now : Double
   mut page_started : (Int, Int) -> Unit
+  mut move_past_bottom : (() -> Unit)?
 }
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit

@@ -49,12 +49,14 @@ pub struct Document {
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
-  /// the page size as given and the layout new pages take (Prawn keeps
-  /// them apart: a landscape page reverses the size, whatever its shape)
-  mut page_size : (Double, Double)
-  mut layout : String
-  /// the bounding boxes inside the margin box, innermost last
-  priv boxes : Array[Box]
+  /// each page's size as given and its layout (Prawn keeps them apart: a
+  /// landscape page reverses the size, whatever its shape); a new page
+  /// takes the current page's
+  priv geometry : Array[((Double, Double), String)]
+  /// the current bounding box (Prawn's `@bounding_box`) and the current
+  /// page's margin box (`bounds.mbt`)
+  priv mut bbox : Box
+  priv mut margin : Box
   /// each page's stack of graphics states (`graphics.mbt`; pdf-core's
   /// `GraphicStateStack`): a new page starts with a copy of the state of
   /// the page it was made from
@@ -63,6 +65,9 @@ pub struct Document {
   /// op (`transform.mbt`), in pagelayout's page space; a new page starts
   /// without one
   priv ctms : Array[@pagelayout.Matrix]
+  /// while `text` sets lines: the line gap and leading Prawn moves down by
+  /// before content moves on to the next column or page
+  priv mut pending_gap : Double
   /// the pages the open transformation blocks started on, kept current as
   /// pages are inserted before them
   priv open_pages : Array[Ref[Int]]
@@ -100,17 +105,30 @@ pub fn Document::new(
     margin_bottom: bottom,
     margin_left: left,
   })
+  // the margin box until the first page has its own
+  let margin : Box = {
+    left,
+    top: h - top,
+    width: w - left - right,
+    height: Some(h - top - bottom),
+    stretched: 0.0,
+    parent: None,
+    columns: None,
+    total_left: 0.0,
+    total_right: 0.0,
+  }
   let doc = {
     flow,
     catalog,
     family: "Helvetica",
     size: 12.0,
-    page_size: size,
-    layout,
-    boxes: [],
+    geometry: [],
+    bbox: margin,
+    margin,
     stacks: [],
     ctms: [],
     open_pages: [],
+    pending_gap: 0.0,
     paths: [],
   }
   // a new page starts with the graphics state of the page it was made from,
@@ -132,9 +150,26 @@ pub fn Document::new(
       }
     }
     doc.paths.insert(to, [])
+    // the page it was made from's size and layout (start_new_page sets
+    // others afterwards)
+    let geometry = if from >= 0 && from < doc.geometry.length() {
+      doc.geometry[from]
+    } else {
+      (size, layout)
+    }
+    doc.geometry.insert(to, geometry)
   }
+  // out of room: Prawn's rules for the bounds (`bounds.mbt`)
+  flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
+  doc.page_changed()
   doc
+}
+
+///|
+/// A new page like the current one (what a page break makes).
+fn Document::new_page(self : Document) -> Unit {
+  self.start_new_page()
 }
 
 ///|
@@ -184,6 +219,10 @@ pub fn Document::text(
   }
   let style = self.style(size?)
   self.check(string, style, Some(self.flow.width()))
+  self.pending_gap = self.flow.font(style).line_gap_pt(style.size) + leading
+  defer {
+    self.pending_gap = 0.0
+  }
   self.flow.typeset(
     [{ text: string, style, anchor: None, }],
     // after the text box, the line gap and leading (`final_gap`, Prawn's
@@ -234,9 +273,12 @@ pub fn Document::start_new_page(
   layout? : String,
   size? : (Double, Double),
 ) -> Unit {
-  self.page_size = size.unwrap_or(self.page_size)
-  self.layout = layout.unwrap_or(self.layout)
-  self.flow.start_new_page(size=oriented(self.page_size, self.layout))
+  let before = self.geometry[self.flow.page]
+  let after = (size.unwrap_or(before.0), layout.unwrap_or(before.1))
+  self.flow.start_new_page(size=oriented(after.0, after.1))
+  self.geometry[self.flow.page] = after
+  // a page of another size or layout: content goes in its margin box
+  self.page_changed(size_changed=after != before)
 }
 
 ///|
@@ -357,5 +399,5 @@ fn Document::check(
 /// its margin box.
 pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
   self.flow.go_to_page(number - 1)
-  self.flow.y = self.flow.top
+  self.page_changed()
 }

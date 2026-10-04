@@ -1,0 +1,35 @@
+{
+  "document": { "page_size": "A6", "margin": 20 },
+  "ops": [
+    ["text", "One. Two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty. One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty. One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty. One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty. One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty.", { "size": 14 }],
+    ["?page_number"],
+    ["?cursor"],
+    ["bounding_box", [30, 200], { "width": 120, "height": 80 }, { "block": [
+      ["text", "A fixed box that overflows: the rest continues at the box's top on the next page, in the same box, for as long as it takes to set all of this text."],
+      ["?cursor"],
+      ["?page_number"]
+    ] }],
+    ["?page_number"],
+    ["?cursor"],
+    ["go_to_page", 1],
+    ["move_down", 300],
+    ["text", "Overflowing onto the next page, which exists already, so no new page is made for this text that runs over the bottom."],
+    ["?page_number"],
+    ["?page_count"],
+    ["start_new_page"],
+    ["column_box", [0, 380], { "width": 256, "height": 100, "columns": 2, "spacer": 10 }, { "block": [
+      ["?bounds"],
+      ["text", "Columns without reflowing margins: past the last column the next page starts at the same height as the box did on its first page, column by column, page by page, until the text runs out at last."],
+      ["?bounds"],
+      ["?page_number"]
+    ] }],
+    ["?cursor"],
+    ["start_new_page"],
+    ["move_down", 200],
+    ["column_box", [0, 180], { "width": 255, "height": 120, "columns": 3, "reflow_margins": true }, { "block": [
+      ["text", "Reflowing margins: past the last column the next page starts at the top of the margin box, so the columns are taller there than on the first page of the box, which started lower down on its page."]
+    ] }],
+    ["?page_number"],
+    ["?cursor"]
+  ]
+}

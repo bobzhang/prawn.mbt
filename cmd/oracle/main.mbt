@@ -170,6 +170,28 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       )
       Some(Json::null())
     }
+    "column_box" if only(opts, [
+        "width", "height", "columns", "spacer", "reflow_margins",
+      ]) &&
+      block(args) is Some(ops) => {
+      doc.column_box(
+        point(args[0]),
+        number(opts.get("width").unwrap_or(Json::null())),
+        height?=match opts.get("height") {
+          None | Some(Null) => None
+          Some(h) => Some(number(h))
+        },
+        columns=opts
+          .get("columns")
+          .map(number)
+          .map(n => n.to_int())
+          .unwrap_or(3),
+        spacer?=opts.get("spacer").map(number),
+        reflow_margins=opts.get("reflow_margins") is Some(True),
+        () => self.ops(ops),
+      )
+      Some(Json::null())
+    }
     "indent" if opts.is_empty() && block(args) is Some(ops) => {
       let right = if args.length() > 2 { number(args[1]) } else { 0.0 }
       doc.indent(number(args[0]), right~, () => self.ops(ops))
