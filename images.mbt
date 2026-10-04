@@ -81,7 +81,14 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     if (colour_type == 0 || colour_type == 2) && png_has_chunk(data, "tRNS") {
       raise Unsupported("the image \{file} (a PNG with a colour key)")
     }
-    try @pdflite.pdf_read_png_view(data[:]) catch {
+    // embedded as rendering will, its data inflated (a corrupt one
+    // refused now, before the position moves)
+    try
+      @pdflite.pdf_image_object_of_png_data(
+        @pdflite.pdf_document_empty(),
+        data[:],
+      )
+    catch {
       _ => raise Unsupported("the image \{file} (a PNG pdflite cannot read)")
     } noraise {
       _ => ()
