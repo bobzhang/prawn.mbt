@@ -8,6 +8,10 @@
     ["move_down", 200],
     ["text", "Hyphen­ation and soft­hyphen­ation in a para­graph long enough to wrap at one of its soft hyphens, some­where along the way.", { "size": 18 }],
     ["formatted_text", [{ "text": "frag­" }, { "text": "ment­ation", "styles": [":bold"] }, { "text": " and more text after it to fill the line out to its end and some­what beyond it." }], { "align": ":justify" }],
+    ["formatted_text", [{ "text": "T\u00ad" }, { "text": "o and fragments" }], { "align": ":right" }],
+    ["text", "A\u00ad\u00adV twice", { "align": ":right" }],
+    ["?text_box", "supercalifragilis", { "at": [400, 300], "width": 60, "align": ":right" }],
+    ["?text_box", "WAVE AVATAR To", { "at": [400, 200], "width": 50, "align": ":right" }],
     ["?cursor"]
   ]
 }

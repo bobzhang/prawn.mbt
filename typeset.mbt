@@ -679,35 +679,54 @@ fn place_line(
         ) {
     visible_end -= 1
   }
-  // a soft hyphen prints only where a line that wraps (or ends the text)
-  // breaks after it: Prawn removes every other (`process_soft_hyphens`);
-  // like a zero-width space, what is hidden takes no room
-  let printed_hyphen = if wraps &&
-    visible_end > from &&
-    items[visible_end - 1].unit == 0xAD {
-    visible_end - 1
-  } else {
-    -1
+  // what Prawn draws of the line: each fragment's text without its
+  // zero-width spaces and soft hyphens (`process_text`), but for a soft
+  // hyphen that is the last character of a line that wraps (or ends the
+  // text), which prints; what is hidden takes no room
+  let mut printed_hyphen = -1
+  if wraps {
+    let mut k = visible_end - 1
+    while k >= from &&
+          (
+            items[k].unit == 0x200B ||
+            items[k].unit == pad_unit ||
+            items[k].anchor is Some(_)
+          ) {
+      k -= 1
+    }
+    if k >= from && items[k].unit == 0xAD {
+      printed_hyphen = k
+    }
   }
   let hidden = fn(i : Int) {
     items[i].unit == 0x200B || (items[i].unit == 0xAD && i != printed_hyphen)
   }
-  // what an item takes as drawn: a character before a soft hyphen Prawn
-  // removes kerns with the one after it instead
+  // what an item takes as drawn: kerned with the next character drawn of
+  // its fragment on the line, as Prawn draws each fragment's text as one
+  // string (none after the last, at the end of a fragment or the line)
   let drawn = fn(i : Int) -> Double {
     let item = items[i]
-    if i + 2 < items.length() &&
-      items[i + 1].unit == 0xAD &&
-      hidden(i + 1) &&
-      items[i + 2].fragment == item.fragment &&
-      items[i + 2].anchor is None {
-      let style = fragments[item.fragment].style
+    let mut j = i + 1
+    while j < visible_end &&
+          items[j].fragment == item.fragment &&
+          items[j].anchor is None &&
+          hidden(j) {
+      j += 1
+    }
+    if j == i + 1 && j < visible_end && items[j].fragment == item.fragment {
+      // the next one, as measured
+      item.draw
+    } else if j < visible_end &&
+      items[j].fragment == item.fragment &&
+      items[j].anchor is None &&
+      items[j].unit != pad_unit {
+      // past hidden ones
       item.draw -
       item.kern +
-      faces[item.fragment].kerning(item.unit, items[i + 2].unit) *
-      (style.size / 1000.0)
+      faces[item.fragment].kerning(item.unit, items[j].unit) *
+      (fragments[item.fragment].style.size / 1000.0)
     } else {
-      item.draw
+      item.draw - item.kern
     }
   }
   let mut draw_width = 0.0
