@@ -423,12 +423,19 @@ fn Document::fragment(
     Some(name) =>
       match standard_face(name) {
         Some((family, bold, italic)) => (family, bold, italic, true)
+        // a font file of its own is its only face
+        None if is_font_file(name) => (name, false, false, true)
         None => (name, f.bold, f.italic, true)
       }
     // no style of its own: the current face, as Prawn's arranger then sets
     // only the size
     None if !f.bold && !f.italic => (base.family, base.bold, base.italic, false)
     None => (base.family, f.bold, f.italic, false)
+  }
+  // its face read when it is one of a TrueType family, or a file
+  match f.font {
+    Some(name) if is_font_file(name) => self.load_face(name, Normal, name)
+    _ => self.ensure_style(family, (bold, italic))
   }
   let meta = self.fragment_meta.length()
   self.fragment_meta.push({
@@ -508,6 +515,7 @@ pub fn Document::formatted_text(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
+      self.ensure_style(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()

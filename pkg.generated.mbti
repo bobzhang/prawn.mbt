@@ -90,7 +90,6 @@ pub(all) struct Columns {
 }
 
 pub struct Document {
-  catalog : FontCatalog
   mut family : String
   mut size : Double
   // private fields
@@ -109,10 +108,13 @@ pub fn Document::dash(Self, Array[Double], space? : Double, phase? : Double) -> 
 pub fn Document::default_leading(Self) -> Double
 pub fn Document::draw_text(Self, String, at~ : (Double, Double), size? : Double, style? : String, rotate? : Double, kerning? : Bool) -> Unit raise
 pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
+pub fn Document::fallback_fonts(Self, Array[String]) -> Unit raise PrawnError
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise
 pub fn Document::font(Self, String, style? : FontStyle, size? : Double, body? : () -> Unit raise) -> Unit raise
+pub fn Document::font_class(Self) -> String
+pub fn Document::font_families_update(Self, String, Array[(FontStyle, String)]) -> Unit
 pub fn Document::font_name(Self) -> String
 pub fn Document::font_size(Self) -> Double
 pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, style? : FontStyle, align? : Alignment, leading? : Double, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
@@ -127,7 +129,7 @@ pub fn Document::move_cursor_to(Self, Double) -> Unit
 pub fn Document::move_down(Self, Double) -> Unit
 pub fn Document::move_to(Self, Double, Double) -> Unit
 pub fn Document::move_up(Self, Double) -> Unit
-pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
+pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double], assets? : (String) -> Bytes?) -> Self raise
 pub fn Document::on_warning(Self, (String) -> Unit) -> Unit
 pub fn Document::pad(Self, Double, () -> Unit raise) -> Unit raise
 pub fn Document::pad_bottom(Self, Double, () -> Unit raise) -> Unit raise

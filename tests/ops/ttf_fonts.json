@@ -1,0 +1,27 @@
+{
+  "ops": [
+    ["font", "$PRAWN/data/fonts/DejaVuSans.ttf", { "block": [
+      ["text", "a file as a font: αβγδε ΑΒΓ"],
+      ["?font.inspect"],
+      ["?font"],
+      ["!raises", "PDF::Core::Text::BadFontFamily", ["text", "x", { "style": ":bold" }]]
+    ] }],
+    ["font_families.update", { "=DV": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf", "bold": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "DV", { "size": 14 }],
+    ["?font.inspect"],
+    ["text", "DV normal, then <b>bold</b> inline", { "inline_format": true }],
+    ["text", "DV bold by the style option", { "style": ":bold" }],
+    ["?width_of", "AVATAR WAVE", { "style": ":bold" }],
+    ["!raises", "Prawn::Errors::UnknownFont", ["text", "x", { "style": ":italic" }]],
+    ["!raises", "Prawn::Errors::UnknownFont", ["formatted_text", [{ "text": "x", "styles": [":italic"] }]]],
+    ["formatted_text", [{ "text": "Helvetica fragment ", "font": "Helvetica" }, { "text": "and DV bold by family", "font": "DV", "styles": [":bold"] }]],
+    ["font", "Helvetica"],
+    ["font_families.update", { "=Missing": { "normal": "$PRAWN/data/fonts/nope.ttf" } }],
+    ["!raises", "ArgumentError", ["font", "Missing"]],
+    ["font_families.update", { "=Kai": { "normal": "$PRAWN/data/fonts/gkai00mp.ttf" } }],
+    ["fallback_fonts", ["Kai"]],
+    ["text", "fallback 中文 in a long enough line to wrap over 中文字体 the right margin of the page, and on 中文"],
+    ["?height_of", "fallback 中文 measured"],
+    ["?cursor"]
+  ]
+}

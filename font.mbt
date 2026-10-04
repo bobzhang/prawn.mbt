@@ -73,6 +73,11 @@ fn Document::find_font(
   name : String,
   style : FontStyle,
 ) -> (String, (Bool, Bool), Bool) raise PrawnError {
+  // a family registered by its files, in `style` (read when first used)
+  if self.families.contains(name) {
+    self.ensure_style(name, style.flags())
+    return (name, style.flags(), true)
+  }
   if self.catalog.faces.contains(face_key(name, false, false)) {
     return (name, style.flags(), true)
   }
@@ -83,6 +88,12 @@ fn Document::find_font(
   // a face by its own name: drawn in that face, but of no family
   match standard_face(name) {
     Some((family, bold, italic)) => (family, (bold, italic), false)
+    // a font file of its own: Prawn's TTF font of no family, named by its
+    // path
+    None if is_font_file(name) => {
+      self.load_face(name, Normal, name)
+      (name, (false, false), false)
+    }
     None => raise UnknownFont("\{name} is not a known font.")
   }
 }
@@ -113,6 +124,14 @@ pub fn Document::with_font_size(
 /// name (`Times-Bold`).
 pub fn Document::font_name(self : Document) -> String {
   let (bold, italic) = self.face_style
+  // a TrueType family's face: its file
+  if self.families.get(self.family) is Some(files) {
+    for entry in files {
+      if entry.0.flags() == (bold, italic) {
+        return entry.1
+      }
+    }
+  }
   for entry in standard_families {
     if entry.0 == self.family {
       let index = (if bold { 1 } else { 0 }) + (if italic { 2 } else { 0 })
@@ -120,4 +139,16 @@ pub fn Document::font_name(self : Document) -> String {
     }
   }
   self.family
+}
+
+///|
+/// The Ruby class of the current font (Prawn's `font.class`): AFM for a
+/// standard font, TTF for one read from a file.
+pub fn Document::font_class(self : Document) -> String {
+  let (bold, italic) = self.face_style
+  if self.face_of({ ..self.style(), bold, italic, }).standard {
+    "Prawn::Fonts::AFM"
+  } else {
+    "Prawn::Fonts::TTF"
+  }
 }

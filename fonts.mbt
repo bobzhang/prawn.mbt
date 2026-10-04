@@ -398,9 +398,10 @@ fn TextContext::apply_fallbacks(
   self : TextContext,
   fragments : Array[Fragment],
 ) -> Array[Fragment] {
-  let fragments = self.apply_winansi(fragments)
+  // split first, then encoded: a character a standard font lacks is looked
+  // for before the font's encoding drops it (Prawn's order)
   if self.catalog.fallbacks.is_empty() {
-    return fragments
+    return self.apply_winansi(fragments)
   }
   let out : Array[Fragment] = []
   for fragment in fragments {
@@ -452,7 +453,7 @@ fn TextContext::apply_fallbacks(
     }
     flush(current)
   }
-  out
+  self.apply_winansi(out)
 }
 
 ///|

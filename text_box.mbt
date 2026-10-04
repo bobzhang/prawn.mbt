@@ -55,6 +55,8 @@ fn Document::set_box(
   }
   let page = self.page()
   let mark = page.items.length()
+  // the fallback families' faces in the styles the text is set in
+  self.prepare_fallbacks(fragments)
   let ctx = self.text_context
   let face = self.face_of(base)
   // the box's top left in the bounds (where Prawn keeps a box's `at`):
@@ -203,6 +205,7 @@ pub fn Document::text_box(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
+      self.ensure_style(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()

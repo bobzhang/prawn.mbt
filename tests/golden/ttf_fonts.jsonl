@@ -1,0 +1,10 @@
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 12 >"}
+{"query":"font","value":{"class":"Prawn::Fonts::TTF"}}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 14 >"}
+{"query":["width_of","AVATAR WAVE",{"style":":bold"}],"value":115.136}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"query":["height_of","fallback 中文 measured"],"value":16.183999999999997}
+{"query":"cursor","value":622.8860000000001}

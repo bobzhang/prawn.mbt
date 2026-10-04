@@ -52,9 +52,17 @@ pub struct Document {
   priv mut position : Double
   /// the margins pages are made with: top, right, bottom, left
   priv margins : (Double, Double, Double, Double)
-  catalog : FontCatalog
+  priv mut catalog : FontCatalog
+  /// the font families registered (`font_families_update`): family → its
+  /// styles' files; the TrueType faces loaded so far, which the catalog is
+  /// made from; the fallback families (`fallback_fonts`); and where files
+  /// are read from (`ttf.mbt`)
+  priv families : Map[String, Array[(FontStyle, String)]]
+  priv font_files : Array[(String, Bool, Bool, Bytes)]
+  priv mut fallbacks : Array[String]
+  priv assets : (String) -> Bytes?
   /// what text is set with: the fonts
-  priv text_context : TextContext
+  priv mut text_context : TextContext
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
@@ -103,11 +111,13 @@ fn oriented(size : (Double, Double), layout : String) -> (Double, Double) {
 ///|
 /// A document with pages `size` (points; Prawn's default is LETTER) in
 /// `layout` ("portrait" or "landscape") with `margin` (Prawn's default 36
-/// all round). Like Prawn, it starts with a page.
+/// all round). Font files are read through `assets`, given a path as it
+/// was named (none by default). Like Prawn, it starts with a page.
 pub fn Document::new(
   size? : (Double, Double) = (612.0, 792.0),
   layout? : String = "portrait",
   margin? : Array[Double] = [36.0],
+  assets? : (String) -> Bytes? = _ => None,
 ) -> Document raise {
   let (w, h) = oriented(size, layout)
   let (top, right, bottom, left) = margins_of(margin)
@@ -131,6 +141,10 @@ pub fn Document::new(
     margins: (top, right, bottom, left),
     catalog,
     text_context: { catalog, hooks: Hooks::new(), },
+    families: Map([]),
+    font_files: [],
+    fallbacks: [],
+    assets,
     family: "Helvetica",
     face_style: (false, false),
     font_family_known: true,
@@ -228,6 +242,7 @@ pub fn Document::text(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
+      self.ensure_style(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -347,12 +362,13 @@ pub fn Document::width_of(
       if !self.font_family_known {
         raise UnknownFont(" is not a known font.")
       }
+      self.ensure_style(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
   }
   let style = self.style(size?)
-  self.check(string, style, None)
+  self.check(string, style, None, fallbacks=false)
   let face = self.face_of(style)
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
@@ -390,6 +406,7 @@ pub fn Document::height_of(
       if !self.font_family_known {
         raise BadFontFamily("PDF::Core::Text::BadFontFamily")
       }
+      self.ensure_style(self.family, style.flags())
       self.face_style = style.flags()
     }
     None => ()
@@ -427,21 +444,47 @@ fn Document::check(
   string : String,
   style : Style,
   width : Double?,
+  fallbacks? : Bool = true,
 ) -> Unit raise PrawnError {
   let face = self.face_of(style)
-  // the whole string is encoded before anything is wrapped
-  if face.standard {
-    for c in string {
-      let cp = c.to_int()
-      if cp >= 0x80 && winansi_code_of(cp) is None {
-        raise IncompatibleStringEncoding(string)
+  // each character in the font it is set in: its own, or the first
+  // fallback family that has it (Prawn splits the text across them before
+  // it encodes it; `width_of` does not)
+  let fallback_faces = if fallbacks {
+    let (bold, italic) = style.face_style()
+    let faces = []
+    for family in self.fallbacks {
+      self.ensure_style(family, (bold, italic))
+      faces.push(self.face_of({ ..style, family, }))
+    }
+    faces
+  } else {
+    []
+  }
+  let face_for = fn(cp : Int) {
+    if cp == 0x0A || face.has_glyph(cp) {
+      return face
+    }
+    for f in fallback_faces {
+      if f.has_glyph(cp) {
+        return f
       }
+    }
+    face
+  }
+  // the whole string is encoded before anything is wrapped
+  for c in string {
+    let cp = c.to_int()
+    if face_for(cp).standard && cp >= 0x80 && winansi_code_of(cp) is None {
+      raise IncompatibleStringEncoding(string)
     }
   }
   guard width is Some(w) else { return }
   let scale = style.size / 1000.0
   for c in string {
-    if c != ' ' && c != '\n' && face.prawn_width(c.to_int()) * scale > w {
+    if c != ' ' &&
+      c != '\n' &&
+      face_for(c.to_int()).prawn_width(c.to_int()) * scale > w {
       raise CannotFit
     }
   }
