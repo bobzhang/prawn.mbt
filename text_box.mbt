@@ -198,7 +198,13 @@ pub fn Document::text_box(
     self.face_style = saved_style
   }
   match style {
-    Some(style) => self.face_style = style.flags()
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
     None => ()
   }
   // the document's default leading unless given (Prawn's `default_leading`)

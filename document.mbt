@@ -61,6 +61,9 @@ pub struct Document {
   /// the current font's style, bold and italic (a fragment's while it is
   /// drawn)
   priv mut face_style : (Bool, Bool)
+  /// whether the current font is a family's (Prawn's `font.family`), not a
+  /// font set by its own name
+  priv mut font_family_known : Bool
   /// each page's record (`page.mbt`), as the model's pages are ordered
   priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
@@ -130,6 +133,7 @@ pub fn Document::new(
     text_context: { catalog, hooks: Hooks::new(), },
     family: "Helvetica",
     face_style: (false, false),
+    font_family_known: true,
     size: 12.0,
     pages: [],
     bbox: margin,
@@ -219,7 +223,13 @@ pub fn Document::text(
     self.face_style = saved_style
   }
   match style {
-    Some(style) => self.face_style = style.flags()
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
     None => ()
   }
   // set as one plain fragment, or the fragments of its markup
@@ -332,7 +342,13 @@ pub fn Document::width_of(
     self.face_style = saved_style
   }
   match style {
-    Some(style) => self.face_style = style.flags()
+    Some(style) => {
+      // Prawn looks up a family of no name
+      if !self.font_family_known {
+        raise UnknownFont(" is not a known font.")
+      }
+      self.face_style = style.flags()
+    }
     None => ()
   }
   let style = self.style(size?)
@@ -369,7 +385,13 @@ pub fn Document::height_of(
     self.face_style = saved_style
   }
   match style {
-    Some(style) => self.face_style = style.flags()
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
     None => ()
   }
   // the document's default leading unless given (Prawn's `default_leading`)

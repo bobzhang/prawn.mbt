@@ -411,6 +411,11 @@ fn Document::fragment(
   }
   let base = self.style(size?)
   // a face named directly is that face, whatever the styles say
+  // styles need a family to take them from (Prawn's arranger raises as it
+  // sets the fragment, before anything of the text is drawn here)
+  if f.font is None && (f.bold || f.italic) && !self.font_family_known {
+    raise BadFontFamily("Prawn::Text::Formatted::Arranger::BadFontFamily")
+  }
   let (family, bold, italic, font_set) = match f.font {
     Some(name) =>
       match standard_face(name) {
@@ -490,7 +495,13 @@ pub fn Document::formatted_text(
     self.face_style = saved_style
   }
   match style {
-    Some(style) => self.face_style = style.flags()
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
     None => ()
   }
   // the pieces drawn by the callback instead (text, where, kerning)

@@ -11,4 +11,11 @@
 {"query":["width_of","AVATAR",{"style":":bold"}],"value":49.992000000000004}
 {"query":["height_of","a bold height of text long enough to wrap onto a second line in the bounds of the page",{"style":":bold","size":20.0}],"value":47.599999999999994}
 {"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
-{"query":"cursor","value":598.7850000000002}
+{"query":"font","value":{"class":"Prawn::Fonts::AFM"}}
+{"query":["font","Courier"],"value":{"class":"Prawn::Fonts::AFM"}}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}
+{"query":"cursor","value":584.9490000000003}

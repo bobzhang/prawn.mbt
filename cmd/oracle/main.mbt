@@ -307,7 +307,8 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.with_font_size(number(args[0]), () => self.ops(ops))
       Some(before.to_json())
     }
-    "font" if args.is_empty() => Some(Json::null())
+    // a font, as the driver logs objects: its class
+    "font" if args.is_empty() => Some({ "class": "Prawn::Fonts::AFM" })
     "font" if only(opts, ["style", "size"]) && args[0] is String(_) => {
       let style = font_style(opts.get("style")).unwrap_or(Normal)
       let size = opts.get("size").map(number)
@@ -316,7 +317,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           doc.font(string(args[0]), style~, size?, body=() => self.ops(ops))
         None => doc.font(string(args[0]), style~, size?)
       }
-      Some(Json::null())
+      Some({ "class": "Prawn::Fonts::AFM" })
     }
     "font.inspect" if args.is_empty() =>
       Some(
@@ -530,6 +531,10 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       }
       @prawn.UnknownFont(s) => {
         raised(@prawn.UnknownFont(s))
+        return
+      }
+      @prawn.BadFontFamily(s) => {
+        raised(@prawn.BadFontFamily(s))
         return
       }
       e => raise e

@@ -22,6 +22,16 @@
     ["?height_of", "a bold height of text long enough to wrap onto a second line in the bounds of the page", { "style": ":bold", "size": 20.0 }],
     ["!raises", "Prawn::Errors::UnknownFont", ["font", "No-Such-Font"]],
     ["text", "after the unknown font"],
+    ["?font"],
+    ["?font", "Courier"],
+    ["font", "Times-Bold"],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["text", "x", { "style": ":italic" }]],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["?text_box", "x", { "style": ":italic" }]],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["?height_of", "x", { "style": ":italic" }]],
+    ["!raises", "Prawn::Errors::UnknownFont", ["?width_of", "x", { "style": ":italic" }]],
+    ["!raises", "Prawn::Text::Formatted::Arranger::BadFontFamily", ["formatted_text", [{ "text": "x", "styles": [":bold"] }]]],
+    ["text", "plain in Times-Bold"],
+    ["font", "Helvetica"],
     ["?cursor"]
   ]
 }

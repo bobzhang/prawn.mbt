@@ -51,6 +51,7 @@ pub(all) suberror PrawnError {
   IncompatibleStringEncoding(String)
   ArgumentError(String)
   UnknownFont(String)
+  BadFontFamily(String)
   EmptyGraphicStateStack
   Unsupported(String)
 }

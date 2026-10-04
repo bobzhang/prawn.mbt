@@ -34,23 +34,31 @@ pub fn Document::font(
   size? : Double,
   body? : () -> Unit raise,
 ) -> Unit raise {
-  let (family, face_style) = self.find_font(name, style)
+  let (family, face_style, known) = self.find_font(name, style)
   match body {
     None => {
       self.family = family
       self.face_style = face_style
+      self.font_family_known = known
       self.size = size.unwrap_or(self.size)
     }
     Some(body) => {
       // Prawn's `save_font`, which restores whatever happens
-      let saved = (self.family, self.face_style, self.size)
+      let saved = (
+        self.family,
+        self.face_style,
+        self.size,
+        self.font_family_known,
+      )
       defer {
         self.family = saved.0
         self.face_style = saved.1
         self.size = saved.2
+        self.font_family_known = saved.3
       }
       self.family = family
       self.face_style = face_style
+      self.font_family_known = known
       self.size = size.unwrap_or(self.size)
       body()
     }
@@ -64,12 +72,17 @@ fn Document::find_font(
   self : Document,
   name : String,
   style : FontStyle,
-) -> (String, (Bool, Bool)) raise PrawnError {
+) -> (String, (Bool, Bool), Bool) raise PrawnError {
   if self.catalog.faces.contains(face_key(name, false, false)) {
-    return (name, style.flags())
+    return (name, style.flags(), true)
   }
+  // Prawn's other built-in fonts, which pagelayout does not draw yet
+  if name == "Symbol" || name == "ZapfDingbats" {
+    raise Unsupported("the \{name} font")
+  }
+  // a face by its own name: drawn in that face, but of no family
   match standard_face(name) {
-    Some((family, bold, italic)) => (family, (bold, italic))
+    Some((family, bold, italic)) => (family, (bold, italic), false)
     None => raise UnknownFont("\{name} is not a known font.")
   }
 }
