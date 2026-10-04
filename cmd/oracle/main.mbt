@@ -107,11 +107,13 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     // kerning is Prawn's default (`default_kerning`), and how Flow sets text
     "text" if only(opts, [
         "size", "align", "leading", "kerning", "inline_format", "draw_text_callback",
+        "style",
       ]) &&
       !(opts.get("kerning") is Some(False)) => {
       doc.text(
         string(args[0]),
         size?=opts.get("size").map(number),
+        style?=font_style(opts.get("style")),
         align=alignment(opts.get("align")),
         leading?=opts.get("leading").map(number),
         inline_format=opts.get("inline_format") is Some(True),
@@ -120,7 +122,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       Some(Json::null())
     }
     "formatted_text" if only(opts, [
-        "size", "align", "leading", "kerning", "draw_text_callback",
+        "size", "align", "leading", "kerning", "draw_text_callback", "style",
       ]) &&
       !(opts.get("kerning") is Some(False)) => {
       guard args[0] is Array(items) else {
@@ -136,6 +138,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.formatted_text(
         fragments,
         size?=opts.get("size").map(number),
+        style?=font_style(opts.get("style")),
         align=alignment(opts.get("align")),
         leading?=opts.get("leading").map(number),
         draw_text_callback?=self.trace_draw_text(opts),
@@ -292,10 +295,33 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         },
       )
     }
-    "font_size" if args.length() == 1 => {
+    // Prawn's `font_size`: the size; given one (or `font_size=`), nil; with a block, the
+    // size it put back
+    "font_size" if args.is_empty() => Some(doc.font_size().to_json())
+    "font_size" | "font_size=" if args.length() == 1 => {
       doc.set_font_size(number(args[0]))
       Some(Json::null())
     }
+    "font_size" if opts.is_empty() && block(args) is Some(ops) => {
+      let before = doc.font_size()
+      doc.with_font_size(number(args[0]), () => self.ops(ops))
+      Some(before.to_json())
+    }
+    "font" if args.is_empty() => Some(Json::null())
+    "font" if only(opts, ["style", "size"]) && args[0] is String(_) => {
+      let style = font_style(opts.get("style")).unwrap_or(Normal)
+      let size = opts.get("size").map(number)
+      match block(args) {
+        Some(ops) =>
+          doc.font(string(args[0]), style~, size?, body=() => self.ops(ops))
+        None => doc.font(string(args[0]), style~, size?)
+      }
+      Some(Json::null())
+    }
+    "font.inspect" if args.is_empty() =>
+      Some(
+        "Prawn::Fonts::AFM< \{doc.font_name()}: \{@prawn.ruby_number(doc.font_size())} >".to_json(),
+      )
     "start_new_page" if only(opts, ["layout", "size"]) => {
       doc.start_new_page(
         layout?=opts.get("layout").bind(symbol),
@@ -306,22 +332,24 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       )
       Some(Json::null())
     }
-    "width_of" if only(opts, ["size", "kerning"]) =>
+    "width_of" if only(opts, ["size", "kerning", "style"]) =>
       Some(
         doc
         .width_of(
           string(args[0]),
           size?=opts.get("size").map(number),
+          style?=font_style(opts.get("style")),
           kerning=opts.get("kerning") is Some(True),
         )
         .to_json(),
       )
-    "height_of" if only(opts, ["size", "width", "leading"]) =>
+    "height_of" if only(opts, ["size", "width", "leading", "style"]) =>
       Some(
         doc
         .height_of(
           string(args[0]),
           size?=opts.get("size").map(number),
+          style?=font_style(opts.get("style")),
           width?=opts.get("width").map(number),
           leading?=opts.get("leading").map(number),
         )
@@ -391,7 +419,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     }
     "text_box" if only(opts, [
         "at", "width", "height", "size", "align", "valign", "overflow", "min_font_size",
-        "leading", "rotate", "rotate_around", "kerning", "draw_text_callback",
+        "style", "leading", "rotate", "rotate_around", "kerning", "draw_text_callback",
       ]) &&
       !(opts.get("kerning") is Some(False)) => {
       let rest = doc.text_box(
@@ -400,6 +428,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         width?=opts.get("width").map(number),
         height?=opts.get("height").map(number),
         size?=opts.get("size").map(number),
+        style?=font_style(opts.get("style")),
         align=alignment(opts.get("align")),
         valign=match opts.get("valign").bind(symbol) {
           None | Some("top") => Top
@@ -497,6 +526,10 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       }
       @prawn.EmptyGraphicStateStack => {
         raised(@prawn.EmptyGraphicStateStack)
+        return
+      }
+      @prawn.UnknownFont(s) => {
+        raised(@prawn.UnknownFont(s))
         return
       }
       e => raise e
@@ -962,5 +995,18 @@ fn present(value : Json?) -> Json? {
   match value {
     Some(Null) | Some(False) | None => None
     some => some
+  }
+}
+
+///|
+/// A font style option (`:bold`), nil and false being none.
+fn font_style(value : Json?) -> @prawn.FontStyle? raise ScriptError {
+  match present(value).bind(symbol) {
+    None => None
+    Some("normal") => Some(Normal)
+    Some("bold") => Some(Bold)
+    Some("italic") => Some(Italic)
+    Some("bold_italic") => Some(BoldItalic)
+    Some(other) => raise ScriptError("style \{other}")
   }
 }

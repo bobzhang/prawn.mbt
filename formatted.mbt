@@ -478,10 +478,21 @@ pub fn Document::formatted_text(
   self : Document,
   fragments : Array[TextFragment],
   size? : Double,
+  style? : FontStyle,
   align? : Alignment = Left,
   leading? : Double,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the current font in `style` while this is set (Prawn's `:style`, which
+  // its boxes apply and undo)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => self.face_style = style.flags()
+    None => ()
+  }
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback

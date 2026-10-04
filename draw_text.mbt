@@ -24,7 +24,7 @@ pub fn Document::draw_text(
   // the whole string is encoded first (Prawn's `normalize_encoding`)
   self.check(text, base, None)
   let draw = () => {
-    let face = self.font(base)
+    let face = self.face_of(base)
     // Prawn's `draw_text!`: text beyond ASCII in a built-in font is warned
     // about, once
     if !self.dry_run &&

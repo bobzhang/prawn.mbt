@@ -56,7 +56,7 @@ fn Document::set_box(
   let page = self.page()
   let mark = page.items.length()
   let ctx = self.text_context
-  let face = self.font(base)
+  let face = self.face_of(base)
   // the box's top left in the bounds (where Prawn keeps a box's `at`):
   // each line is drawn on the page current then, which a callback may
   // change
@@ -88,7 +88,7 @@ fn Document::set_box(
     match stripped.search_by(f => !f.text.is_empty()) {
       Some(i) => {
         let first = stripped[i]
-        let first_face = self.font(first.style)
+        let first_face = self.face_of(first.style)
         match first.text.iter().next() {
           Some(c) if c != '\n' &&
             first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) >
@@ -181,6 +181,7 @@ pub fn Document::text_box(
   width? : Double,
   height? : Double,
   size? : Double,
+  style? : FontStyle,
   align? : Alignment = Left,
   valign? : VerticalAlignment = Top,
   overflow? : Overflow = Truncate,
@@ -190,6 +191,16 @@ pub fn Document::text_box(
   rotate_around? : String = "upper_left",
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> String raise {
+  // the current font in `style` while this is set (Prawn's `:style`, which
+  // its boxes apply and undo)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => self.face_style = style.flags()
+    None => ()
+  }
   // the document's default leading unless given (Prawn's `default_leading`)
   let leading = leading.unwrap_or(self.default_leading)
   let saved_callback = self.draw_text_callback
@@ -263,7 +274,7 @@ pub fn Document::text_box(
   }
   if !(valign is Top) {
     let (_, printed, _) = set_at(size, top, height, true)
-    let descender = self.font(self.style(size~)).descender_pt(size)
+    let descender = self.face_of(self.style(size~)).descender_pt(size)
     match valign {
       Center => top -= (height - printed + descender) * 0.5
       _ => top -= height - printed
@@ -366,7 +377,7 @@ fn line_window(
     let f = text[i]
     let from = if i == start { offset } else { 0 }
     let s = f.text
-    let face = doc.font(f.style)
+    let face = doc.face_of(f.style)
     let scale = f.style.size / 1000.0
     let mut cut = -1
     for j in from..<s.length() {

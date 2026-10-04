@@ -1,0 +1,14 @@
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Helvetica: 12 >"}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Times-Bold: 12 >"}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Courier: 9 >"}
+{"query":"font_size","value":9}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Helvetica-Oblique: 12 >"}
+{"query":["font_size",16],"value":null}
+{"query":["font_size",8],"value":16}
+{"query":"font_size","value":16}
+{"query":["font_size=",12],"value":null}
+{"query":["text_box","a bold italic text box",{"at":[300.0,300.0],"width":120.0,"height":60.0,"style":":bold_italic"}],"value":""}
+{"query":["width_of","AVATAR",{"style":":bold"}],"value":49.992000000000004}
+{"query":["height_of","a bold height of text long enough to wrap onto a second line in the bounds of the page",{"style":":bold","size":20.0}],"value":47.599999999999994}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"query":"cursor","value":598.7850000000002}

@@ -1,0 +1,27 @@
+{
+  "ops": [
+    ["?font.inspect"],
+    ["font", "Times-Roman", { "style": ":bold" }],
+    ["text", "Times bold"],
+    ["?font.inspect"],
+    ["font", "Courier", { "size": 9, "block": [["text", "Courier nine inside"], ["?font.inspect"], ["?font_size"]] }],
+    ["text", "Times bold again, at its size"],
+    ["font", "Helvetica-Oblique"],
+    ["text", "a face by its own name"],
+    ["?font.inspect"],
+    ["font", "Helvetica"],
+    ["?font_size", 16],
+    ["text", "sixteen"],
+    ["?font_size", 8, { "block": [["text", "eight inside"]] }],
+    ["?font_size"],
+    ["?font_size=", 12],
+    ["text", "plain, then <i>italic</i> with the style option", { "style": ":bold", "inline_format": true }],
+    ["formatted_text", [{ "text": "a fragment of no style " }, { "text": "and an italic one", "styles": [":italic"] }], { "style": ":bold" }],
+    ["?text_box", "a bold italic text box", { "at": [300.0, 300.0], "width": 120.0, "height": 60.0, "style": ":bold_italic" }],
+    ["?width_of", "AVATAR", { "style": ":bold" }],
+    ["?height_of", "a bold height of text long enough to wrap onto a second line in the bounds of the page", { "style": ":bold", "size": 20.0 }],
+    ["!raises", "Prawn::Errors::UnknownFont", ["font", "No-Such-Font"]],
+    ["text", "after the unknown font"],
+    ["?cursor"]
+  ]
+}
