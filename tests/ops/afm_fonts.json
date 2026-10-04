@@ -10,6 +10,8 @@
     ["text", "a face by its own name"],
     ["?font.inspect"],
     ["font", "Helvetica"],
+    ["formatted_text", [{ "text": "a callback sets a face by name", "callback": { "trace": "f", "phase": "in_front", "draw": [["font", "Times-Bold"]] } }]],
+    ["text", "italic after the callback", { "style": ":italic" }],
     ["?font_size", 16],
     ["text", "sixteen"],
     ["?font_size", 8, { "block": [["text", "eight inside"]] }],
@@ -30,6 +32,7 @@
     ["!raises", "PDF::Core::Text::BadFontFamily", ["?height_of", "x", { "style": ":italic" }]],
     ["!raises", "Prawn::Errors::UnknownFont", ["?width_of", "x", { "style": ":italic" }]],
     ["!raises", "Prawn::Text::Formatted::Arranger::BadFontFamily", ["formatted_text", [{ "text": "x", "styles": [":bold"] }]]],
+    ["!raises", "Prawn::Text::Formatted::Arranger::BadFontFamily", ["formatted_text", [{ "text": "x", "font": "Courier" }]]],
     ["text", "plain in Times-Bold"],
     ["font", "Helvetica"],
     ["?cursor"]
