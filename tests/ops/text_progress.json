@@ -1,0 +1,15 @@
+{
+  "document": { "page_size": [200, 30], "margin": 10 },
+  "ops": [
+    ["text", "a", { "size": 6 }],
+    ["start_new_page"],
+    ["text", "b", { "size": 6 }],
+    ["start_new_page", { "size": [200, 100] }],
+    ["text", "c"],
+    ["go_to_page", 1],
+    ["formatted_text", [{ "text": " ", "size": 50 }, { "text": "x", "size": 12 }]],
+    ["?cursor"],
+    ["?page_number"],
+    ["?page_count"]
+  ]
+}

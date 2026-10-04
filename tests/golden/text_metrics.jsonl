@@ -1,0 +1,17 @@
+{"query":"cursor","value":36.2}
+{"query":"page_count","value":2}
+{"query":"cursor","value":714.2}
+{"query":"cursor","value":625.8840000000001}
+{"query":"cursor","value":510.2840000000002}
+{"query":"cursor","value":496.4120000000002}
+{"query":["height_of"," "],"value":13.872}
+{"query":["height_of","\t\tx",{"size":30}],"value":34.68}
+{"query":"cursor","value":482.5400000000002}
+{"query":"cursor","value":598.6}
+{"query":"page_count","value":4}
+{"query":["height_of","supercalifragilisticexpialidocious-and-more-words-joined-by-hyphens and spaces   with   runs\nof\n\nnewlines",{"width":60}],"value":180.33600000000004}
+{"query":"cursor","value":66.128}
+{"query":"page_count","value":6}
+{"query":"cursor","value":494.55999999999995}
+{"query":["text_box","                                                  x",{"at":[0,700],"width":20,"height":12}],"value":""}
+{"query":["height_of","                                                  x",{"width":20}],"value":13.872}

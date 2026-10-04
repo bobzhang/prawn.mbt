@@ -482,15 +482,8 @@ pub fn Document::formatted_text(
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
-  // the document's position while this text is set (an outer text's
-  // is put back after)
-  let (outer_y, outer_start) = (self.text_y, self.text_start)
-  self.text_y = Some(self.flow.y)
-  self.text_start = self.flow.y
   defer {
     self.draw_text_callback = saved_callback
-    self.text_y = outer_y
-    self.text_start = outer_start
   }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
@@ -507,35 +500,55 @@ pub fn Document::formatted_text(
     self.check(piece.text, piece.style, Some(self.flow.width()))
   }
   let base = self.style(size?)
-  self.pending_gap = self.flow.font(base).line_gap_pt(base.size) + leading
-  defer {
-    self.pending_gap = 0.0
+  // Prawn's `formatted_text`: text boxes, each as tall as the room left,
+  // the next column or page between them, until the text is set (or a
+  // fresh one takes none of it)
+  let mut remaining = self.fill_box(set, base, align, leading)
+  while !remaining.is_empty() {
+    self.move_past_bottom()
+    let before = remaining
+    remaining = self.fill_box(remaining, base, align, leading)
+    // Prawn compares the fragments, empty ones too
+    if remaining.length() == before.length() &&
+      remaining.iter().zip(before.iter()).all(p => p.0.text == p.1.text) {
+      break
+    }
   }
-  self.flow.typeset(
-    set,
-    { leading, padding_top: 0.0, padding_bottom: 0.0, },
+}
+
+///|
+/// Prawn's `fill_formatted_text_box`: as much of `fragments` as fits in a
+/// box from the position down to the bottom of the bounds (of the margin
+/// box, in a stretchy box), across the bounds (a column box's column);
+/// then the position moves down by what was set and the line gap and
+/// leading (Prawn's final gap), from wherever callbacks left it. The rest
+/// is returned.
+fn Document::fill_box(
+  self : Document,
+  fragments : Array[Fragment],
+  base : Style,
+  align : Alignment,
+  leading : Double,
+) -> Array[Fragment] raise PrawnError {
+  let box = self.bbox
+  let y = self.y()
+  let bottom = if box.height is None {
+    self.margin.bottom_at(y)
+  } else {
+    box.bottom_at(y)
+  }
+  let (side, width) = box.side()
+  let (rest, printed, gap) = self.set_box(
+    fragments,
     base,
-    align~,
+    (side, y),
+    width,
+    y - bottom,
+    align,
+    leading,
   )
-  // then the line gap and leading (Prawn's `final_gap`): the last line's,
-  // whose largest font sets its gap
-  let gap = match self.flow.last_line {
-    Some((line, _, _)) => {
-      let (a, d, h) = line_extent(line, self.flow.font(base), base.size, false)
-      h - a - d
-    }
-    None => 0.0
-  }
-  self.move_down(gap + leading)
-  // Prawn moves down by what it set from the document's position, which
-  // callbacks may have moved (to another page too)
-  match self.text_y {
-    Some(y) => {
-      self.flow.y = self.flow.y + (y - self.text_start)
-      self.track()
-    }
-    None => ()
-  }
+  self.set_y(self.y() - printed - (gap + leading))
+  rest
 }
 
 ///|
@@ -839,19 +852,9 @@ fn Document::capture(
   // the page it starts on (its record holds it through insertions)
   let page = self.page()
   let mark = page.items.length()
-  // the callback runs at the document's position while a text is set (not
-  // where Flow is setting lines), and may move it; Flow then carries on
-  // from its own
-  let line_y = self.flow.y
-  match self.text_y {
-    Some(y) => self.flow.y = y
-    None => ()
-  }
+  // the callback runs at the document's position, which setting a box
+  // does not move, and may move it
   body()
-  if self.text_y is Some(_) {
-    self.text_y = Some(self.flow.y)
-  }
-  self.flow.y = line_y
   let items = page.items
   if mark > items.length() {
     return []

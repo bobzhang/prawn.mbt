@@ -38,82 +38,130 @@ fn text_of_fragments(fragments : Array[Fragment]) -> String {
 /// nothing stays on the page.
 fn Document::set_box(
   self : Document,
-  string : String,
+  fragments : Array[Fragment],
+  base : Style,
   at : (Double, Double),
   width : Double,
   height : Double,
-  size : Double,
   align : Alignment,
   leading : Double,
   dry_run? : Bool = false,
-) -> (Array[Fragment], Double) raise PrawnError {
+) -> (Array[Fragment], Double, Double) raise PrawnError {
   // a dry run calls no callbacks
   let was_dry = self.dry_run
   self.dry_run = was_dry || dry_run
   defer {
     self.dry_run = was_dry
   }
-  let style = self.style(size~)
   let flow = self.flow
-  let page = flow.page
-  let mark = flow.model.pages[page].items.length()
+  let page = self.page()
+  let mark = page.items.length()
   let ctx = flow.text()
-  let face = flow.font(style)
+  let face = flow.font(base)
   let top = flow.page_h() - at.1
   // Prawn's `Wrap#wrap`: line by line, each stripped of its leading
   // whitespace and wrapped, CannotFit when not even its first character
   // fits, set when it fits the height; the first that does not is where
   // the box ends
-  let mut remaining = ctx.apply_fallbacks([
-    { text: string, style, anchor: None, },
-  ])
+  // the text, as Prawn's arranger takes it in (an empty fragment is none)
+  let text = ctx
+    .apply_fallbacks(fragments)
+    .filter(f => !f.text.is_empty() || f.anchor is Some(_) || f.style.image >= 0)
+  // where the text not yet set starts: a fragment, and an offset in it
+  let mut at_fragment = 0
+  let mut at_offset = 0
   let mut baseline = 0.0
   let mut placed = 0
-  let mut last : Double? = None
+  // the last line measured (whether or not it fit): Prawn takes the box's
+  // height and final gap from it
   let mut depth = 0.0
-  while !remaining.is_empty() {
-    let line_fragments = strip_leading_fragments(remaining)
-    if line_fragments.is_empty() {
-      remaining = []
-      break
-    }
+  let mut gap = 0.0
+  let mut rejected = false
+  while at_fragment < text.length() {
+    let window = line_window(text, at_fragment, at_offset, flow, width)
+    let (stripped, origins) = strip_leading_fragments(window)
     // measured in the font it is set in (a fallback font, maybe)
-    let first = line_fragments[0]
-    let first_face = flow.font(first.style)
-    match first.text.iter().next() {
-      Some(c) if c != '\n' &&
-        first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) > width => {
-        if dry_run {
-          flow.model.pages[page].items.truncate(mark)
+    match stripped.search_by(f => !f.text.is_empty()) {
+      Some(i) => {
+        let first = stripped[i]
+        let first_face = flow.font(first.style)
+        match first.text.iter().next() {
+          Some(c) if c != '\n' &&
+            first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) >
+            width => {
+            if dry_run {
+              page.items.truncate(mark)
+            }
+            raise CannotFit
+          }
+          _ => ()
         }
-        raise CannotFit
       }
-      _ => ()
+      None => ()
     }
-    let (line, rest) = split_first_line(
-      line_fragments, line_fragments, ctx, width, align,
-    )
-    let (a, d, h) = line_extent(line, face, size, false)
+    // a fragment emptied counts towards the line's height (Prawn keeps
+    // it): a zero-width space holds its place
+    let held = stripped.map(f => {
+      if f.text.is_empty() && f.anchor is None && f.style.image < 0 {
+        { ..f, text: "\u{200B}", }
+      } else {
+        f
+      }
+    })
+    let (line, after) = first_line_break(held, ctx, width, align)
+    let (a, d, h) = line_extent(line, face, base.size, false)
+    depth = d
+    // the box's line gap is its last line's (its largest font's)
+    gap = h - a - d
     let next = if placed == 0 { a } else { baseline + h + leading }
     if next + d > height + 0.0001 {
-      remaining = line_fragments
+      rejected = true
       break
     }
     baseline = next
     flow.ink_line(line, at.0, top + baseline)
-    last = Some(top + baseline)
-    depth = d
     placed += 1
-    remaining = rest
+    // the text after the line, in the text's terms
+    let (w, offset) = match after {
+      Some((i, o)) => {
+        let (w, removed) = origins[i]
+        (w, removed + (if held[i].text == "\u{200B}" { 0 } else { o }))
+      }
+      None => (window.length() - 1, window[window.length() - 1].text.length())
+    }
+    let base_offset = if w == 0 { at_offset } else { 0 }
+    let before = (at_fragment, at_offset)
+    at_fragment += w
+    at_offset = base_offset + offset
+    let length = text[at_fragment].text.length()
+    if (after is None || at_offset > 0) && at_offset >= length {
+      at_fragment += 1
+      at_offset = 0
+    }
+    // every line takes some of the text
+    guard (at_fragment, at_offset) != before else {
+      abort("a line took none of the text")
+    }
   }
   if dry_run {
-    flow.model.pages[page].items.truncate(mark)
+    page.items.truncate(mark)
   }
-  let printed = match last {
-    Some(b) => b - top + depth
-    None => 0.0
+  let remaining : Array[Fragment] = []
+  if at_fragment < text.length() {
+    let f = text[at_fragment]
+    remaining.push({ ..f, text: f.text[at_offset:].to_owned(), })
+    for i in (at_fragment + 1)..<text.length() {
+      remaining.push(text[i])
+    }
   }
-  (remaining, printed)
+  // a line that did not fit goes back without the whitespace it starts
+  // with, as Prawn has stripped it
+  let remaining = if rejected {
+    strip_leading_fragments(remaining).0
+  } else {
+    remaining
+  }
+  (remaining, baseline + depth, gap)
 }
 
 ///|
@@ -140,17 +188,10 @@ pub fn Document::text_box(
 ) -> String raise {
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
-  // the document's position while the box is set: callbacks may move it,
-  // and it stays where they leave it (a text box does not move it)
-  let outer_y = self.text_y
-  self.text_y = Some(self.flow.y)
+  // a text box does not move the position; callbacks may, and it stays
+  // where they leave it
   defer {
     self.draw_text_callback = saved_callback
-    match self.text_y {
-      Some(y) => self.flow.y = y
-      None => ()
-    }
-    self.text_y = outer_y
     self.track()
   }
   let bounds = self.bounds()
@@ -185,18 +226,29 @@ pub fn Document::text_box(
   let origin = self.absolute(at)
   let mut top = origin.1
   let left = origin.0
+  // the string set at `size` in the box `h` tall with its top at `y`: a
+  // dry run, or for good
+  let set_at = fn(
+    size : Double,
+    y : Double,
+    h : Double,
+    dry : Bool,
+  ) raise PrawnError {
+    let st = self.style(size~)
+    self.set_box(
+      [{ text: string, style: st, anchor: None, }],
+      st,
+      (left, y),
+      width,
+      h,
+      align,
+      leading,
+      dry_run=dry,
+    )
+  }
   if overflow is ShrinkToFit {
     while true {
-      let (rest, _) = self.set_box(
-        string,
-        (left, top),
-        width,
-        height,
-        size,
-        align,
-        leading,
-        dry_run=true,
-      )
+      let (rest, _, _) = set_at(size, top, height, true)
       if rest.is_empty() || size <= min_font_size {
         break
       }
@@ -204,16 +256,7 @@ pub fn Document::text_box(
     }
   }
   if !(valign is Top) {
-    let (_, printed) = self.set_box(
-      string,
-      (left, top),
-      width,
-      height,
-      size,
-      align,
-      leading,
-      dry_run=true,
-    )
+    let (_, printed, _) = set_at(size, top, height, true)
     let descender = self.flow.font(self.style(size~)).descender_pt(size)
     match valign {
       Center => top -= (height - printed + descender) * 0.5
@@ -223,15 +266,7 @@ pub fn Document::text_box(
     height = printed
   }
   let set = () => {
-    let (rest, _) = self.set_box(
-      string,
-      (left, top),
-      width,
-      height,
-      size,
-      align,
-      leading,
-    )
+    let (rest, _, _) = set_at(size, top, height, false)
     text_of_fragments(rest)
   }
   if rotate == 0.0 {
@@ -268,21 +303,108 @@ fn strip_leading_spaces(text : String) -> String {
 
 ///|
 /// Fragments without the whitespace they start with (Prawn's line wrap
-/// strips a line's leading whitespace).
-fn strip_leading_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
+/// strips a line's leading whitespace), and where each comes from: its
+/// index in `fragments` and how much was stripped from its start. A
+/// fragment it empties stays, as Prawn keeps it, unless a line break
+/// follows it.
+fn strip_leading_fragments(
+  fragments : Array[Fragment],
+) -> (Array[Fragment], Array[(Int, Int)]) {
   let out : Array[Fragment] = []
+  let origins : Array[(Int, Int)] = []
   let mut stripping = true
-  for f in fragments {
+  for i, f in fragments {
     if stripping {
       let text = strip_leading_spaces(f.text)
-      if text.is_empty() && f.anchor is None {
+      let removed = f.text.length() - text.length()
+      if text.is_empty() && f.anchor is None && f.style.image < 0 {
+        if i + 1 < fragments.length() && fragments[i + 1].text.has_prefix("\n") {
+          continue
+        }
+        out.push({ ..f, text, })
+        origins.push((i, removed))
         continue
       }
       stripping = false
       out.push({ ..f, text, })
+      origins.push((i, removed))
     } else {
       out.push(f)
+      origins.push((i, 0))
     }
   }
-  out
+  (out, origins)
+}
+
+///|
+/// A window of `text` from fragment `start` at `offset` that surely holds
+/// the first line set `width` wide: up to a line break, or the second
+/// break opportunity past twice the width, or four times the width. A
+/// long text is then not wrapped (nor copied) in full for each line.
+fn line_window(
+  text : Array[Fragment],
+  start : Int,
+  offset : Int,
+  flow : Flow,
+  width : Double,
+) -> Array[Fragment] {
+  let window : Array[Fragment] = []
+  let mut w = 0.0
+  let mut breaks = 0
+  // the whitespace the line starts with is stripped: it takes no room
+  let mut leading = true
+  for i in start..<text.length() {
+    let f = text[i]
+    let from = if i == start { offset } else { 0 }
+    let s = f.text
+    let face = flow.font(f.style)
+    let scale = f.style.size / 1000.0
+    let mut cut = -1
+    for j in from..<s.length() {
+      let u = s[j].to_int()
+      if u == '\n'.to_int() {
+        cut = j + 1
+        break
+      }
+      if leading {
+        if u == ' '.to_int() || u == '\t'.to_int() || u == 0x200B {
+          continue
+        }
+        leading = false
+      }
+      // never between the halves of a surrogate pair
+      let low = u >= 0xDC00 && u <= 0xDFFF
+      if w > 4.0 * width && !low {
+        cut = j
+        break
+      }
+      if w > 2.0 * width &&
+        (
+          u == ' '.to_int() ||
+          u == '\t'.to_int() ||
+          u == 0x200B ||
+          u == '-'.to_int() ||
+          u == 0xAD
+        ) {
+        breaks += 1
+        if breaks >= 2 {
+          cut = j
+          break
+        }
+      }
+      w += face.prawn_width(u) * scale
+    }
+    let to = if cut >= 0 { cut } else { s.length() }
+    window.push(
+      if from == 0 && to == s.length() {
+        f
+      } else {
+        { ..f, text: s[from:to].to_owned(), }
+      },
+    )
+    if cut >= 0 {
+      break
+    }
+  }
+  window
 }
