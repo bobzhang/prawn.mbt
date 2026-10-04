@@ -1,0 +1,13 @@
+{"document": {"page_size": [300, 400], "margin": 20},
+ "ops": [
+  ["start_new_page", {"size": [500, 600]}],
+  ["go_to_page", 1],
+  ["bounding_box", [0, 100], {"width": 200, "height": 60}, {"block": [
+    ["text", "a box that overflows onto a new page made after page one, which takes page one's size and not the last size asked for, as long as it takes"]
+  ]}],
+  ["?page_count"],
+  ["start_new_page", {"layout": ":landscape"}],
+  ["?bounds"],
+  ["start_new_page"],
+  ["?bounds"]
+ ]}

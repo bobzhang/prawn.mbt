@@ -49,10 +49,10 @@ pub struct Document {
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
-  /// the page size as given and the layout new pages take (Prawn keeps
-  /// them apart: a landscape page reverses the size, whatever its shape)
-  mut page_size : (Double, Double)
-  mut layout : String
+  /// each page's size as given and its layout (Prawn keeps them apart: a
+  /// landscape page reverses the size, whatever its shape); a new page
+  /// takes the current page's
+  priv geometry : Array[((Double, Double), String)]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
   /// page's margin box (`bounds.mbt`)
   priv mut bbox : Box
@@ -122,8 +122,7 @@ pub fn Document::new(
     catalog,
     family: "Helvetica",
     size: 12.0,
-    page_size: size,
-    layout,
+    geometry: [],
     bbox: margin,
     margin,
     stacks: [],
@@ -151,6 +150,14 @@ pub fn Document::new(
       }
     }
     doc.paths.insert(to, [])
+    // the page it was made from's size and layout (start_new_page sets
+    // others afterwards)
+    let geometry = if from >= 0 && from < doc.geometry.length() {
+      doc.geometry[from]
+    } else {
+      (size, layout)
+    }
+    doc.geometry.insert(to, geometry)
   }
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
@@ -266,12 +273,12 @@ pub fn Document::start_new_page(
   layout? : String,
   size? : (Double, Double),
 ) -> Unit {
-  let before = (self.page_size, self.layout)
-  self.page_size = size.unwrap_or(self.page_size)
-  self.layout = layout.unwrap_or(self.layout)
-  self.flow.start_new_page(size=oriented(self.page_size, self.layout))
+  let before = self.geometry[self.flow.page]
+  let after = (size.unwrap_or(before.0), layout.unwrap_or(before.1))
+  self.flow.start_new_page(size=oriented(after.0, after.1))
+  self.geometry[self.flow.page] = after
   // a page of another size or layout: content goes in its margin box
-  self.page_changed(size_changed=(self.page_size, self.layout) != before)
+  self.page_changed(size_changed=after != before)
 }
 
 ///|

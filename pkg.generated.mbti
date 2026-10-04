@@ -86,8 +86,6 @@ pub struct Document {
   catalog : FontCatalog
   mut family : String
   mut size : Double
-  mut page_size : (Double, Double)
-  mut layout : String
   // private fields
 }
 pub fn Document::bounding_box(Self, (Double, Double), Double, height? : Double, () -> Unit raise) -> Unit raise
