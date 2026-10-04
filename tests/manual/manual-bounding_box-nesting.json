@@ -1,0 +1,177 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        50,
+        720.0
+      ],
+      {
+        "width": 400,
+        "height": 200,
+        "block": [
+          [
+            "text",
+            "Fixed height"
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ],
+          [
+            "?cursor"
+          ],
+          [
+            "bounding_box",
+            [
+              20,
+              166.12799999999993
+            ],
+            {
+              "width": 300,
+              "block": [
+                [
+                  "text",
+                  "Stretchy height"
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
+                ],
+                [
+                  "bounding_box",
+                  [
+                    20,
+                    -6.127999999999929
+                  ],
+                  {
+                    "width": 100,
+                    "block": [
+                      [
+                        "text",
+                        "Stretchy height"
+                      ],
+                      [
+                        "transparent",
+                        0.5,
+                        {
+                          "block": [
+                            [
+                              "dash",
+                              1
+                            ],
+                            [
+                              "stroke_bounds"
+                            ],
+                            [
+                              "undash"
+                            ]
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  "?bounds"
+                ],
+                [
+                  "?bounds.top"
+                ],
+                [
+                  "bounding_box",
+                  [
+                    140,
+                    13.872000000000071
+                  ],
+                  {
+                    "width": 100,
+                    "height": 50,
+                    "block": [
+                      [
+                        "text",
+                        "Fixed height"
+                      ],
+                      [
+                        "transparent",
+                        0.5,
+                        {
+                          "block": [
+                            [
+                              "stroke_bounds"
+                            ]
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  "transparent",
+                  0.5,
+                  {
+                    "block": [
+                      [
+                        "dash",
+                        1
+                      ],
+                      [
+                        "stroke_bounds"
+                      ],
+                      [
+                        "undash"
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ],
+          [
+            "?cursor"
+          ],
+          [
+            "bounding_box",
+            [
+              20,
+              76.12799999999993
+            ],
+            {
+              "width": 300,
+              "height": 50,
+              "block": [
+                [
+                  "text",
+                  "Fixed height"
+                ],
+                [
+                  "transparent",
+                  0.5,
+                  {
+                    "block": [
+                      [
+                        "stroke_bounds"
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

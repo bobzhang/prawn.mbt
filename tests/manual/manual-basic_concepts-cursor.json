@@ -1,0 +1,51 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "the cursor is here: 720.0"
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "now it is here: 706.1279999999999"
+    ],
+    [
+      "move_down",
+      100
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "on the first move the cursor went down to: 592.2559999999999"
+    ],
+    [
+      "move_up",
+      50
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "on the second move the cursor went up to: 628.3839999999998"
+    ],
+    [
+      "move_cursor_to",
+      50
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "text",
+      "on the last move the cursor went directly to: 50.0"
+    ]
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "ops": [
+    [
+      "font"
+    ],
+    [
+      "?font.inspect"
+    ],
+    [
+      "text",
+      "Let's see which font we are using: Prawn::Fonts::AFM< Helvetica: 12 >"
+    ],
+    [
+      "font",
+      "Times-Roman"
+    ],
+    [
+      "text",
+      "Written in Times."
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "block": [
+          [
+            "text",
+            "Written in Courier because we are inside the block."
+          ]
+        ]
+      }
+    ],
+    [
+      "text",
+      "Written in Times again as we left the previous block."
+    ],
+    [
+      "font"
+    ],
+    [
+      "?font.inspect"
+    ],
+    [
+      "text",
+      "Let's see which font we are using again: Prawn::Fonts::AFM< Times-Roman: 12 >"
+    ],
+    [
+      "font",
+      "Helvetica"
+    ],
+    [
+      "text",
+      "Back to normal."
+    ]
+  ]
+}

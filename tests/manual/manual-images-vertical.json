@@ -1,0 +1,99 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        0,
+        720.0
+      ],
+      {
+        "width": 500,
+        "height": 450,
+        "block": [
+          [
+            "stroke_bounds"
+          ],
+          [
+            "text",
+            "Image vertically aligned to the top.",
+            {
+              "valign": ":top"
+            }
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": 220,
+              "vposition": ":top"
+            }
+          ],
+          [
+            "text",
+            "Image vertically aligned to the center.",
+            {
+              "valign": ":center"
+            }
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": 220,
+              "vposition": ":center"
+            }
+          ],
+          [
+            "text",
+            "Image vertically aligned to the bottom.",
+            {
+              "valign": ":bottom"
+            }
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": 220,
+              "vposition": ":bottom"
+            }
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.width"
+          ],
+          [
+            "?bounds"
+          ],
+          [
+            "?bounds.top"
+          ],
+          [
+            "?text_box",
+            "The next image has a 100 point offset from the top boundary",
+            {
+              "at": [
+                390,
+                440
+              ],
+              "width": 100
+            }
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": ":right",
+              "vposition": 100
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

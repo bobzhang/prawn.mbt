@@ -1,0 +1,35 @@
+{
+  "ops": [
+    [
+      "text",
+      "          This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. This paragraph won't be indented. \n          This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. This one will with NBSP. "
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. \nThis one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. ",
+      {
+        "indent_paragraphs": 60
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "FROM RIGHT TO LEFT:"
+    ],
+    [
+      "text",
+      "This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. This paragraph will be indented. \nThis one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. This one will too. ",
+      {
+        "indent_paragraphs": 60,
+        "direction": ":rtl"
+      }
+    ]
+  ]
+}

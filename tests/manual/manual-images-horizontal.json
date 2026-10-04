@@ -1,0 +1,67 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        50,
+        720.0
+      ],
+      {
+        "width": 400,
+        "height": 450,
+        "block": [
+          [
+            "stroke_bounds"
+          ],
+          [
+            "text",
+            "Image aligned to the left."
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": ":left"
+            }
+          ],
+          [
+            "text",
+            "Image aligned to the center."
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": ":center"
+            }
+          ],
+          [
+            "text",
+            "Image aligned to the right."
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": ":right"
+            }
+          ],
+          [
+            "text",
+            "The next image has a 50 point offset from the left boundary"
+          ],
+          [
+            "image",
+            "$PRAWN/data/images/stef.jpg",
+            {
+              "position": 50
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

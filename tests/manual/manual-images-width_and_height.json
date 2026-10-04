@@ -1,0 +1,46 @@
+{
+  "ops": [
+    [
+      "text",
+      "Scale by setting only the width"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/pigs.jpg",
+      {
+        "width": 150
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Scale by setting only the height"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/pigs.jpg",
+      {
+        "height": 80
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Stretch to fit the width and height provided"
+    ],
+    [
+      "image",
+      "$PRAWN/data/images/pigs.jpg",
+      {
+        "width": 500,
+        "height": 100
+      }
+    ]
+  ]
+}

@@ -1,0 +1,4 @@
+{"query":["text_box","reference rectangle",{"at":[60,180],"width":80}],"value":""}
+{"query":["text_box","rectangle scaled from upper-left corner",{"at":[50,135],"width":100}],"value":""}
+{"query":["text_box","reference rectangle",{"at":[360,180],"width":80}],"value":""}
+{"query":["text_box","rectangle scaled from center",{"at":[350,135],"width":100}],"value":""}

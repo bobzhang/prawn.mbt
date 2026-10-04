@@ -1,0 +1,118 @@
+{
+  "ops": [
+    [
+      "font_families.update",
+      {
+        "=DejaVu Sans": {
+          "normal": "$PRAWN/data/fonts/DejaVuSans.ttf"
+        }
+      }
+    ],
+    [
+      "font",
+      "DejaVu Sans",
+      {
+        "block": [
+          [
+            "text",
+            "Using the DejaVu Sans font providing only its name to the font method"
+          ]
+        ]
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font_families.update",
+      {
+        "=Panic Sans": {
+          "normal": {
+            "file": "$PRAWN/data/fonts/Panic+Sans.dfont",
+            "font": "PanicSans"
+          },
+          "italic": {
+            "file": "$PRAWN/data/fonts/Panic+Sans.dfont",
+            "font": "PanicSans-Italic"
+          },
+          "bold": {
+            "file": "$PRAWN/data/fonts/Panic+Sans.dfont",
+            "font": "PanicSans-Bold"
+          },
+          "bold_italic": {
+            "file": "$PRAWN/data/fonts/Panic+Sans.dfont",
+            "font": "PanicSans-BoldItalic"
+          }
+        }
+      }
+    ],
+    [
+      "font",
+      "Panic Sans"
+    ],
+    [
+      "text",
+      "Also using Panic Sans by providing only its name"
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "Taking <b>advantage</b> of the <i>inline formatting</i>",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "Using the bold style option.",
+      {
+        "style": ":bold"
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Using the bold_italic style option.",
+      {
+        "style": ":bold_italic"
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Using the italic style option.",
+      {
+        "style": ":italic"
+      }
+    ],
+    [
+      "move_down",
+      10
+    ],
+    [
+      "text",
+      "Using the normal style option.",
+      {
+        "style": ":normal"
+      }
+    ],
+    [
+      "move_down",
+      10
+    ]
+  ]
+}

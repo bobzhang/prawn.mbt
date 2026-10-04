@@ -1,0 +1,128 @@
+{
+  "ops": [
+    [
+      "text",
+      "This text should be left aligned"
+    ],
+    [
+      "text",
+      "This text should be centered",
+      {
+        "align": ":center"
+      }
+    ],
+    [
+      "text",
+      "This text should be right aligned",
+      {
+        "align": ":right"
+      }
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "bounding_box",
+      [
+        0,
+        658.3839999999998
+      ],
+      {
+        "width": 250,
+        "height": 220,
+        "block": [
+          [
+            "text",
+            "This text is flowing from the left. This text is flowing from the left. This text is flowing from the left. This text is flowing from the left. "
+          ],
+          [
+            "move_down",
+            15
+          ],
+          [
+            "text",
+            "This text is flowing from the center. This text is flowing from the center. This text is flowing from the center. ",
+            {
+              "align": ":center"
+            }
+          ],
+          [
+            "move_down",
+            15
+          ],
+          [
+            "text",
+            "This text is flowing from the right. This text is flowing from the right. This text is flowing from the right. This text is flowing from the right. ",
+            {
+              "align": ":right"
+            }
+          ],
+          [
+            "move_down",
+            15
+          ],
+          [
+            "text",
+            "This text is justified. This text is justified. This text is justified. This text is justified. This text is justified. This text is justified. ",
+            {
+              "align": ":justify"
+            }
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "bounding_box",
+      [
+        270,
+        658.3839999999998
+      ],
+      {
+        "width": 250,
+        "height": 220,
+        "block": [
+          [
+            "text",
+            "This text should be vertically top aligned"
+          ],
+          [
+            "text",
+            "This text should be vertically centered",
+            {
+              "valign": ":center"
+            }
+          ],
+          [
+            "text",
+            "This text should be vertically bottom aligned",
+            {
+              "valign": ":bottom"
+            }
+          ],
+          [
+            "transparent",
+            0.5,
+            {
+              "block": [
+                [
+                  "stroke_bounds"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ]
+  ]
+}

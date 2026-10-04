@@ -1,0 +1,70 @@
+{
+  "ops": [
+    [
+      "?font_size"
+    ],
+    [
+      "text",
+      "Let's see which is the current font_size: 12"
+    ],
+    [
+      "?font_size",
+      16
+    ],
+    [
+      "text",
+      "Yeah, something bigger!"
+    ],
+    [
+      "?font_size",
+      25,
+      {
+        "block": [
+          [
+            "text",
+            "Even bigger!"
+          ]
+        ]
+      }
+    ],
+    [
+      "text",
+      "Back to 16 again."
+    ],
+    [
+      "text",
+      "Single line on 20 using the :size option.",
+      {
+        "size": 20
+      }
+    ],
+    [
+      "text",
+      "Back to 16 once more."
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "size": 10,
+        "block": [
+          [
+            "text",
+            "Yeah, using Courier 10 courtesy of the font method."
+          ]
+        ]
+      }
+    ],
+    [
+      "font",
+      "Helvetica",
+      {
+        "size": 12
+      }
+    ],
+    [
+      "text",
+      "Back to normal"
+    ]
+  ]
+}

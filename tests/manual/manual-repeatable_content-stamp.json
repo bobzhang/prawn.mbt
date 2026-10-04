@@ -1,0 +1,79 @@
+{
+  "ops": [
+    [
+      "create_stamp",
+      "approved",
+      {
+        "block": [
+          [
+            "rotate",
+            30,
+            {
+              "origin": [
+                -5,
+                -5
+              ],
+              "block": [
+                [
+                  "stroke_color",
+                  "FF3333"
+                ],
+                [
+                  "stroke_ellipse",
+                  [
+                    0,
+                    0
+                  ],
+                  29,
+                  15
+                ],
+                [
+                  "stroke_color",
+                  "000000"
+                ],
+                [
+                  "fill_color",
+                  "993333"
+                ],
+                [
+                  "font",
+                  "Times-Roman",
+                  {
+                    "block": [
+                      [
+                        "draw_text",
+                        "Approved",
+                        {
+                          "at": [
+                            -23,
+                            -3
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  "fill_color",
+                  "000000"
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      "stamp",
+      "approved"
+    ],
+    [
+      "stamp_at",
+      "approved",
+      [
+        200,
+        100
+      ]
+    ]
+  ]
+}

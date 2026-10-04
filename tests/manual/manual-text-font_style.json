@@ -1,0 +1,148 @@
+{
+  "ops": [
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "style": ":bold"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Courier (bold)"
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "style": ":bold_italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Courier (bold_italic)"
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "style": ":italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Courier (italic)"
+    ],
+    [
+      "font",
+      "Courier",
+      {
+        "style": ":normal"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Courier (normal)"
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font",
+      "Helvetica",
+      {
+        "style": ":bold"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Helvetica (bold)"
+    ],
+    [
+      "font",
+      "Helvetica",
+      {
+        "style": ":bold_italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Helvetica (bold_italic)"
+    ],
+    [
+      "font",
+      "Helvetica",
+      {
+        "style": ":italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Helvetica (italic)"
+    ],
+    [
+      "font",
+      "Helvetica",
+      {
+        "style": ":normal"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Helvetica (normal)"
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font",
+      "Times-Roman",
+      {
+        "style": ":bold"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Times-Roman (bold)"
+    ],
+    [
+      "font",
+      "Times-Roman",
+      {
+        "style": ":bold_italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Times-Roman (bold_italic)"
+    ],
+    [
+      "font",
+      "Times-Roman",
+      {
+        "style": ":italic"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Times-Roman (italic)"
+    ],
+    [
+      "font",
+      "Times-Roman",
+      {
+        "style": ":normal"
+      }
+    ],
+    [
+      "text",
+      "I'm writing in Times-Roman (normal)"
+    ]
+  ]
+}

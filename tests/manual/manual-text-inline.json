@@ -1,0 +1,67 @@
+{
+  "ops": [
+    [
+      "text",
+      "Just your regular text <b>except this portion</b> is using the b tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Just your regular text <i>except this portion</i> is using the i tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Just your regular text <u>except this portion</u> is using the u tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Just your regular text <strikethrough>except this portion</strikethrough> is using the strikethrough tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Just your regular text <sub>except this portion</sub> is using the sub tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Just your regular text <sup>except this portion</sup> is using the sup tag",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "This <font size='18'>line</font> uses <font name='Courier'>all the font tag</font> attributes in <font character_spacing='2'>a single line</font>. ",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "Coloring in <color rgb='FF00FF'>both RGB</color> <color c='100' m='0' y='0' k='0'>and CMYK</color>",
+      {
+        "inline_format": true
+      }
+    ],
+    [
+      "text",
+      "This an external link to the <u><link href='https://prawnpdf.org/'>Prawn home page</link></u>",
+      {
+        "inline_format": true
+      }
+    ]
+  ]
+}

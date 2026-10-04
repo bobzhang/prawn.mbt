@@ -1,0 +1,117 @@
+{
+  "ops": [
+    [
+      "text",
+      "This is the sample text used for the text boxes. See how it behave with the various overflow options used."
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "?text_box",
+      "This is the sample text used for the text boxes. See how it behave with the various overflow options used.",
+      {
+        "at": [
+          0,
+          672.256
+        ],
+        "width": 100,
+        "height": 50,
+        "overflow": ":truncate"
+      }
+    ],
+    [
+      "?text_box",
+      "This is the sample text used for the text boxes. See how it behave with the various overflow options used.",
+      {
+        "at": [
+          150,
+          672.256
+        ],
+        "width": 100,
+        "height": 50,
+        "overflow": ":expand"
+      }
+    ],
+    [
+      "?text_box",
+      "This is the sample text used for the text boxes. See how it behave with the various overflow options used.",
+      {
+        "at": [
+          300,
+          672.256
+        ],
+        "width": 100,
+        "height": 50,
+        "overflow": ":shrink_to_fit"
+      }
+    ],
+    [
+      "move_down",
+      120
+    ],
+    [
+      "text",
+      "If the box is too small for the text, :shrink_to_fit can render the text in a really small font size."
+    ],
+    [
+      "?cursor"
+    ],
+    [
+      "?text_box",
+      "If the box is too small for the text, :shrink_to_fit can render the text in a really small font size.",
+      {
+        "at": [
+          0,
+          538.3839999999999
+        ],
+        "width": 50,
+        "height": 50,
+        "overflow": ":shrink_to_fit",
+        "min_font_size": null
+      }
+    ],
+    [
+      "?text_box",
+      "If the box is too small for the text, :shrink_to_fit can render the text in a really small font size.",
+      {
+        "at": [
+          150,
+          538.3839999999999
+        ],
+        "width": 50,
+        "height": 50,
+        "overflow": ":shrink_to_fit",
+        "min_font_size": 8
+      }
+    ],
+    [
+      "?text_box",
+      "If the box is too small for the text, :shrink_to_fit can render the text in a really small font size.",
+      {
+        "at": [
+          300,
+          538.3839999999999
+        ],
+        "width": 50,
+        "height": 50,
+        "overflow": ":shrink_to_fit",
+        "min_font_size": 10
+      }
+    ],
+    [
+      "?text_box",
+      "If the box is too small for the text, :shrink_to_fit can render the text in a really small font size.",
+      {
+        "at": [
+          450,
+          538.3839999999999
+        ],
+        "width": 50,
+        "height": 50,
+        "overflow": ":shrink_to_fit",
+        "min_font_size": 12
+      }
+    ]
+  ]
+}

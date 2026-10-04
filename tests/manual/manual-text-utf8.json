@@ -1,0 +1,51 @@
+{
+  "ops": [
+    [
+      "text",
+      "Take this example, a simple Euro sign:"
+    ],
+    [
+      "text",
+      "€",
+      {
+        "size": 32
+      }
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "This works, because €  is one of the few non-ASCII glyphs supported in PDF built-in fonts."
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "text",
+      "For full internationalized text support, we need to use external fonts:"
+    ],
+    [
+      "move_down",
+      20
+    ],
+    [
+      "font",
+      "$PRAWN/data/fonts/DejaVuSans.ttf",
+      {
+        "block": [
+          [
+            "text",
+            "ὕαλον ϕαγεῖν δύναμαι· τοῦτο οὔ με βλάπτει."
+          ],
+          [
+            "text",
+            "There you go."
+          ]
+        ]
+      }
+    ]
+  ]
+}

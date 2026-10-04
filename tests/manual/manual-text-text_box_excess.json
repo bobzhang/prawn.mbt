@@ -1,0 +1,32 @@
+{
+  "ops": [
+    [
+      "?cursor"
+    ],
+    [
+      "?text_box",
+      "This is the beginning of the text. It will be cut somewhere and the rest of the text will proceed to be rendered this time by calling another method. .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . ",
+      {
+        "width": 300,
+        "height": 50,
+        "overflow": ":truncate",
+        "at": [
+          100,
+          700.0
+        ],
+        "size": 18
+      }
+    ],
+    [
+      "?text_box",
+      "text will proceed to be rendered this time by calling another method. .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . ",
+      {
+        "width": 300,
+        "at": [
+          100,
+          600.0
+        ]
+      }
+    ]
+  ]
+}
