@@ -1,0 +1,12 @@
+{"query":["image","$PRAWN/data/images/pigs.jpg",{"width":100}],"value":{"class":"Prawn::Images::JPG"}}
+{"query":"cursor","value":645.0}
+{"query":"cursor","value":447.0}
+{"query":"cursor","value":312.0}
+{"query":"page_number","value":1}
+{"query":"cursor","value":12.0}
+{"query":"page_number","value":2}
+{"query":"cursor","value":620.0}
+{"query":"bounds","value":{"left":0,"bottom":0,"width":200,"height":150.0,"absolute_left":336,"absolute_top":436.0}}
+{"query":"page_count","value":2}
+{"query":"cursor","value":100.0}
+{"raises":"Prawn::Errors::UnsupportedImageType","error":"Prawn::Errors::UnsupportedImageType"}

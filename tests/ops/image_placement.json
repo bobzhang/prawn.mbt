@@ -1,0 +1,36 @@
+{
+  "ops": [
+    ["?image", "$PRAWN/data/images/pigs.jpg", { "width": 100 }],
+    ["?cursor"],
+    ["image", "$PRAWN/data/images/dice.png", { "height": 60, "position": ":center" }],
+    ["image", "$PRAWN/data/images/dice.png", { "scale": 0.2, "position": ":right" }],
+    ["image", "$PRAWN/data/images/pigs.jpg", { "fit": [80, 80], "position": 50 }],
+    ["image", "$PRAWN/data/images/pigs.jpg", { "fit": [200, 30] }],
+    ["?cursor"],
+    ["image", "$PRAWN/data/images/dice.png", { "width": 60, "vposition": ":bottom", "position": ":right" }],
+    ["image", "$PRAWN/data/images/dice.png", { "width": 60, "vposition": ":center", "position": ":center" }],
+    ["image", "$PRAWN/data/images/dice.png", { "width": 60, "vposition": 100 }],
+    ["?cursor"],
+    ["image", "$PRAWN/data/images/pigs.jpg", { "height": 300 }],
+    ["?page_number"],
+    ["?cursor"],
+    ["image", "$PRAWN/data/images/dice.png", { "height": 100 }],
+    ["?page_number"],
+    ["?cursor"],
+    ["bounding_box", [300, 400], { "width": 200 }, { "block": [
+      ["image", "$PRAWN/data/images/dice.png", { "width": 100 }],
+      ["image", "$PRAWN/data/images/pigs.jpg", { "width": 100, "position": ":right" }],
+      ["?bounds"],
+      ["image", "$PRAWN/data/images/pigs.jpg", { "at": [10, 10], "width": 50 }]
+    ] }],
+    ["column_box", [0, 300], { "width": 300, "height": 200, "columns": 2, "spacer": 20 }, { "block": [
+      ["image", "$PRAWN/data/images/pigs.jpg", { "width": 100 }],
+      ["image", "$PRAWN/data/images/pigs.jpg", { "width": 100 }],
+      ["image", "$PRAWN/data/images/pigs.jpg", { "width": 100 }]
+    ] }],
+    ["rotate", 30, { "origin": [300, 100], "block": [["image", "$PRAWN/data/images/dice.png", { "at": [300, 100], "width": 80 }]] }],
+    ["?page_count"],
+    ["?cursor"],
+    ["!raises", "Prawn::Errors::UnsupportedImageType", ["image", "$PRAWN/data/fonts/DejaVuSans.ttf"]]
+  ]
+}

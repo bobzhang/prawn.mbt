@@ -19,6 +19,8 @@ pub(all) suberror PrawnError {
   /// pdf-core's: a graphics state restored with none saved on the page (a
   /// page made inside two nested blocks that save it)
   EmptyGraphicStateStack
+  /// an image Prawn cannot read (neither PNG nor JPEG)
+  UnsupportedImageType(String)
   /// something Prawn does that this module does not do yet (CMYK colour,
   /// character spacing): raised rather than set wrongly
   Unsupported(String)
@@ -33,6 +35,7 @@ pub fn PrawnError::ruby_class(self : PrawnError) -> String {
     ArgumentError(_) => "ArgumentError"
     UnknownFont(_) => "Prawn::Errors::UnknownFont"
     BadFontFamily(class) => class
+    UnsupportedImageType(_) => "Prawn::Errors::UnsupportedImageType"
     EmptyGraphicStateStack => "PDF::Core::Errors::EmptyGraphicStateStack"
     Unsupported(_) => "Unsupported"
   }
