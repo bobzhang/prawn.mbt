@@ -24,6 +24,29 @@
       ["?bounds"],
       ["text", "after the box, still indented"]
     ] }],
+    ["?bounds"],
+    ["start_new_page", { "size": [200, 200] }],
+    ["bounding_box", [0, 160], { "width": 100, "height": 100 }, { "block": [
+      ["bounding_box", [0, 100], { "width": 80, "height": 50 }, { "block": [
+        ["start_new_page", { "size": [300, 300] }],
+        ["?bounds"],
+        ["bounding_box", [10, 200], { "width": 60 }, { "block": [["?bounds"], ["text", "child"]] }]
+      ] }],
+      ["?bounds"]
+    ] }],
+    ["?bounds"],
+    ["start_new_page", { "size": [200, 200] }],
+    ["bounding_box", [0, 160], { "width": 100, "height": 100 }, { "block": [
+      ["start_new_page", { "size": [300, 300] }],
+      ["text", "text in the new margin box"]
+    ] }],
+    ["?cursor"],
+    ["start_new_page", { "size": [200, 200] }],
+    ["indent", 10, { "block": [
+      ["bounding_box", [0, 160], { "width": 100, "height": 100 }, { "block": [
+        ["start_new_page", { "size": [300, 300] }]
+      ] }]
+    ] }],
     ["?bounds"]
   ]
 }

@@ -53,8 +53,10 @@ pub struct Document {
   /// them apart: a landscape page reverses the size, whatever its shape)
   mut page_size : (Double, Double)
   mut layout : String
-  /// the bounding boxes inside the margin box, innermost last
-  priv boxes : Array[Box]
+  /// the current bounding box (Prawn's `@bounding_box`) and the current
+  /// page's margin box (`bounds.mbt`)
+  priv mut bbox : Box
+  priv mut margin : Box
   /// each page's stack of graphics states (`graphics.mbt`; pdf-core's
   /// `GraphicStateStack`): a new page starts with a copy of the state of
   /// the page it was made from
@@ -63,17 +65,6 @@ pub struct Document {
   /// op (`transform.mbt`), in pagelayout's page space; a new page starts
   /// without one
   priv ctms : Array[@pagelayout.Matrix]
-  /// the margin box's indentation (`indent` outside any box), which it
-  /// keeps across pages
-  priv mut pad_left : Double
-  priv mut pad_right : Double
-  /// a new page of another size or layout puts content in its margin box
-  /// while the boxes open then stay open (Prawn): how many there were
-  priv mut margin_override : Int?
-  /// the margin box a box left after such an override goes back to: the
-  /// one it was opened in (Prawn restores that object), until the page
-  /// changes
-  priv mut stale_root : Box?
   /// while `text` sets lines: the line gap and leading Prawn moves down by
   /// before content moves on to the next column or page
   priv mut pending_gap : Double
@@ -114,6 +105,18 @@ pub fn Document::new(
     margin_bottom: bottom,
     margin_left: left,
   })
+  // the margin box until the first page has its own
+  let margin : Box = {
+    left,
+    top: h - top,
+    width: w - left - right,
+    height: Some(h - top - bottom),
+    stretched: 0.0,
+    parent: None,
+    columns: None,
+    total_left: 0.0,
+    total_right: 0.0,
+  }
   let doc = {
     flow,
     catalog,
@@ -121,14 +124,11 @@ pub fn Document::new(
     size: 12.0,
     page_size: size,
     layout,
-    boxes: [],
+    bbox: margin,
+    margin,
     stacks: [],
     ctms: [],
     open_pages: [],
-    pad_left: 0.0,
-    pad_right: 0.0,
-    margin_override: None,
-    stale_root: None,
     pending_gap: 0.0,
     paths: [],
   }
@@ -155,7 +155,14 @@ pub fn Document::new(
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
+  doc.page_changed()
   doc
+}
+
+///|
+/// A new page like the current one (what a page break makes).
+fn Document::new_page(self : Document) -> Unit {
+  self.start_new_page()
 }
 
 ///|
@@ -262,13 +269,9 @@ pub fn Document::start_new_page(
   let before = (self.page_size, self.layout)
   self.page_size = size.unwrap_or(self.page_size)
   self.layout = layout.unwrap_or(self.layout)
-  // a page of another size or layout: content goes in its margin box
-  // until the box open now is left (Prawn)
-  if (self.page_size, self.layout) != before && !self.boxes.is_empty() {
-    self.margin_override = Some(self.boxes.length())
-  }
   self.flow.start_new_page(size=oriented(self.page_size, self.layout))
-  self.reframe()
+  // a page of another size or layout: content goes in its margin box
+  self.page_changed(size_changed=(self.page_size, self.layout) != before)
 }
 
 ///|
@@ -389,5 +392,5 @@ fn Document::check(
 /// its margin box.
 pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
   self.flow.go_to_page(number - 1)
-  self.reframe()
+  self.page_changed()
 }
