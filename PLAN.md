@@ -85,6 +85,7 @@ that come up.
 | Capability | Today | General value |
 |---|---|---|
 | AFM glyph-name kerning and glyph bboxes | the parser drops kern pairs of `C -1` glyphs (`pdflite/font/afm/pdf_afm.mbt:178`); kerning is by code | correct std-14 kerning |
+| TrueType cmap format 12 (characters beyond the BMP) | the sfnt reader handles formats 0, 4 and 6 (`pagelayout/fonts`); a font's emoji or CJK extension glyphs are .notdef | full Unicode coverage of TrueType fonts |
 | PNG palette transparency, translucent palettes | rejected (`pdflite/pdf_png.mbt:155`) | PNG coverage |
 | JPEG bits/colour space (grey, CMYK, Adobe inversion) | builder hardcodes 8-bit DeviceRGB (`pdflite/pdf_image_object_builders.mbt:35`) | correct JPEG embedding |
 | Extension item / missing graphics in `PageItem` (§1) | no raw-content or custom-emitter variant (`pagelayout/page_model.mbt:162`) | richer drawing API |

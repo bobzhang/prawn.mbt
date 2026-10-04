@@ -36,14 +36,20 @@ pub fn Document::draw_text(
     }
     let scale = base.size / 1000.0
     let codes = text.iter().map(c => c.to_int()).to_array()
-    let advances = codes.mapi((i, code) => {
+    // one advance per UTF-16 unit, as the text is drawn: a character
+    // beyond the BMP's second unit advances nothing
+    let advances = []
+    for i, code in codes {
       let kern = if kerning && i + 1 < codes.length() {
         face.kerning(code, codes[i + 1])
       } else {
         0.0
       }
-      (face.drawn_width(code) + kern) * scale
-    })
+      advances.push((face.drawn_width(code) + kern) * scale)
+      if code > 0xFFFF {
+        advances.push(0.0)
+      }
+    }
     // on the page: Prawn's `map_to_absolute`
     let b = self.bounds()
     let x = b.absolute_left + at.0
