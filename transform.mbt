@@ -93,19 +93,13 @@ fn Document::group(
     items.push(Graphic({ x_pt: 0.0, y_pt: 0.0, ops, }))
     items.append(kept)
   }
-  // an error in the block leaves it with the state it saved popped
-  let mut restoring = false
-  errdefer {
-    if !restoring {
-      self.page().stack.pop() |> ignore
-    }
-    finish()
-  }
+  // an error in the block leaves the state it saved on the stack, as
+  // Prawn restores only after the block returns
+  errdefer finish()
   body()
   // Q: the stack of the page current now; one with nothing left to
   // restore (a new page holds one state, so two blocks around a page break
   // empty it) is pdf-core's EmptyGraphicStateStack
-  restoring = true
   let stack = self.page().stack
   if stack.is_empty() {
     raise EmptyGraphicStateStack
