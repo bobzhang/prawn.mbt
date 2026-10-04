@@ -1,0 +1,11 @@
+{"query":["text_box","ab­cd unused",{"at":[0,720],"width":200,"height":40}],"value":""}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["text_box","abcdefghij­klmnopqrstuvwxyz",{"at":[0,660],"width":80,"height":60}],"value":""}
+{"query":["text_box","abcdefghij­klm­nop­qrstuvwxyz",{"at":[100,660],"width":80,"height":80,"align":":right"}],"value":""}
+{"query":["text_box","end­",{"at":[200,660],"width":80,"height":20,"align":":center"}],"value":""}
+{"query":["text_box","hard­\nbreak",{"at":[300,660],"width":80,"height":40}],"value":""}
+{"query":["text_box","supercalifragilis",{"at":[400,300],"width":60,"align":":right"}],"value":""}
+{"query":["text_box","WAVE AVATAR To",{"at":[400,200],"width":50,"align":":right"}],"value":""}
+{"query":["text_box","a­­­­­­­­­­­­­­­­­­­­b",{"at":[300,300],"width":20,"height":40}],"value":""}
+{"query":["text_box","ab­\r",{"at":[300,200],"width":80,"height":40,"align":":right"}],"value":""}
+{"query":"cursor","value":436.35999999999996}

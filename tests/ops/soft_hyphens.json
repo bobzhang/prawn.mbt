@@ -1,0 +1,19 @@
+{
+  "ops": [
+    ["?text_box", "ab­cd unused", { "at": [0, 720], "width": 200, "height": 40 }],
+    ["?text_box", "abcdefghij­klmnopqrstuvwxyz", { "at": [0, 660], "width": 80, "height": 60 }],
+    ["?text_box", "abcdefghij­klm­nop­qrstuvwxyz", { "at": [100, 660], "width": 80, "height": 80, "align": ":right" }],
+    ["?text_box", "end­", { "at": [200, 660], "width": 80, "height": 20, "align": ":center" }],
+    ["?text_box", "hard­\nbreak", { "at": [300, 660], "width": 80, "height": 40 }],
+    ["move_down", 200],
+    ["text", "Hyphen­ation and soft­hyphen­ation in a para­graph long enough to wrap at one of its soft hyphens, some­where along the way.", { "size": 18 }],
+    ["formatted_text", [{ "text": "frag­" }, { "text": "ment­ation", "styles": [":bold"] }, { "text": " and more text after it to fill the line out to its end and some­what beyond it." }], { "align": ":justify" }],
+    ["formatted_text", [{ "text": "T\u00ad" }, { "text": "o and fragments" }], { "align": ":right" }],
+    ["text", "A\u00ad\u00adV twice", { "align": ":right" }],
+    ["?text_box", "supercalifragilis", { "at": [400, 300], "width": 60, "align": ":right" }],
+    ["?text_box", "WAVE AVATAR To", { "at": [400, 200], "width": 50, "align": ":right" }],
+    ["?text_box", "a\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00ad\u00adb", { "at": [300, 300], "width": 20, "height": 40 }],
+    ["?text_box", "ab\u00ad\r", { "at": [300, 200], "width": 80, "height": 40, "align": ":right" }],
+    ["?cursor"]
+  ]
+}

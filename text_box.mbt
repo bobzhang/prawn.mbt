@@ -396,7 +396,10 @@ fn line_window(
           break
         }
       }
-      w += face.prawn_width(u) * scale
+      // a soft hyphen takes no room in a line (but the one ending it)
+      if u != 0xAD {
+        w += face.prawn_width(u) * scale
+      }
     }
     let to = if cut >= 0 { cut } else { s.length() }
     window.push(
