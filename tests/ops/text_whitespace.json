@@ -1,0 +1,10 @@
+{
+  "ops": [
+    ["text", "a \nb", { "align": ":right" }],
+    ["text", "a   \nb  ", { "align": ":right" }],
+    ["formatted_text", [{ "text": "a" }, { "text": "  " }, { "text": "\nb" }], { "align": ":right" }],
+    ["formatted_text", [{ "text": "a" }, { "text": " ", "callback": { "trace": "space" } }, { "text": "\n" }]],
+    ["formatted_text", [{ "text": "x " }, { "text": "y  ", "styles": [":underline"] }, { "text": "\nz" }], { "align": ":center" }],
+    ["?cursor"]
+  ]
+}

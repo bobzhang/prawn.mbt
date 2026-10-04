@@ -1,0 +1,12 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "a", "styles": [":underline"], "link": "https://example.com", "callback": { "trace": "behind", "phase": "behind", "draw": [["start_new_page"], ["fill_color", "0000FF"]] } },
+      { "text": "b", "callback": { "trace": "b", "phase": "both", "draw": [["stroke_horizontal_line", 0, 10]] } }
+    ]],
+    ["text", "after"],
+    ["?page_count"],
+    ["?page_number"],
+    ["?cursor"]
+  ]
+}

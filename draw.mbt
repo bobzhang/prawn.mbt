@@ -4,11 +4,12 @@
 // line too), in its own font and colour (`begin_fragment`), what its
 // callbacks put behind it, its text (or what the `draw_text_callback`
 // draws instead), then its underline and strikethrough, its links and
-// what its callbacks put in front.
+// what its callbacks put in front. Each goes on the page current when it
+// is drawn, which a callback may change.
 
 ///|
-/// Draw `line` on the current page: its left edge at `x0`, its baseline at
-/// `baseline` (in Flow's page coordinates, y down).
+/// Draw `line`: its left edge at `x0`, its baseline at `baseline` (in
+/// Flow's page coordinates, y down).
 fn Document::ink_line(
   self : Document,
   line : Line,
@@ -18,7 +19,6 @@ fn Document::ink_line(
   if !line.runs.is_empty() {
     self.flow.mark_inked()
   }
-  let page = self.page()
   for held in line.held {
     let (fragment, x, style, face) = held
     let runs = line.runs.filter(r => r.fragment == fragment)
@@ -33,24 +33,22 @@ fn Document::ink_line(
       width += run.width
       text.write_string(run.text)
     }
-    page.items.append(
-      self.draw_fragment(
-        runs,
-        x0,
-        x,
-        width,
-        baseline,
-        style,
-        face,
-        text.to_string(),
-      ),
+    self.draw_fragment(
+      runs,
+      x0,
+      x,
+      width,
+      baseline,
+      style,
+      face,
+      text.to_string(),
     )
   }
 }
 
 ///|
-/// Prawn's `draw_fragment`: a fragment's items, from its runs on the line
-/// (`x0` their line's left edge); it starts at `x`, `width` wide, its text
+/// Prawn's `draw_fragment`: a fragment from its runs on the line (`x0`
+/// their line's left edge); it starts at `x`, `width` wide, its text
 /// `text`.
 fn Document::draw_fragment(
   self : Document,
@@ -62,10 +60,27 @@ fn Document::draw_fragment(
   style : Style,
   face : Face,
   text : String,
-) -> Array[@pagelayout.PageItem] {
+) -> Unit {
   // the fragment's font and colour, to its end
   self.begin_fragment(style)
-  let out = self.underlays(x, width, baseline, style, face, text)
+  // its callbacks (none in a dry run)
+  let callbacks = match self.fragment_meta.get(style.callback) {
+    Some(meta) if !self.dry_run => meta.callbacks
+    _ => []
+  }
+  // the fragment as they see it, placed once (Prawn sets its position as
+  // it starts drawing it)
+  let placed = if callbacks.is_empty() {
+    None
+  } else {
+    Some(self.placed(x, width, baseline, style, face, text))
+  }
+  for callback in callbacks {
+    match (callback.render_behind, placed) {
+      (Some(f), Some(p)) => f(p)
+      _ => ()
+    }
+  }
   let rise = script_rise(style, face)
   match self.draw_text_callback {
     Some(draw) =>
@@ -73,11 +88,14 @@ fn Document::draw_fragment(
       // kerning); a dry run draws nothing
       if !self.dry_run {
         let box = self.current_box()
-        let at = (
-          x - box.left,
-          self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y()),
+        draw(
+          text,
+          (
+            x - box.left,
+            self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y()),
+          ),
+          true,
         )
-        out.append(self.capture(() => draw(text, at, true)))
       }
     None => {
       let (bold, italic) = style.face_style()
@@ -89,8 +107,9 @@ fn Document::draw_fragment(
       // in the fill colour current now: the fragment's own, or what a
       // callback set
       let color = self.gs().fill
+      let items = self.page().items
       for run in runs {
-        out.push(
+        items.push(
           Text({
             font,
             size_pt: style.size,
@@ -104,9 +123,80 @@ fn Document::draw_fragment(
       }
     }
   }
-  out.append(self.decorations(x, width, baseline, style, face, text))
+  self.draw_overlays(x, width, baseline - rise, style, face)
+  for callback in callbacks {
+    match (callback.render_in_front, placed) {
+      (Some(f), Some(p)) => f(p)
+      _ => ()
+    }
+  }
   self.end_fragment()
-  out
+}
+
+///|
+/// Prawn's `draw_fragment_overlay_styles`, link and anchor: the underline
+/// and strikethrough, stroked as `stroke_line` strokes them in the current
+/// stroke colour and line style, 1.25 points below the baseline (`base`,
+/// where a sub- or superscript sits) and 0.3 of the ascender above it;
+/// then the URI's annotation and the destination's, as wide as the
+/// fragment.
+fn Document::draw_overlays(
+  self : Document,
+  x : Double,
+  width : Double,
+  base : Double,
+  style : Style,
+  face : Face,
+) -> Unit {
+  let a = face.ascender_pt(style.size)
+  let d = face.descender_pt(style.size)
+  let gs = self.gs()
+  let items = self.page().items
+  let line = fn(y : Double) -> @pagelayout.PageItem {
+    Graphic({
+      x_pt: 0.0,
+      y_pt: 0.0,
+      ops: [
+        Path({
+          segments: [MoveTo(x, y), LineTo(x + width, y)],
+          fill: None,
+          fill_rule: NonZero,
+          stroke: Some(Solid(gs.stroke)),
+          stroke_style: {
+            width: if gs.line_width == 0.0 {
+              Hairline
+            } else {
+              Width(gs.line_width)
+            },
+            cap: gs.cap,
+            join: gs.join,
+            miter_limit: 10.0,
+            dash: gs.dash.copy(),
+            dash_phase: gs.dash_phase,
+          },
+        }),
+      ],
+    })
+  }
+  if style.underline {
+    items.push(line(base + 1.25))
+  }
+  if style.strike {
+    items.push(line(base - a * 0.3))
+  }
+  let link = fn(target) {
+    items.push(
+      Link({ x_pt: x, y_pt: base - a, w_pt: width, h_pt: a + d, target, }),
+    )
+  }
+  match style.link {
+    Some(target) => link(target)
+    None => ()
+  }
+  match self.fragment_meta.get(style.callback) {
+    Some({ anchor: Some(name), .. }) => link(Named(name))
+    _ => ()
+  }
 }
 
 ///|

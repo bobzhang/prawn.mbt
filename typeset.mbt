@@ -650,19 +650,19 @@ fn place_line(
   justify : Bool,
   hard : Bool,
 ) -> Line {
-  // trailing spaces are not part of the line, nor are the spaces before
-  // anchors that end it: Prawn's `omit_trailing_whitespace_from_line_width`
-  // takes a fragment whose text Ruby's `strip` empties as white space, and
+  // the spaces a line ends with are not part of it, nor are anchors that
+  // end it: Prawn's `omit_trailing_whitespace_from_line_width` takes a
+  // fragment whose text Ruby's `strip` empties as white space, and
   // asciidoctor-pdf's anchor text is a NUL, which `strip` removes; so is
-  // the highlight mark of a source line, but Prawn stops at a line break,
-  // so only a line that wraps (source_wrap's breaks included) or ends the
-  // text loses the blanks before it
+  // the highlight mark of a source line. But Prawn stops at a line break:
+  // only a line that wraps (source_wrap's breaks included) or ends the
+  // text loses the spaces and marks it ends with
   let wraps = !hard ||
     (to < items.length() && fragments[items[to].fragment].style.wrap_break)
   let mut visible_end = to
   while visible_end > from &&
         (
-          is_break_space(items[visible_end - 1].unit) ||
+          (wraps && is_break_space(items[visible_end - 1].unit)) ||
           items[visible_end - 1].anchor is Some(_) ||
           (wraps && fragments[items[visible_end - 1].fragment].style.line_mark)
         ) {
