@@ -484,12 +484,13 @@ pub fn Document::formatted_text(
   self.draw_text_callback = draw_text_callback
   // the document's position while this text is set (an outer text's
   // is put back after)
-  let outer_y = self.text_y
-  let start_y = self.flow.y
-  self.text_y = Some(start_y)
+  let (outer_y, outer_start) = (self.text_y, self.text_start)
+  self.text_y = Some(self.flow.y)
+  self.text_start = self.flow.y
   defer {
     self.draw_text_callback = saved_callback
     self.text_y = outer_y
+    self.text_start = outer_start
   }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
@@ -530,7 +531,7 @@ pub fn Document::formatted_text(
   // callbacks may have moved (to another page too)
   match self.text_y {
     Some(y) => {
-      self.flow.y = self.flow.y + (y - start_y)
+      self.flow.y = self.flow.y + (y - self.text_start)
       self.track()
     }
     None => ()

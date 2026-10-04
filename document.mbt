@@ -85,6 +85,10 @@ pub struct Document {
   /// coordinates), apart from where Flow is setting lines; callbacks see
   /// and move it, and the text moves down from it when it is set
   priv mut text_y : Double?
+  /// where that text started (or, after a page or column break, where it
+  /// carried on): the text moves down from `text_y` by what it set from
+  /// here
+  priv mut text_start : Double
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
@@ -150,6 +154,7 @@ pub fn Document::new(
     draw_text_callback: None,
     scopes: [],
     text_y: None,
+    text_start: 0.0,
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)
