@@ -800,6 +800,7 @@ pub fn Flow::typeset(
         self.width() - hanging_indent,
         align,
         first_width=self.width(),
+        paragraphs=hanging_indent > 0.0,
       )
   }
   let base_face = self.font(base)

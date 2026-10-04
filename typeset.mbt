@@ -274,6 +274,7 @@ pub fn typeset_lines(
   align : Alignment,
   first_width? : Double = width,
   indent_paragraphs? : Bool = false,
+  paragraphs? : Bool = false,
 ) -> Array[Line] {
   typeset_paragraph_lines(
     fragments,
@@ -282,6 +283,7 @@ pub fn typeset_lines(
     align,
     first_width~,
     indent_paragraphs~,
+    paragraphs~,
   ).0
 }
 
@@ -295,6 +297,7 @@ fn typeset_paragraph_lines(
   align : Alignment,
   first_width? : Double = width,
   indent_paragraphs? : Bool = false,
+  paragraphs? : Bool = false,
 ) -> (Array[Line], Array[Bool]) {
   let fragments = ctx.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
@@ -323,6 +326,7 @@ fn typeset_paragraph_lines(
         align,
         align == Justify && !is_last && !hard,
         hard,
+        paragraphs=paragraphs || indent_paragraphs,
       ),
     )
     starts.push(start)
@@ -649,6 +653,7 @@ fn place_line(
   align : Alignment,
   justify : Bool,
   hard : Bool,
+  paragraphs? : Bool = false,
 ) -> Line {
   // the spaces a line ends with are not part of it, nor are anchors that
   // end it: Prawn's `omit_trailing_whitespace_from_line_width` takes a
@@ -658,6 +663,7 @@ fn place_line(
   // only a line that wraps (source_wrap's breaks included) or ends the
   // text loses the spaces and marks it ends with
   let wraps = !hard ||
+    paragraphs ||
     (to < items.length() && fragments[items[to].fragment].style.wrap_break)
   let mut visible_end = to
   while visible_end > from &&
