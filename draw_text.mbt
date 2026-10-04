@@ -21,8 +21,11 @@ pub fn Document::draw_text(
     Some("bold_italic") => { ..base, bold: true, italic: true, }
     Some(other) => raise ArgumentError("style \{other}")
   }
-  // the whole string is encoded first (Prawn's `normalize_encoding`)
-  self.check(text, base, None)
+  // in a family's face in that style, read as needed
+  self.ensure_style(base.family, base.face_style())
+  // the whole string is encoded first (Prawn's `normalize_encoding`), in
+  // its own font only: draw_text looks in no fallback
+  self.check(text, base, None, fallbacks=false)
   let draw = () => {
     let face = self.face_of(base)
     // Prawn's `draw_text!`: text beyond ASCII in a built-in font is warned

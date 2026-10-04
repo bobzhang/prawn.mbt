@@ -78,7 +78,7 @@ fn Document::find_font(
     self.ensure_style(name, style.flags())
     return (name, style.flags(), true)
   }
-  if self.catalog.faces.contains(face_key(name, false, false)) {
+  if standard_families.iter().any(entry => entry.0 == name) {
     return (name, style.flags(), true)
   }
   // Prawn's other built-in fonts, which pagelayout does not draw yet

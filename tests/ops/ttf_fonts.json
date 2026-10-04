@@ -22,6 +22,26 @@
     ["fallback_fonts", ["Kai"]],
     ["text", "fallback 中文 in a long enough line to wrap over 中文字体 the right margin of the page, and on 中文"],
     ["?height_of", "fallback 中文 measured"],
-    ["?cursor"]
+    ["?cursor"],
+    ["fallback_fonts", ["Missing", "Kai"]],
+    ["!raises", "none", ["text", "ascii only, bold: no fallback reached", { "style": ":bold" }]],
+    ["!raises", "ArgumentError", ["text", "中 reaches the missing fallback"]],
+    ["fallback_fonts", ["$PRAWN/data/fonts/gkai00mp.ttf"]],
+    ["text", "a file as a fallback: 中文"],
+    ["fallback_fonts", []],
+    ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
+    ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["text", "x", { "style": ":bold" }]],
+    ["?width_of", "a\nb"],
+    ["font_families.update", { "=DV2": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf", "bold": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "DV2"],
+    ["draw_text", "drawn bold", { "at": [300.0, 100.0], "style": ":bold" }],
+    ["?width_of", "Hello"],
+    ["font_families.update", { "=DV2": { "normal": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "DV2"],
+    ["?width_of", "Hello"],
+    ["font", "Helvetica"],
+    ["fallback_fonts", ["DV"]],
+    ["!raises", "Prawn::Errors::IncompatibleStringEncoding", ["draw_text", "αβγ", { "at": [300.0, 60.0] }]]
   ]
 }

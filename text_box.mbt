@@ -71,7 +71,7 @@ fn Document::set_box(
   // the box ends
   // the text, as Prawn's arranger takes it in (an empty fragment is none)
   let text = ctx
-    .apply_fallbacks(fragments)
+    .apply_fallbacks(fragments, split_first=true)
     .filter(f => !f.text.is_empty() || f.anchor is Some(_) || f.style.image >= 0)
   // where the text not yet set starts: a fragment, and an offset in it
   let mut at_fragment = 0

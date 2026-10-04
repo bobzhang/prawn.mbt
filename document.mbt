@@ -58,7 +58,7 @@ pub struct Document {
   /// made from; the fallback families (`fallback_fonts`); and where files
   /// are read from (`ttf.mbt`)
   priv families : Map[String, Array[(FontStyle, String)]]
-  priv font_files : Array[(String, Bool, Bool, Bytes)]
+  priv mut font_files : Array[(String, Bool, Bool, Bytes, String)]
   priv mut fallbacks : Array[String]
   priv assets : (String) -> Bytes?
   /// what text is set with: the fonts
@@ -373,6 +373,10 @@ pub fn Document::width_of(
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
   for i, cp in chars {
+    // a TrueType font gives a newline no width (Prawn's TTF does so)
+    if cp == 0x0A && !face.standard {
+      continue
+    }
     width += face.prawn_width(cp)
     if kerning && i + 1 < chars.length() {
       width += face.kerning(cp, chars[i + 1])
@@ -448,29 +452,14 @@ fn Document::check(
 ) -> Unit raise PrawnError {
   let face = self.face_of(style)
   // each character in the font it is set in: its own, or the first
-  // fallback family that has it (Prawn splits the text across them before
-  // it encodes it; `width_of` does not)
-  let fallback_faces = if fallbacks {
-    let (bold, italic) = style.face_style()
-    let faces = []
-    for family in self.fallbacks {
-      self.ensure_style(family, (bold, italic))
-      faces.push(self.face_of({ ..style, family, }))
+  // fallback that has it (Prawn splits the text across them before it
+  // encodes it; `width_of` and `draw_text` do not)
+  let face_for = fn(cp : Int) raise PrawnError {
+    if fallbacks {
+      self.char_face(style, cp)
+    } else {
+      face
     }
-    faces
-  } else {
-    []
-  }
-  let face_for = fn(cp : Int) {
-    if cp == 0x0A || face.has_glyph(cp) {
-      return face
-    }
-    for f in fallback_faces {
-      if f.has_glyph(cp) {
-        return f
-      }
-    }
-    face
   }
   // the whole string is encoded before anything is wrapped
   for c in string {

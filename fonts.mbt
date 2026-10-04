@@ -397,11 +397,19 @@ fn Face::has_glyph(self : Face, codepoint : Int) -> Bool {
 fn TextContext::apply_fallbacks(
   self : TextContext,
   fragments : Array[Fragment],
+  split_first? : Bool = false,
 ) -> Array[Fragment] {
-  // split first, then encoded: a character a standard font lacks is looked
-  // for before the font's encoding drops it (Prawn's order)
+  // Prawn's order (`split_first`): split, then encoded, so a character a
+  // standard font lacks is looked for before its encoding drops it; Flow
+  // encodes first, as asciidoctor-pdf's patched `glyph_present?` takes a
+  // character its encoding replaces as present
+  let fragments = if split_first {
+    fragments
+  } else {
+    self.apply_winansi(fragments)
+  }
   if self.catalog.fallbacks.is_empty() {
-    return self.apply_winansi(fragments)
+    return if split_first { self.apply_winansi(fragments) } else { fragments }
   }
   let out : Array[Fragment] = []
   for fragment in fragments {
@@ -453,7 +461,11 @@ fn TextContext::apply_fallbacks(
     }
     flush(current)
   }
-  self.apply_winansi(out)
+  if split_first {
+    self.apply_winansi(out)
+  } else {
+    out
+  }
 }
 
 ///|

@@ -8,3 +8,10 @@
 {"raises":"ArgumentError","error":"ArgumentError"}
 {"query":["height_of","fallback 中文 measured"],"value":16.183999999999997}
 {"query":"cursor","value":622.8860000000001}
+{"raises":"none","error":null}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":["width_of","a\nb"],"value":17.444}
+{"query":["width_of","Hello"],"value":35.434}
+{"query":["width_of","Hello"],"value":40.39}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
