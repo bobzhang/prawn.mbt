@@ -1,0 +1,9 @@
+{
+  "document": { "page_size": [200, 100], "margin": 10 },
+  "ops": [
+    ["move_down", 20],
+    ["formatted_text", [{ "text": "a\nb\nc\nd\ne\nf", "callback": { "trace": "where", "phase": "in_front", "draw": [["?cursor"]] } }]],
+    ["?cursor"],
+    ["?page_count"]
+  ]
+}

@@ -35,18 +35,27 @@ end
 
 # A formatted-text callback that records where Prawn renders its fragment.
 class TraceCallback
-  def initialize(id, log, phase)
+  # draw: ops run after each logged call (drawing from inside the callback)
+  def initialize(id, log, phase, draw = nil, driver = nil)
     @id = id
     @log = log
     @phase = phase
+    @draw = draw
+    @driver = driver
   end
 
   def render_behind(fragment)
-    trace('render_behind', fragment) if @phase != 'in_front'
+    return if @phase == 'in_front'
+
+    trace('render_behind', fragment)
+    @driver.send(:ops, @draw) if @draw
   end
 
   def render_in_front(fragment)
-    trace('render_in_front', fragment) if @phase != 'behind'
+    return if @phase == 'behind'
+
+    trace('render_in_front', fragment)
+    @driver.send(:ops, @draw) if @draw
   end
 
   private
@@ -149,7 +158,9 @@ class Driver
   def value(v)
     case v
     when Hash
-      return TraceCallback.new(v['trace'], @log, v.fetch('phase', 'both')) if v.key?('trace') && v.size <= 2
+      if v.key?('trace') && (v.keys - %w[trace phase draw]).empty?
+        return TraceCallback.new(v['trace'], @log, v.fetch('phase', 'both'), v['draw'], self)
+      end
       v.each_with_object({}) do |(k, x), h|
         key = k.start_with?('=') ? k[1..] : k.to_sym
         h[key] = key == :draw_text_callback ? draw_text_callback(x) : value(x)
@@ -170,10 +181,13 @@ class Driver
 
   def draw_text_callback(spec)
     id = spec.fetch('trace')
+    draw = spec['draw']
     log = @log
+    driver = self
     lambda do |text, options|
       log.write('trace' => id, 'event' => 'draw_text', 'text' => text,
                 'at' => options[:at], 'kerning' => options[:kerning])
+      driver.send(:ops, draw) if draw
     end
   end
 

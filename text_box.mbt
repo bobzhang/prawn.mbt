@@ -47,6 +47,12 @@ fn Document::set_box(
   leading : Double,
   dry_run? : Bool = false,
 ) -> (Array[Fragment], Double) raise PrawnError {
+  // a dry run calls no callbacks
+  let was_dry = self.dry_run
+  self.dry_run = was_dry || dry_run
+  defer {
+    self.dry_run = was_dry
+  }
   let style = self.style(size~)
   let flow = self.flow
   let page = flow.page
@@ -130,7 +136,23 @@ pub fn Document::text_box(
   leading? : Double = 0.0,
   rotate? : Double = 0.0,
   rotate_around? : String = "upper_left",
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> String raise {
+  let saved_callback = self.draw_text_callback
+  self.draw_text_callback = draw_text_callback
+  // the document's position while the box is set: callbacks may move it,
+  // and it stays where they leave it (a text box does not move it)
+  let outer_y = self.text_y
+  self.text_y = Some(self.flow.y)
+  defer {
+    self.draw_text_callback = saved_callback
+    match self.text_y {
+      Some(y) => self.flow.y = y
+      None => ()
+    }
+    self.text_y = outer_y
+    self.track()
+  }
   let bounds = self.bounds()
   let mut at = at.unwrap_or((0.0, bounds.height))
   let width = width.unwrap_or(bounds.width - at.0)

@@ -1,0 +1,14 @@
+{"trace":"where","event":"render_in_front","text":"a","left":0,"baseline":51.384,"width":6.672,"height":11.100000000000001,"top":60.0,"bottom":48.9}
+{"query":"cursor","value":60}
+{"trace":"where","event":"render_in_front","text":"b","left":0,"baseline":37.512,"width":6.672,"height":11.100000000000001,"top":46.128,"bottom":35.028}
+{"query":"cursor","value":60}
+{"trace":"where","event":"render_in_front","text":"c","left":0,"baseline":23.64,"width":6.0,"height":11.100000000000001,"top":32.256,"bottom":21.156}
+{"query":"cursor","value":60}
+{"trace":"where","event":"render_in_front","text":"d","left":0,"baseline":9.768,"width":6.672,"height":11.1,"top":18.384,"bottom":7.284000000000001}
+{"query":"cursor","value":60}
+{"trace":"where","event":"render_in_front","text":"e","left":0,"baseline":71.384,"width":6.672,"height":11.099999999999994,"top":80.0,"bottom":68.9}
+{"query":"cursor","value":80}
+{"trace":"where","event":"render_in_front","text":"f","left":0,"baseline":57.512,"width":3.336,"height":11.100000000000001,"top":66.128,"bottom":55.028}
+{"query":"cursor","value":80}
+{"query":"cursor","value":52.25599999999999}
+{"query":"page_count","value":2}

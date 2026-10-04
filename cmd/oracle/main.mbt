@@ -106,7 +106,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
   match name {
     // kerning is Prawn's default (`default_kerning`), and how Flow sets text
     "text" if only(opts, [
-        "size", "align", "leading", "kerning", "inline_format",
+        "size", "align", "leading", "kerning", "inline_format", "draw_text_callback",
       ]) &&
       !(opts.get("kerning") is Some(False)) => {
       doc.text(
@@ -115,17 +115,20 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         align=alignment(opts.get("align")),
         leading=opts.get("leading").map(number).unwrap_or(0.0),
         inline_format=opts.get("inline_format") is Some(True),
+        draw_text_callback?=self.trace_draw_text(opts),
       )
       Some(Json::null())
     }
-    "formatted_text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+    "formatted_text" if only(opts, [
+        "size", "align", "leading", "kerning", "draw_text_callback",
+      ]) &&
       !(opts.get("kerning") is Some(False)) => {
       guard args[0] is Array(items) else {
         raise ScriptError("formatted_text needs fragments")
       }
       let fragments = []
       for item in items {
-        match text_fragment(item) {
+        match self.text_fragment(item) {
           Some(f) => fragments.push(f)
           None => return None
         }
@@ -135,6 +138,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         size?=opts.get("size").map(number),
         align=alignment(opts.get("align")),
         leading=opts.get("leading").map(number).unwrap_or(0.0),
+        draw_text_callback?=self.trace_draw_text(opts),
       )
       Some(Json::null())
     }
@@ -241,7 +245,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     }
     "text_box" if only(opts, [
         "at", "width", "height", "size", "align", "valign", "overflow", "min_font_size",
-        "leading", "rotate", "rotate_around", "kerning",
+        "leading", "rotate", "rotate_around", "kerning", "draw_text_callback",
       ]) &&
       !(opts.get("kerning") is Some(False)) => {
       let rest = doc.text_box(
@@ -270,6 +274,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           .get("rotate_around")
           .bind(symbol)
           .unwrap_or("upper_left"),
+        draw_text_callback?=self.trace_draw_text(opts),
       )
       Some(rest.to_json())
     }
@@ -655,9 +660,15 @@ fn Run::graphics(
 ///|
 /// A fragment hash of `formatted_text`; None when it has a key this module
 /// cannot set yet (callbacks, character spacing, local links).
-fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
+fn Run::text_fragment(
+  self : Run,
+  j : Json,
+) -> @prawn.TextFragment? raise ScriptError {
   guard j is Object(map) else { raise ScriptError("not a fragment") }
-  if !only(map, ["text", "styles", "size", "color", "link", "anchor", "font"]) {
+  if !only(map, [
+      "text", "styles", "size", "color", "link", "anchor", "font", "character_spacing",
+      "callback",
+    ]) {
     return None
   }
   let styles = match map.get("styles") {
@@ -685,5 +696,100 @@ fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
     character_spacing: map.get("character_spacing").map(number),
     link: map.get("link").map(string),
     anchor: map.get("anchor").map(string),
+    callbacks: match map.get("callback") {
+      Some(spec) => [self.trace_callback(spec)]
+      None => []
+    },
   })
+}
+
+///|
+/// A traced fragment callback (`{"trace": ID, "phase": …}`): logs each
+/// call with the fragment's text and geometry, as the driver's
+/// TraceCallback does.
+fn Run::trace_callback(
+  self : Run,
+  spec : Json,
+) -> @prawn.FragmentCallback raise ScriptError {
+  guard spec is Object(map) && map.get("trace") is Some(id) else {
+    raise ScriptError("a callback needs a trace id")
+  }
+  let phase = match map.get("phase") {
+    Some(String(p)) => p
+    _ => "both"
+  }
+  // then the ops it draws with, if any
+  let draw = match map.get("draw") {
+    Some(Array(ops)) => ops
+    _ => []
+  }
+  let log = fn(event : String) {
+    fn(f : @prawn.PlacedFragment) {
+      self.log.push({
+        "trace": id,
+        "event": event.to_json(),
+        "text": f.text.to_json(),
+        "left": f.left.to_json(),
+        "baseline": f.baseline.to_json(),
+        "width": f.width.to_json(),
+        "height": f.height.to_json(),
+        "top": f.top.to_json(),
+        "bottom": f.bottom.to_json(),
+      })
+      self.draw_in_callback(draw)
+    }
+  }
+  {
+    render_behind: if phase != "in_front" {
+      Some(log("render_behind"))
+    } else {
+      None
+    },
+    render_in_front: if phase != "behind" {
+      Some(log("render_in_front"))
+    } else {
+      None
+    },
+  }
+}
+
+///|
+/// A traced draw_text_callback (`{"trace": ID}`): logs each call instead of
+/// drawing, as the driver's does.
+fn Run::trace_draw_text(
+  self : Run,
+  opts : Map[String, Json],
+) -> ((String, (Double, Double), Bool) -> Unit)? raise ScriptError {
+  match opts.get("draw_text_callback") {
+    Some(Object(map)) =>
+      match map.get("trace") {
+        Some(id) =>
+          Some(fn(text, at, kerning) {
+            self.log.push({
+              "trace": id,
+              "event": "draw_text",
+              "text": text.to_json(),
+              "at": [at.0, at.1].to_json(),
+              "kerning": kerning.to_json(),
+            })
+            self.draw_in_callback(
+              match map.get("draw") {
+                Some(Array(ops)) => ops
+                _ => []
+              },
+            )
+          })
+        None => raise ScriptError("draw_text_callback needs a trace id")
+      }
+    _ => None
+  }
+}
+
+///|
+/// The ops a traced callback draws with; a callback cannot raise, so an
+/// error is logged instead.
+fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
+  self.ops(ops) catch {
+    e => self.log.push({ "callback_error": e.to_string().to_json() })
+  }
 }

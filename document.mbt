@@ -74,6 +74,22 @@ pub struct Document {
   /// what Prawn knows of each fragment set that its style does not carry
   /// (`formatted.mbt`), by the style's `callback` index
   priv fragment_meta : Array[FragmentMeta]
+  /// during a dry run (measuring, shrinking, aligning): callbacks are not
+  /// called
+  priv mut dry_run : Bool
+  /// during a `draw_text_callback` text: what draws its pieces instead
+  /// the fragments being drawn, innermost last: text set from inside a
+  /// callback nests (`formatted.mbt`)
+  priv scopes : Array[FragmentScope]
+  /// while a text is set: the document's position (Prawn's `y`, in Flow's
+  /// coordinates), apart from where Flow is setting lines; callbacks see
+  /// and move it, and the text moves down from it when it is set
+  priv mut text_y : Double?
+  /// where that text started (or, after a page or column break, where it
+  /// carried on): the text moves down from `text_y` by what it set from
+  /// here
+  priv mut text_start : Double
+  priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
   priv paths : Array[Array[@pagelayout.PathSegment]]
@@ -134,6 +150,11 @@ pub fn Document::new(
     pending_gap: 0.0,
     paths: [],
     fragment_meta: [],
+    dry_run: false,
+    draw_text_callback: None,
+    scopes: [],
+    text_y: None,
+    text_start: 0.0,
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)
@@ -164,9 +185,19 @@ pub fn Document::new(
     doc.geometry.insert(to, geometry)
   }
   // underlines and strikethroughs as Prawn draws them (`formatted.mbt`)
-  flow.decorate = Some((x, w, baseline, style, face) => {
-    doc.decorations(x, w, baseline, style, face)
+  flow.decorate = Some((x, w, baseline, style, face, text) => {
+    doc.decorations(x, w, baseline, style, face, text)
   })
+  // fragment callbacks and draw_text_callback (`formatted.mbt`)
+  flow.underlay = Some((x, w, baseline, style, face, text) => {
+    doc.underlays(x, w, baseline, style, face, text)
+  })
+  flow.draw_text = Some((text, x, baseline, style) => {
+    doc.draw_text_instead(text, x, baseline, style)
+  })
+  // text is inked in the fill colour current when it is drawn: its own
+  // colour while its fragment is (`begin_fragment`), or what a callback set
+  flow.ink_color = Some(_ => doc.gs().fill)
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
@@ -219,6 +250,7 @@ pub fn Document::text(
   align? : Alignment = Left,
   leading? : Double = 0.0,
   inline_format? : Bool = false,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
   // set as one plain fragment, or the fragments of its markup
   // (`formatted.mbt`)
@@ -227,7 +259,7 @@ pub fn Document::text(
   } else {
     [TextFragment::new(string)]
   }
-  self.formatted_text(fragments, size?, align~, leading~)
+  self.formatted_text(fragments, size?, align~, leading~, draw_text_callback?)
 }
 
 ///|

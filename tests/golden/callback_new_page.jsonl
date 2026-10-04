@@ -1,0 +1,5 @@
+{"trace":"pg","event":"render_in_front","text":"pager","left":0,"baseline":711.384,"width":30.684,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"trace":"down","event":"render_in_front","text":"down ","left":0,"baseline":683.6399999999999,"width":31.836000000000002,"height":11.100000000000023,"top":692.2559999999999,"bottom":681.1559999999998}
+{"trace":"page","event":"render_in_front","text":"page","left":31.836000000000002,"baseline":683.6399999999999,"width":26.688,"height":11.100000000000023,"top":692.2559999999999,"bottom":681.1559999999998}
+{"query":"page_count","value":3}
+{"query":"cursor","value":692.2559999999999}

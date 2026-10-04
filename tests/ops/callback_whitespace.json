@@ -1,0 +1,5 @@
+{
+  "ops": [
+    ["formatted_text", [{ "text": "abc" }, { "text": " ", "callback": { "trace": "space" } }]]
+  ]
+}

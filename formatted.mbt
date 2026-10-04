@@ -26,6 +26,32 @@ pub(all) struct TextFragment {
   link : String?
   /// a named destination the text links to
   anchor : String?
+  /// called as each piece of the fragment is drawn (Prawn's `callback`)
+  callbacks : Array[FragmentCallback]
+}
+
+///|
+/// A piece of a fragment as it is drawn (Prawn's fragment, as callbacks
+/// see it), in the coordinates of the bounds: its left side, baseline,
+/// width, and its font's top (baseline plus ascender) and bottom
+/// (baseline less descender).
+pub(all) struct PlacedFragment {
+  text : String
+  left : Double
+  baseline : Double
+  width : Double
+  height : Double
+  top : Double
+  bottom : Double
+}
+
+///|
+/// A fragment callback (Prawn's callback object): `render_behind` before
+/// the text is drawn, `render_in_front` after it and its decorations and
+/// links. Not called in dry runs (measuring, shrinking, aligning).
+pub(all) struct FragmentCallback {
+  render_behind : ((PlacedFragment) -> Unit)?
+  render_in_front : ((PlacedFragment) -> Unit)?
 }
 
 ///|
@@ -46,6 +72,7 @@ pub fn TextFragment::new(text : String) -> TextFragment {
     character_spacing: None,
     link: None,
     anchor: None,
+    callbacks: [],
   }
 }
 
@@ -334,6 +361,7 @@ fn fragment_of(
     character_spacing: spacing,
     link,
     anchor,
+    callbacks: [],
   }
 }
 
@@ -348,6 +376,7 @@ fn fragment_of(
 priv struct FragmentMeta {
   color_set : Bool
   anchor : String?
+  callbacks : Array[FragmentCallback]
 }
 
 ///|
@@ -398,6 +427,7 @@ fn Document::fragment(
     } else {
       None
     },
+    callbacks: f.callbacks,
   })
   let mut size = f.size.unwrap_or(base.size)
   if f.subscript || f.superscript {
@@ -447,7 +477,21 @@ pub fn Document::formatted_text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the pieces drawn by the callback instead (text, where, kerning)
+  let saved_callback = self.draw_text_callback
+  self.draw_text_callback = draw_text_callback
+  // the document's position while this text is set (an outer text's
+  // is put back after)
+  let (outer_y, outer_start) = (self.text_y, self.text_start)
+  self.text_y = Some(self.flow.y)
+  self.text_start = self.flow.y
+  defer {
+    self.draw_text_callback = saved_callback
+    self.text_y = outer_y
+    self.text_start = outer_start
+  }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
     self.move_down(leading)
@@ -483,6 +527,15 @@ pub fn Document::formatted_text(
     None => 0.0
   }
   self.move_down(gap + leading)
+  // Prawn moves down by what it set from the document's position, which
+  // callbacks may have moved (to another page too)
+  match self.text_y {
+    Some(y) => {
+      self.flow.y = self.flow.y + (y - self.text_start)
+      self.track()
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -498,6 +551,7 @@ fn Document::decorations(
   baseline : Double,
   style : Style,
   face : Face,
+  text : String,
 ) -> Array[@pagelayout.PageItem] {
   let a = face.ascender_pt(style.size)
   let d = face.descender_pt(style.size)
@@ -509,12 +563,9 @@ fn Document::decorations(
   let base = baseline - rise
   let gs = self.gs()
   let meta = self.fragment_meta.get(style.callback)
-  // a fragment with its own colour strokes its decorations in it (Prawn's
-  // arranger sets the stroke colour too)
-  let stroke = match meta {
-    Some({ color_set: true, .. }) => style.color
-    _ => gs.stroke
-  }
+  // the stroke colour current now: a fragment's own colour while it is
+  // drawn (`begin_fragment`), or what a callback set
+  let stroke = gs.stroke
   let line = fn(y : Double) -> @pagelayout.PageItem {
     Graphic({
       x_pt: 0.0,
@@ -563,6 +614,24 @@ fn Document::decorations(
       )
     _ => ()
   }
+  // then the fragment's `render_in_front` callbacks (not in dry runs)
+  match meta {
+    Some(m) if !self.dry_run && !m.callbacks.is_empty() => {
+      let fragment = self.placed(x, width, baseline, style, face, text)
+      out.append(
+        self.capture(() => {
+          for callback in m.callbacks {
+            match callback.render_in_front {
+              Some(f) => f(fragment)
+              None => ()
+            }
+          }
+        }),
+      )
+    }
+    _ => ()
+  }
+  self.end_fragment()
   out
 }
 
@@ -666,5 +735,179 @@ fn ruby_float(s : String) -> Double raise PrawnError {
   }
   @string.parse_double(n) catch {
     _ => raise bad
+  }
+}
+
+///|
+/// A run as Prawn's fragment: in the coordinates of the current bounds,
+/// the baseline at the run's rise (a sub- or superscript's).
+fn Document::placed(
+  self : Document,
+  x : Double,
+  width : Double,
+  baseline : Double,
+  style : Style,
+  face : Face,
+  text : String,
+) -> PlacedFragment {
+  let a = face.ascender_pt(style.size)
+  let d = face.descender_pt(style.size)
+  let rise = match style.script {
+    1 => 0.85 * a
+    -1 => -d
+    _ => 0.0
+  }
+  let box = self.current_box()
+  let base = self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y())
+  {
+    text,
+    left: x - box.left,
+    baseline: base,
+    width,
+    height: a + d,
+    top: base + a,
+    bottom: base - d,
+  }
+}
+
+///|
+/// What goes behind a run: its fragment's `render_behind` callbacks (not in
+/// dry runs).
+fn Document::underlays(
+  self : Document,
+  x : Double,
+  width : Double,
+  baseline : Double,
+  style : Style,
+  face : Face,
+  text : String,
+) -> Array[@pagelayout.PageItem] {
+  // the fragment's state from here to its overlays (`decorations`)
+  self.begin_fragment(style)
+  match self.fragment_meta.get(style.callback) {
+    Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
+      let fragment = self.placed(x, width, baseline, style, face, text)
+      self.capture(() => {
+        for callback in meta.callbacks {
+          match callback.render_behind {
+            Some(f) => f(fragment)
+            None => ()
+          }
+        }
+      })
+    }
+    _ => []
+  }
+}
+
+///|
+/// A run drawn by the `draw_text_callback` of the text being set, when it
+/// has one: the text and where it goes (`at`, in the coordinates of the
+/// bounds) with Prawn's default kerning.
+fn Document::draw_text_instead(
+  self : Document,
+  text : String,
+  x : Double,
+  baseline : Double,
+  _style : Style,
+) -> Array[@pagelayout.PageItem]? {
+  match self.draw_text_callback {
+    Some(draw) => {
+      // a dry run draws nothing either way
+      if self.dry_run {
+        return Some([])
+      }
+      let box = self.current_box()
+      let at = (
+        x - box.left,
+        self.flow.page_h() - baseline - box.bottom_at(self.y()),
+      )
+      Some(self.capture(() => draw(text, at, true)))
+    }
+    None => None
+  }
+}
+
+///|
+/// Runs a callback and returns what it drew on the page it started on,
+/// taken off that page so the run can put it where Prawn would: behind or
+/// in front of the text.
+fn Document::capture(
+  self : Document,
+  body : () -> Unit,
+) -> Array[@pagelayout.PageItem] {
+  // the page followed through insertions a callback may make before it
+  let page : Ref[Int] = { val: self.flow.page, }
+  self.open_pages.push(page)
+  let mark = self.flow.model.pages[page.val].items.length()
+  // the callback runs at the document's position while a text is set (not
+  // where Flow is setting lines), and may move it; Flow then carries on
+  // from its own
+  let line_y = self.flow.y
+  match self.text_y {
+    Some(y) => self.flow.y = y
+    None => ()
+  }
+  body()
+  if self.text_y is Some(_) {
+    self.text_y = Some(self.flow.y)
+  }
+  self.flow.y = line_y
+  self.open_pages.pop() |> ignore
+  let items = self.flow.model.pages[page.val].items
+  if mark > items.length() {
+    return []
+  }
+  let drawn = items[mark:].to_owned()
+  items.truncate(mark)
+  drawn
+}
+
+///|
+/// The document's state around a fragment being drawn (Prawn's arranger):
+/// what to put back when the fragment is done.
+priv struct FragmentScope {
+  family : String
+  size : Double
+  fill : @pagelayout.Color
+  stroke : @pagelayout.Color
+  color_set : Bool
+}
+
+///|
+/// A run's fragment starts being drawn: the document takes its font and
+/// size, and its own colour as fill and stroke colour, for the underlay,
+/// text, decorations and callbacks that follow.
+fn Document::begin_fragment(self : Document, style : Style) -> Unit {
+  let gs = self.gs()
+  let color_set = self.fragment_meta.get(style.callback)
+    is Some({ color_set: true, .. })
+  self.scopes.push({
+    family: self.family,
+    size: self.size,
+    fill: gs.fill,
+    stroke: gs.stroke,
+    color_set,
+  })
+  self.family = style.family
+  self.size = style.size
+  if color_set {
+    gs.fill = style.color
+    gs.stroke = style.color
+  }
+}
+
+///|
+/// The fragment is drawn: font and size back, and a fragment's own colour
+/// taken off again on the page current now (a colour a callback set in a
+/// fragment without one stays, as with Prawn's arranger).
+fn Document::end_fragment(self : Document) -> Unit {
+  guard self.scopes.pop() is Some(scope) else { return }
+  self.family = scope.family
+  self.size = scope.size
+  if scope.color_set {
+    let gs = self.gs()
+    gs.fill = scope.fill
+    gs.stroke = scope.stroke
   }
 }

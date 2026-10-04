@@ -1,0 +1,17 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "Before the traced fragment, " },
+      { "text": "a traced fragment long enough to be split across two lines of justified text here", "callback": { "trace": "split" } },
+      { "text": " and after it." }
+    ], { "align": ":justify" }],
+    ["bounding_box", [50, 600], { "width": 200 }, { "block": [
+      ["indent", 20, { "block": [
+        ["formatted_text", [{ "text": "x" }, { "text": "2", "styles": [":superscript"], "callback": { "trace": "sup", "phase": "in_front" } }, { "text": " in a box" }]]
+      ] }]
+    ] }],
+    ["?text_box", "centered with a callback", { "at": [300, 600], "width": 150, "height": 80, "valign": ":center", "draw_text_callback": { "trace": "box" } }],
+    ["text", "Drawn line by line by the callback, which is long enough to wrap onto a second line.", { "draw_text_callback": { "trace": "lines" } }],
+    ["?cursor"]
+  ]
+}
