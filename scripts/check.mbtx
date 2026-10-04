@@ -1,4 +1,5 @@
-// Full validation: type-check (all targets), unit tests, and the
+// Full validation: formatting and interfaces (brought up to date, as CI
+// requires them), type-check (all targets), unit tests, and the
 // comparison's self-test on the goldens in tests/golden (PLAN.md §3).
 //
 // Usage: moon run --target native scripts/check.mbtx -- [--oracle]
@@ -23,6 +24,9 @@ async fn step(name : String, cmd : String, args : Array[String]) -> Unit {
 ///|
 async fn main {
   let oracle = @env.args().contains("--oracle")
+  // formatted, and the package interfaces up to date (CI fails otherwise)
+  step("format", "moon", ["fmt"])
+  step("interfaces", "moon", ["info"])
   step("check", "moon", ["check", "--target", "all", "--deny-warn"])
   step("test (native)", "moon", ["test", "--target", "native"])
   step("test (wasm)", "moon", ["test", "--target", "wasm"])

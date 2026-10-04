@@ -53,11 +53,10 @@ fn Document::set_box(
   defer {
     self.dry_run = was_dry
   }
-  let flow = self.flow
   let page = self.page()
   let mark = page.items.length()
-  let ctx = flow.text()
-  let face = flow.font(base)
+  let ctx = self.text_context
+  let face = self.font(base)
   // the box's top left in the bounds (where Prawn keeps a box's `at`):
   // each line is drawn on the page current then, which a callback may
   // change
@@ -83,13 +82,13 @@ fn Document::set_box(
   let mut gap = 0.0
   let mut rejected = false
   while at_fragment < text.length() {
-    let window = line_window(text, at_fragment, at_offset, flow, width)
+    let window = line_window(text, at_fragment, at_offset, self, width)
     let (stripped, origins) = strip_leading_fragments(window)
     // measured in the font it is set in (a fallback font, maybe)
     match stripped.search_by(f => !f.text.is_empty()) {
       Some(i) => {
         let first = stripped[i]
-        let first_face = flow.font(first.style)
+        let first_face = self.font(first.style)
         match first.text.iter().next() {
           Some(c) if c != '\n' &&
             first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) >
@@ -262,7 +261,7 @@ pub fn Document::text_box(
   }
   if !(valign is Top) {
     let (_, printed, _) = set_at(size, top, height, true)
-    let descender = self.flow.font(self.style(size~)).descender_pt(size)
+    let descender = self.font(self.style(size~)).descender_pt(size)
     match valign {
       Center => top -= (height - printed + descender) * 0.5
       _ => top -= height - printed
@@ -350,7 +349,7 @@ fn line_window(
   text : Array[Fragment],
   start : Int,
   offset : Int,
-  flow : Flow,
+  doc : Document,
   width : Double,
 ) -> Array[Fragment] {
   let window : Array[Fragment] = []
@@ -362,7 +361,7 @@ fn line_window(
     let f = text[i]
     let from = if i == start { offset } else { 0 }
     let s = f.text
-    let face = flow.font(f.style)
+    let face = doc.font(f.style)
     let scale = f.style.size / 1000.0
     let mut cut = -1
     for j in from..<s.length() {

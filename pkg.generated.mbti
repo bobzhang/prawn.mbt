@@ -85,7 +85,6 @@ pub(all) struct Columns {
 }
 
 pub struct Document {
-  flow : Flow
   catalog : FontCatalog
   mut family : String
   mut size : Double
@@ -184,7 +183,6 @@ pub(all) struct Flow {
   mut margin_right : Double
   mut page_width_now : Double
   mut page_height_now : Double
-  mut page_started : (Int, Int) -> Unit
 }
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit

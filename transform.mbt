@@ -98,7 +98,7 @@ pub fn Document::transformation_matrix(
   body : () -> Unit raise,
 ) -> Unit raise {
   let (a, b, c, d, e, f) = matrix
-  let f_ = flip(self.flow.page_h())
+  let f_ = flip(self.page_h())
   let m : @pagelayout.Matrix = { a, b, c, d, e, f, }
   self.group([Transform(f_.after(m.after(f_)))], body)
 }

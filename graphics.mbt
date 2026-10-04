@@ -176,7 +176,7 @@ fn Document::page_point(
 ) -> (Double, Double) {
   let box = self.current_box()
   let bottom = box.top - box.height_at(self.y())
-  (box.left + x, self.flow.page_h() - (bottom + y))
+  (box.left + x, self.page_h() - (bottom + y))
 }
 
 ///|
@@ -410,7 +410,7 @@ fn Document::paint(
   self.path().clear()
   guard segments.length() > 0 else { return }
   let gs = self.gs()
-  self.flow.push(
+  self.page().items.push(
     Graphic({
       x_pt: 0.0,
       y_pt: 0.0,

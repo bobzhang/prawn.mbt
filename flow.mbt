@@ -86,11 +86,6 @@ pub(all) struct Flow {
   /// the size of the page the bounds were set for
   mut page_width_now : Double
   mut page_height_now : Double
-  /// told of each new page (the page it was made from, the new page,
-  /// inserted after it, so later pages move up by one),
-  /// before it becomes current: what carries over from page to page
-  /// (Prawn's graphics state) is copied then
-  mut page_started : (Int, Int) -> Unit
 }
 
 ///|
@@ -139,7 +134,6 @@ pub fn Flow::new(
     margin_right: setup.margin_right,
     page_width_now: setup.width,
     page_height_now: setup.height,
-    page_started: (_, _) => (),
   }
 }
 
@@ -184,7 +178,6 @@ pub fn Flow::start_new_page(
   // there; at the last page, that is the end)
   let index = self.page + 1
   self.model.pages.insert(index, { width_pt: w, height_pt: h, items: [], })
-  (self.page_started)(self.page, index)
   self.page = index
   self.fit_page_size()
   self.apply_page_margins(self.page)
