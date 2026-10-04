@@ -256,6 +256,9 @@ if $PROGRAM_NAME == __FILE__
       begin
         run_script(script_path, pdf_path, log_path)
         puts "ok\t#{script_path}"
+      rescue SystemCallError, IOError
+        # writing or reading files failed: the harness, not the script
+        raise
       rescue StandardError => e
         puts "error\t#{script_path}\t#{e.class}: #{e.message.lines.first&.chomp}"
       end
