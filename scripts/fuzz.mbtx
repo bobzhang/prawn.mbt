@@ -71,8 +71,12 @@ let separators : Array[(UInt, String)] = [
 ]
 
 ///|
+/// A dimension, spelled as a float even when whole (`200.0`): Ruby would
+/// take `200` as an Integer and divide it as one (column widths), which this
+/// module deliberately does not.
 fn number(x : Double) -> Json {
-  Json::number(x)
+  let s = x.to_string()
+  Json::number(x, repr=if s.contains(".") || s.contains("e") { s } else { s + ".0" })
 }
 
 ///|
@@ -307,7 +311,7 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
       gen((sz, rs) => {
         let opts : Map[String, Json] = {
           "width": range_gen(200, 540, 10).run(sz, rs),
-          "columns": range_gen(1, 3, 1).run(sz, rs),
+          "columns": Json::number(rs.next_uint(limit=3).reinterpret_as_int().to_double() + 1.0),
         }
         if rs.next_uint(limit=2) == 0 {
           opts["height"] = range_gen(60, 400, 10).run(sz, rs)
@@ -448,6 +452,8 @@ async fn run_all(
   dir : String,
   scripts : Array[(String, Json)],
 ) -> Array[Outcome] {
+  // nothing left from an earlier batch (shrinking reuses names)
+  ignore(@process.run("rm", ["-rf", dir]))
   for sub in ["ops", "ruby", "mbt"] {
     ignore(@process.run("mkdir", ["-p", "\{dir}/\{sub}"]))
   }
@@ -467,12 +473,15 @@ async fn run_all(
   let (_, out) = @process.collect_output_merged(ruby, [
     driver, "--batch", "\{dir}/list",
   ])
-  // Ruby's verdict on each script, by its path
-  let ruby_errors : Map[String, String] = Map([])
+  // Ruby's verdict on each script, by its path: Ok, or what it raised
+  let verdicts : Map[String, Result[Unit, String]] = Map([])
   for line in out.text().split("\n") {
     let parts = line.split("\t").map(p => p.to_owned()).to_array()
-    if parts.length() >= 2 && parts[0] == "error" {
-      ruby_errors[parts[1]] = if parts.length() > 2 { parts[2] } else { "" }
+    match parts {
+      ["ok", path, ..] => verdicts[path] = Ok(())
+      ["error", path, ..] =>
+        verdicts[path] = Err(if parts.length() > 2 { parts[2] } else { "" })
+      _ => ()
     }
   }
   let outcomes = []
@@ -487,37 +496,53 @@ async fn run_all(
     let mbt_log = @fs.read_file("\{dir}/mbt/\{name}.jsonl").text() catch {
       _ => ""
     }
-    // Prawn's errors by name: Ruby's `Prawn::Errors::CannotFit: …`, this
-    // module's `…PrawnError.CannotFit`; anything else refuses the script
-    let ruby_error = ruby_errors
-      .get(path)
-      .map(e => if e.has_prefix("Prawn::Errors::") {
-        Ok(e["Prawn::Errors::".length():].to_owned().split(":").next().unwrap().to_owned())
-      } else {
-        Err(e)
-      })
+    // Prawn's errors by name (Ruby's `Prawn::Errors::CannotFit: …` or an
+    // ArgumentError, this module's `PrawnError.CannotFit`); anything else
+    // Ruby raises means the driver refused the script
+    let ruby_error = match verdicts.get(path) {
+      None => Some(Err("no verdict from the Ruby driver"))
+      Some(Ok(_)) => None
+      Some(Err(e)) =>
+        if e.has_prefix("Prawn::Errors::") {
+          Some(Ok(e["Prawn::Errors::".length():].to_owned().split(":").next().unwrap().to_owned()))
+        } else if e.has_prefix("ArgumentError") {
+          Some(Ok("ArgumentError"))
+        } else {
+          Some(Err(e))
+        }
+    }
+    let text = run.text()
+    let last_line = text
+      .split("\n")
+      .filter(l => !l.trim().is_empty())
+      .to_array()
+      .last()
+      .map(l => l.to_owned())
+      .unwrap_or("")
+    // the runner refusing the script (`script error:`), a Prawn error, or a
+    // crash
     let module_error = if code == 0 {
       None
+    } else if text.contains("script error:") {
+      Some(Err(last_line))
     } else {
-      let text = run.text()
       match text.find("PrawnError.") {
-        Some(at) => {
-          let rest = text[at + "PrawnError.".length():].to_owned()
-          let name = rest
-            .split("\n")
-            .next()
-            .unwrap()
-            .split("(")
-            .next()
-            .unwrap()
-            .trim()
-            .to_owned()
-          Some(Ok(name))
-        }
-        None => {
-          let lines = text.split("\n").filter(l => !l.trim().is_empty()).to_array()
-          Some(Err(lines.last().map(l => l.to_owned()).unwrap_or("")))
-        }
+        Some(at) =>
+          Some(
+            Ok(
+              text[at + "PrawnError.".length():]
+              .to_owned()
+              .split("\n")
+              .next()
+              .unwrap()
+              .split("(")
+              .next()
+              .unwrap()
+              .trim()
+              .to_owned(),
+            ),
+          )
+        None => Some(Ok("a crash: \{last_line}"))
       }
     }
     outcomes.push(

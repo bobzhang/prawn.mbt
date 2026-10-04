@@ -420,7 +420,8 @@ async fn main {
   }
   for op in ops {
     run.op(op) catch {
-      ScriptError(message) => fail("\{message} in \{op.stringify()}")
+      ScriptError(message) =>
+        fail("script error: \{message} in \{op.stringify()}")
       e => raise e
     }
   }
