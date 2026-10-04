@@ -1,0 +1,3 @@
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"query":"cursor","value":650.6399999999998}

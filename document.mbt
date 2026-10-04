@@ -71,6 +71,9 @@ pub struct Document {
   /// the pages the open transformation blocks started on, kept current as
   /// pages are inserted before them
   priv open_pages : Array[Ref[Int]]
+  /// what Prawn knows of each fragment set that its style does not carry
+  /// (`formatted.mbt`), by the style's `callback` index
+  priv fragment_meta : Array[FragmentMeta]
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
   priv paths : Array[Array[@pagelayout.PathSegment]]
@@ -130,6 +133,7 @@ pub fn Document::new(
     open_pages: [],
     pending_gap: 0.0,
     paths: [],
+    fragment_meta: [],
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)

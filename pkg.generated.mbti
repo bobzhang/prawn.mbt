@@ -29,7 +29,7 @@ pub fn margins_of(Array[Double]) -> (Double, Double, Double, Double)
 
 pub fn page_size_named(String) -> (Double, Double)?
 
-pub fn parse_inline_format(String) -> Array[TextFragment]
+pub fn parse_inline_format(String) -> Array[TextFragment] raise PrawnError
 
 pub fn pdf_anchor_name(String) -> String
 
@@ -48,6 +48,7 @@ pub(all) suberror PrawnError {
   CannotFit
   IncompatibleStringEncoding(String)
   ArgumentError(String)
+  Unsupported(String)
 }
 pub fn PrawnError::ruby_class(Self) -> String
 
@@ -357,6 +358,8 @@ pub(all) struct TextFragment {
   font : String?
   size : Double?
   color : String?
+  cmyk : Array[Double]?
+  character_spacing : Double?
   link : String?
   anchor : String?
 }

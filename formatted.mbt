@@ -18,6 +18,10 @@ pub(all) struct TextFragment {
   size : Double?
   /// six hex digits (`"FF0000"`)
   color : String?
+  /// a CMYK colour (0 to 100 each), not set yet
+  cmyk : Array[Double]?
+  /// extra space between characters, not set yet
+  character_spacing : Double?
   /// a URI the text links to
   link : String?
   /// a named destination the text links to
@@ -38,6 +42,8 @@ pub fn TextFragment::new(text : String) -> TextFragment {
     font: None,
     size: None,
     color: None,
+    cmyk: None,
+    character_spacing: None,
     link: None,
     anchor: None,
   }
@@ -140,14 +146,20 @@ fn unescape(text : String) -> String {
 /// `<font name size>`, `<color rgb>`, `<link href anchor>`/`<a>`, `<br>`,
 /// and `&lt;`, `&gt;`, `&amp;`. A `<` that starts no tag is dropped, as
 /// Prawn's scan skips it.
-pub fn parse_inline_format(string : String) -> Array[TextFragment] {
+pub fn parse_inline_format(
+  string : String,
+) -> Array[TextFragment] raise PrawnError {
   // <br>, <br/> and <br /> are line breaks
   let s = StringBuilder()
   let mut i = 0
   while i < string.length() {
     if string[i:].has_prefix("<br") {
       let mut j = i + 3
-      while j < string.length() && is_prawn_space(string[j].unsafe_to_char()) {
+      // Ruby's \s: space, tab, line feed, carriage return, form feed,
+      // vertical tab
+      while j < string.length() &&
+            string[j].unsafe_to_char()
+            is (' ' | '\t' | '\n' | '\r' | '\u{0C}' | '\u{0B}') {
         j = j + 1
       }
       if j < string.length() && string[j] == '/' {
@@ -165,17 +177,14 @@ pub fn parse_inline_format(string : String) -> Array[TextFragment] {
   let text = s.to_string()
   let out : Array[TextFragment] = []
   let styles : Array[String] = []
-  let colors : Array[String] = []
+  let colors : Array[(String?, Array[Double]?)] = []
   let fonts : Array[String] = []
   let sizes : Array[Double] = []
+  let spacings : Array[Double] = []
   let mut link : String? = None
   let mut anchor : String? = None
-  let remove = fn(style : String) {
-    match styles.search(style) {
-      Some(k) => styles.remove(k) |> ignore
-      None => ()
-    }
-  }
+  // every occurrence, as Ruby's Array#delete removes them
+  let remove = fn(style : String) { styles.retain(s => s != style) }
   let mut i = 0
   while i < text.length() {
     let c = text[i]
@@ -187,6 +196,7 @@ pub fn parse_inline_format(string : String) -> Array[TextFragment] {
           colors.last(),
           fonts.last(),
           sizes.last(),
+          spacings.last(),
           link,
           anchor,
         ),
@@ -206,6 +216,7 @@ pub fn parse_inline_format(string : String) -> Array[TextFragment] {
           colors.last(),
           fonts.last(),
           sizes.last(),
+          spacings.last(),
           link,
           anchor,
         ),
@@ -241,23 +252,53 @@ pub fn parse_inline_format(string : String) -> Array[TextFragment] {
       "</font>" => {
         fonts.pop() |> ignore
         sizes.pop() |> ignore
+        spacings.pop() |> ignore
       }
+      // an attribute left out keeps what an outer tag set
       _ if tag.has_prefix("<link") || tag.has_prefix("<a") => {
-        link = attribute(tag, "href")
-        anchor = attribute(tag, "anchor")
-      }
-      _ if tag.has_prefix("<color") =>
-        match attribute(tag, "rgb", hash=true) {
-          Some(rgb) => colors.push(rgb)
+        match attribute(tag, "href") {
+          Some(h) => link = Some(h)
           None => ()
         }
+        match attribute(tag, "anchor") {
+          Some(a) => anchor = Some(a)
+          None => ()
+        }
+      }
+      _ if tag.has_prefix("<color") => {
+        match attribute(tag, "rgb", hash=true) {
+          Some(rgb) => colors.push((Some(rgb), None))
+          None => ()
+        }
+        // c, m, y and k all given: a CMYK colour
+        let parts = ["c", "m", "y", "k"].map(n => attribute(tag, n, hash=true))
+        if parts.iter().all(p => p is Some(_)) {
+          let values = []
+          for p in parts {
+            values.push(
+              @string.parse_int(p.unwrap()).to_double() catch {
+                _ =>
+                  raise ArgumentError(
+                    "invalid value for Integer(): \{p.unwrap()}",
+                  )
+              },
+            )
+          }
+          colors.push((None, Some(values)))
+        }
+      }
       _ if tag.has_prefix("<font") => {
         match attribute(tag, "name") {
           Some(name) => fonts.push(name)
           None => ()
         }
+        // Ruby's Float(): a bad number is an ArgumentError
         match attribute(tag, "size") {
-          Some(size) => sizes.push(@string.parse_double(size)) catch { _ => () }
+          Some(size) => sizes.push(ruby_float(size))
+          None => ()
+        }
+        match attribute(tag, "character_spacing") {
+          Some(spacing) => spacings.push(ruby_float(spacing))
           None => ()
         }
       }
@@ -271,9 +312,10 @@ pub fn parse_inline_format(string : String) -> Array[TextFragment] {
 fn fragment_of(
   text : String,
   styles : Array[String],
-  color : String?,
+  color : (String?, Array[Double]?)?,
   font : String?,
   size : Double?,
+  spacing : Double?,
   link : String?,
   anchor : String?,
 ) -> TextFragment {
@@ -287,7 +329,9 @@ fn fragment_of(
     superscript: styles.contains("superscript"),
     font,
     size,
-    color,
+    color: color.bind(c => c.0),
+    cmyk: color.bind(c => c.1),
+    character_spacing: spacing,
     link,
     anchor,
   }
@@ -296,12 +340,65 @@ fn fragment_of(
 ///|
 /// A fragment as Flow sets it: its font, size (a sub- or superscript at
 /// 0.583 of it, as Prawn's arranger sets them), colour, styles and link.
+
+///|
+/// What Prawn knows of a fragment that its style does not carry: whether
+/// it sets its own colour (Prawn then strokes its decorations in it), and
+/// the destination it links to besides a URI.
+priv struct FragmentMeta {
+  color_set : Bool
+  anchor : String?
+}
+
+///|
+/// A standard font's face named directly (`Times-Bold`): its family and
+/// whether it is bold and italic.
+fn standard_face(name : String) -> (String, Bool, Bool)? {
+  // a family name (Courier, Helvetica) is the family, styles and all
+  if standard_families.iter().any(entry => entry.0 == name) {
+    return None
+  }
+  for entry in standard_families {
+    for i, face in entry.1 {
+      if face == name {
+        return Some((entry.0, i == 1 || i == 3, i == 2 || i == 3))
+      }
+    }
+  }
+  None
+}
+
+///|
 fn Document::fragment(
   self : Document,
   f : TextFragment,
   size : Double?,
 ) -> Fragment raise PrawnError {
+  if f.cmyk is Some(_) {
+    raise Unsupported("CMYK colour")
+  }
+  if f.character_spacing is Some(_) {
+    raise Unsupported("character spacing")
+  }
   let base = self.style(size?)
+  // a face named directly is that face, whatever the styles say
+  let (family, bold, italic, font_set) = match f.font {
+    Some(name) =>
+      match standard_face(name) {
+        Some((family, bold, italic)) => (family, bold, italic, true)
+        None => (name, f.bold, f.italic, true)
+      }
+    None => (base.family, f.bold, f.italic, false)
+  }
+  let meta = self.fragment_meta.length()
+  self.fragment_meta.push({
+    color_set: f.color is Some(_),
+    anchor: if f.link is Some(_) {
+      f.anchor
+    } else {
+      None
+    },
+  })
   let mut size = f.size.unwrap_or(base.size)
   if f.subscript || f.superscript {
     size = size * 0.583
@@ -314,18 +411,20 @@ fn Document::fragment(
     text: f.text,
     style: {
       ..base,
-      family: f.font.unwrap_or(base.family),
+      family,
       size,
-      bold: f.bold,
-      italic: f.italic,
-      font_set: f.font is Some(_),
+      bold,
+      italic,
+      font_set,
+      callback: meta,
       color,
       underline: f.underline,
       strike: f.strikethrough,
-      script: if f.superscript {
-        1
-      } else if f.subscript {
+      // a subscript first, as Prawn's `y_offset` checks
+      script: if f.subscript {
         -1
+      } else if f.superscript {
+        1
       } else {
         0
       },
@@ -355,6 +454,11 @@ pub fn Document::formatted_text(
     return
   }
   let set = pieces.map(f => self.fragment(f, size))
+  // every fragment's encoding first, as Prawn normalizes them all before
+  // wrapping
+  for piece in set {
+    self.check(piece.text, piece.style, None)
+  }
   for piece in set {
     self.check(piece.text, piece.style, Some(self.flow.width()))
   }
@@ -404,6 +508,13 @@ fn Document::decorations(
   }
   let base = baseline - rise
   let gs = self.gs()
+  let meta = self.fragment_meta.get(style.callback)
+  // a fragment with its own colour strokes its decorations in it (Prawn's
+  // arranger sets the stroke colour too)
+  let stroke = match meta {
+    Some({ color_set: true, .. }) => style.color
+    _ => gs.stroke
+  }
   let line = fn(y : Double) -> @pagelayout.PageItem {
     Graphic({
       x_pt: 0.0,
@@ -413,7 +524,7 @@ fn Document::decorations(
           segments: [MoveTo(x, y), LineTo(x + width, y)],
           fill: None,
           fill_rule: NonZero,
-          stroke: Some(Solid(gs.stroke)),
+          stroke: Some(Solid(stroke)),
           stroke_style: {
             width: if gs.line_width == 0.0 {
               Hairline
@@ -437,5 +548,79 @@ fn Document::decorations(
   if style.strike {
     out.push(line(base - a * 0.3))
   }
+  // a link and an anchor both: the destination's annotation after the
+  // URI's, as Prawn draws them
+  match meta {
+    Some({ anchor: Some(name), .. }) =>
+      out.push(
+        Link({
+          x_pt: x,
+          y_pt: base - a,
+          w_pt: width,
+          h_pt: a + d,
+          target: Named(name),
+        }),
+      )
+    _ => ()
+  }
   out
+}
+
+///|
+/// Ruby's `Float()` of a string: an optional sign, digits (with single
+/// underscores between them), an optional fraction and exponent, and
+/// surrounding whitespace; anything else is an ArgumentError.
+fn ruby_float(s : String) -> Double raise PrawnError {
+  let bad = ArgumentError("invalid value for Float(): \"\{s}\"")
+  let t = s.trim(chars=" \t\n\r\u{0B}\u{0C}").to_owned()
+  let digits = fn(from : Int) -> Int {
+    // how far a run of digits with single underscores between them goes
+    let mut i = from
+    while i < t.length() &&
+          (
+            t[i].unsafe_to_char().is_ascii_digit() ||
+            (
+              t[i] == '_' &&
+              i > from &&
+              i + 1 < t.length() &&
+              t[i + 1].unsafe_to_char().is_ascii_digit()
+            )
+          ) {
+      i = i + 1
+    }
+    i
+  }
+  let mut i = 0
+  if i < t.length() && (t[i] == '+' || t[i] == '-') {
+    i = i + 1
+  }
+  let int_end = digits(i)
+  if int_end == i {
+    raise bad
+  }
+  i = int_end
+  if i < t.length() && t[i] == '.' {
+    let frac_end = digits(i + 1)
+    if frac_end == i + 1 {
+      raise bad
+    }
+    i = frac_end
+  }
+  if i < t.length() && (t[i] == 'e' || t[i] == 'E') {
+    let mut j = i + 1
+    if j < t.length() && (t[j] == '+' || t[j] == '-') {
+      j = j + 1
+    }
+    let exp_end = digits(j)
+    if exp_end == j {
+      raise bad
+    }
+    i = exp_end
+  }
+  if i != t.length() {
+    raise bad
+  }
+  @string.parse_double(t.replace_all(old="_", new="")) catch {
+    _ => raise bad
+  }
 }

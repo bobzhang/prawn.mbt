@@ -9,6 +9,9 @@ pub(all) suberror PrawnError {
   /// Ruby's `ArgumentError`: an argument Prawn rejects (a zero or negative
   /// dash, a malformed colour)
   ArgumentError(String)
+  /// something Prawn does that this module does not do yet (CMYK colour,
+  /// character spacing): raised rather than set wrongly
+  Unsupported(String)
 }
 
 ///|
@@ -18,5 +21,6 @@ pub fn PrawnError::ruby_class(self : PrawnError) -> String {
     CannotFit => "Prawn::Errors::CannotFit"
     IncompatibleStringEncoding(_) => "Prawn::Errors::IncompatibleStringEncoding"
     ArgumentError(_) => "ArgumentError"
+    Unsupported(_) => "Unsupported"
   }
 }

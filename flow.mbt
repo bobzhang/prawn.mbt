@@ -94,9 +94,9 @@ pub(all) struct Flow {
   /// what to do when content runs out of room, instead of the next column
   /// or page below (a document that keeps bounds of its own sets it)
   mut move_past_bottom : (() -> Unit)?
-  /// draws a run's underline and strikethrough instead (x, width,
-  /// baseline, style, face): a document with Prawn's own decorations
-  /// sets it
+  /// draws what goes over each run (x, width, baseline, style, face) in
+  /// place of the underline and strikethrough below: a document with
+  /// Prawn's own overlays (decorations, links) sets it
   mut decorate : ((Double, Double, Double, Style, Face) -> Array[
     @pagelayout.PageItem,
   ])?
@@ -669,7 +669,7 @@ pub fn Flow::line_items(
       }),
     )
     match self.decorate {
-      Some(decorate) if style.underline || style.strike =>
+      Some(decorate) =>
         items.append(decorate(x, run.width, baseline, style, run.face))
       _ => ()
     }

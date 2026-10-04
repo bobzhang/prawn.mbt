@@ -302,6 +302,16 @@ fn block(args : Array[Json]) -> Array[Json]? {
 }
 
 ///|
+/// `call`, with what this module raises as not done yet (Prawn's
+/// `Unsupported`) taken as an op it cannot run.
+fn Run::supported(self : Run, name : String, args : Array[Json]) -> Json? raise {
+  self.call(name, args) catch {
+    @prawn.Unsupported(_) => None
+    e => raise e
+  }
+}
+
+///|
 /// Runs one op, logging what the driver logs.
 fn Run::op(self : Run, op : Json) -> Unit raise {
   guard op is Array(items) && items.length() > 0 else {
@@ -345,11 +355,11 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
     } else {
       Json::array([query.to_json(), ..shown])
     }
-    match self.call(query, args) {
+    match self.supported(query, args) {
       Some(value) => self.log.push({ "query": label, "value": value })
       None => self.log.push({ "unsupported": query.to_json() })
     }
-  } else if self.call(name, args) is None {
+  } else if self.supported(name, args) is None {
     self.log.push({ "unsupported": name.to_json() })
   }
 }
@@ -654,10 +664,11 @@ fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
     Some(Array(xs)) => xs.filter_map(symbol)
     _ => []
   }
-  let color = match map.get("color") {
-    Some(String(hex)) => Some(hex)
+  let (color, cmyk) = match map.get("color") {
+    Some(String(hex)) => (Some(hex), None)
+    Some(Array(xs)) => (None, Some(xs.map(number)))
     Some(_) => return None
-    None => None
+    None => (None, None)
   }
   Some({
     ..@prawn.TextFragment::new(string(map.get("text").unwrap_or("".to_json()))),
@@ -670,6 +681,8 @@ fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
     font: map.get("font").map(string),
     size: map.get("size").map(number),
     color,
+    cmyk,
+    character_spacing: map.get("character_spacing").map(number),
     link: map.get("link").map(string),
     anchor: map.get("anchor").map(string),
   })
