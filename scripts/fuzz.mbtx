@@ -188,14 +188,28 @@ fn fragment_gen(size : Int) -> Generator[Json] {
 
 ///|
 fn text_op(size : Int) -> Generator[Json] {
-  text_gen(size).zip_with(
+  let plain = text_gen(size).zip_with(
     options([
       ("size", maybe(size_gen())),
       ("align", maybe(align_gen())),
       ("leading", maybe(leading_gen())),
+      (
+        "draw_text_callback",
+        maybe(@quickcheck.pure(Json::object({ "trace": "dtc".to_json() }))),
+      ),
     ]),
     (s, o) => Json::array(["text".to_json(), s.to_json(), o]),
   )
+  let inline = inline_text_gen(size).zip_with(
+    options([("size", maybe(size_gen())), ("align", maybe(align_gen()))]),
+    (s, o) => {
+      guard o is Object(map) else { return Json::null() }
+      let map = map.copy()
+      map["inline_format"] = Json::boolean(true)
+      Json::array(["text".to_json(), s.to_json(), Json::object(map)])
+    },
+  )
+  @quickcheck.frequency([(3, plain), (1, inline)])
 }
 
 ///|
@@ -271,6 +285,179 @@ fn block(ops : Array[Json]) -> Json {
 }
 
 ///|
+///|
+fn point_gen() -> Generator[Json] {
+  range_gen(0, 500, 10).zip_with(range_gen(50, 750, 10), (x, y) => Json::array([
+    x, y,
+  ]))
+}
+
+///|
+/// `n` points, no two in a row (round the end too) the same: Prawn writes
+/// NaN for a rounded corner on an edge of no length.
+fn distinct_points(n : Int, sz : Int, rs : @splitmix.RandomState) -> Array[Json] {
+  let out : Array[Json] = []
+  while out.length() < n {
+    let p = point_gen().run(sz, rs)
+    let last = out.last()
+    if last is Some(q) && q == p {
+      continue
+    }
+    if out.length() == n - 1 && out.length() > 0 && out[0] == p {
+      continue
+    }
+    out.push(p)
+  }
+  out
+}
+
+///|
+fn color_gen() -> Generator[Json] {
+  @quickcheck.elements(["000000", "FF0000", "0000FF", "008800", "CCCC00", "777777"])
+  .map(c => c.to_json())
+}
+
+///|
+/// A shape built and painted in one op (`stroke_rectangle`): never a path
+/// left open, which Prawn writes as invalid PDF across graphics states.
+fn shape_op() -> Generator[Json] {
+  let paint = @quickcheck.elements(["stroke_", "fill_", "fill_and_stroke_"])
+  let len = range_gen(5, 200, 5)
+  let shape = @quickcheck.one_of([
+    gen((sz, rs) => [
+      "rectangle".to_json(),
+      point_gen().run(sz, rs),
+      len.run(sz, rs),
+      len.run(sz, rs),
+    ]),
+    gen((sz, rs) => [
+      "rounded_rectangle".to_json(),
+      point_gen().run(sz, rs),
+      len.run(sz, rs),
+      len.run(sz, rs),
+      range_gen(0, 20, 2).run(sz, rs),
+    ]),
+    gen((sz, rs) => [
+      "circle".to_json(),
+      point_gen().run(sz, rs),
+      range_gen(2, 80, 2).run(sz, rs),
+    ]),
+    gen((sz, rs) => [
+      "ellipse".to_json(),
+      point_gen().run(sz, rs),
+      range_gen(2, 80, 2).run(sz, rs),
+      range_gen(2, 80, 2).run(sz, rs),
+    ]),
+    gen((sz, rs) => {
+      let n = rs.next_uint(limit=4).reinterpret_as_int() + 3
+      ["polygon".to_json(), ..distinct_points(n, sz, rs)]
+    }),
+    gen((sz, rs) => {
+      let n = rs.next_uint(limit=3).reinterpret_as_int() + 3
+      [
+        "rounded_polygon".to_json(),
+        range_gen(2, 20, 2).run(sz, rs),
+        ..distinct_points(n, sz, rs),
+      ]
+    }),
+    gen((sz, rs) => [
+      "curve".to_json(),
+      point_gen().run(sz, rs),
+      point_gen().run(sz, rs),
+      Json::object({
+        "bounds": Json::array([point_gen().run(sz, rs), point_gen().run(sz, rs)]),
+      }),
+    ]),
+  ])
+  let line = @quickcheck.one_of([
+    gen((sz, rs) => [
+      "stroke_line".to_json(),
+      point_gen().run(sz, rs),
+      point_gen().run(sz, rs),
+    ]),
+    gen((sz, rs) => [
+      "stroke_horizontal_line".to_json(),
+      range_gen(0, 300, 10).run(sz, rs),
+      range_gen(300, 540, 10).run(sz, rs),
+      Json::object({ "at": range_gen(50, 750, 10).run(sz, rs) }),
+    ]),
+    gen((sz, rs) => [
+      "stroke_vertical_line".to_json(),
+      range_gen(50, 300, 10).run(sz, rs),
+      range_gen(300, 750, 10).run(sz, rs),
+      Json::object({ "at": range_gen(0, 540, 10).run(sz, rs) }),
+    ]),
+  ])
+  @quickcheck.frequency([
+    (
+      4,
+      gen((sz, rs) => {
+        let parts = shape.run(sz, rs)
+        guard parts[0] is String(name) else { return Json::array(parts) }
+        Json::array([(paint.run(sz, rs) + name).to_json(), ..parts[1:]])
+      }),
+    ),
+    (2, line.map(parts => Json::array(parts))),
+    (1, @quickcheck.pure(Json::array(["stroke_bounds".to_json()]))),
+  ])
+}
+
+///|
+/// A change to the graphics state.
+fn style_op() -> Generator[Json] {
+  @quickcheck.one_of([
+    color_gen().map(c => Json::array(["fill_color".to_json(), c])),
+    color_gen().map(c => Json::array(["stroke_color".to_json(), c])),
+    @quickcheck.elements([0.0, 0.5, 1.0, 2.0, 4.0]).map(w => Json::array([
+      "line_width".to_json(),
+      number(w),
+    ])),
+    @quickcheck.elements([1.0, 3.0, 5.0]).map(d => Json::array([
+      "dash".to_json(),
+      number(d),
+    ])),
+    @quickcheck.pure(Json::array(["undash".to_json()])),
+    @quickcheck.elements(["butt", "round", "projecting_square"]).map(s => Json::array([
+      "cap_style".to_json(),
+      symbol(s),
+    ])),
+    @quickcheck.elements(["miter", "round", "bevel"]).map(s => Json::array([
+      "join_style".to_json(),
+      symbol(s),
+    ])),
+  ])
+}
+
+///|
+/// Text with Prawn's inline format tags around some of its words.
+fn inline_text_gen(size : Int) -> Generator[String] {
+  let tags = [
+    ("<b>", "</b>"),
+    ("<i>", "</i>"),
+    ("<u>", "</u>"),
+    ("<strikethrough>", "</strikethrough>"),
+    ("<sup>", "</sup>"),
+    ("<sub>", "</sub>"),
+    ("<color rgb=\"FF0000\">", "</color>"),
+    ("<link href=\"https://example.com\">", "</link>"),
+    ("<font size=\"18\">", "</font>"),
+  ]
+  text_gen(size).flat_map(text => gen((_, rs) => {
+    let words = text.split(" ").map(w => w.to_owned()).to_array()
+    let out = []
+    for w in words {
+      if !w.is_empty() && rs.next_uint(limit=3) == 0 {
+        let (open, close) = tags[rs.next_uint(limit=tags.length().reinterpret_as_uint()).reinterpret_as_int()]
+        out.push(open + w + close)
+      } else {
+        out.push(w)
+      }
+    }
+    out.iter().join(" ")
+  }))
+}
+
+///|
 /// An op; `depth` bounds how deep boxes nest.
 fn op_gen(size : Int, depth : Int) -> Generator[Json] {
   let simple : Array[(UInt, Generator[Json])] = [
@@ -283,6 +470,22 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
       range_gen(0, 120, 5).map(n => Json::array(["move_down".to_json(), n])),
     ),
     (1, @quickcheck.pure(Json::array(["start_new_page".to_json()]))),
+    (
+      1,
+      options([
+        (
+          "layout",
+          maybe(@quickcheck.elements(["portrait", "landscape"]).map(symbol)),
+        ),
+        (
+          "size",
+          maybe(@quickcheck.elements(["A4", "A5", "LETTER", "LEGAL"]).map(s => s.to_json())),
+        ),
+      ]).map(o => Json::array(["start_new_page".to_json(), o])),
+    ),
+    (1, @quickcheck.pure(Json::array(["go_to_page".to_json(), Json::number(1.0)]))),
+    (3, shape_op()),
+    (2, style_op()),
   ]
   if depth <= 0 {
     return @quickcheck.frequency(simple)
@@ -341,6 +544,58 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
     (
       1,
       gen((sz, rs) => Json::array(["float".to_json(), block(inner.run(sz, rs))])),
+    ),
+    (
+      1,
+      gen((sz, rs) => {
+        let opts : Map[String, Json] = { "block": Json::array(inner.run(sz, rs)) }
+        if rs.next_uint(limit=2) == 0 {
+          opts["origin"] = point_gen().run(sz, rs)
+        }
+        Json::array([
+          "rotate".to_json(),
+          range_gen(-90, 90, 15).run(sz, rs),
+          Json::object(opts),
+        ])
+      }),
+    ),
+    (
+      1,
+      gen((sz, rs) => {
+        let opts : Map[String, Json] = { "block": Json::array(inner.run(sz, rs)) }
+        if rs.next_uint(limit=2) == 0 {
+          opts["origin"] = point_gen().run(sz, rs)
+        }
+        Json::array([
+          "scale".to_json(),
+          @quickcheck.elements([0.5, 0.75, 1.5, 2.0]).map(number).run(sz, rs),
+          Json::object(opts),
+        ])
+      }),
+    ),
+    (
+      1,
+      gen((sz, rs) => Json::array([
+        "translate".to_json(),
+        range_gen(-100, 100, 10).run(sz, rs),
+        range_gen(-100, 100, 10).run(sz, rs),
+        block(inner.run(sz, rs)),
+      ])),
+    ),
+    (
+      1,
+      gen((sz, rs) => Json::array([
+        "transparent".to_json(),
+        @quickcheck.elements([0.25, 0.5, 0.75]).map(number).run(sz, rs),
+        block(inner.run(sz, rs)),
+      ])),
+    ),
+    (
+      1,
+      gen((sz, rs) => Json::array([
+        "save_graphics_state".to_json(),
+        block(inner.run(sz, rs)),
+      ])),
     ),
   ]
   @quickcheck.frequency([..simple, ..boxes])
@@ -509,8 +764,10 @@ async fn run_all(
     let ruby_error = match verdicts.get(path) {
       None | Some(Ok(_)) => None
       Some(Err(e)) =>
-        if e.has_prefix("Prawn::Errors::") {
-          Some(Ok(e["Prawn::Errors::".length():].to_owned().split(":").next().unwrap().to_owned()))
+        if e.has_prefix("Prawn::Errors::") || e.has_prefix("PDF::Core::Errors::") {
+          // pdf-core's errors are Prawn's too (its graphics state stack)
+          let class = e.split(": ").next().unwrap().to_owned()
+          Some(Ok(class.split("::").to_array().last().unwrap().to_owned()))
         } else if e.has_prefix("ArgumentError") {
           Some(Ok("ArgumentError"))
         } else {
