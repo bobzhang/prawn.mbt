@@ -131,45 +131,103 @@ fn Document::face_by_key(self : Document, key : (String, Bool, Bool)) -> Face {
 }
 
 ///|
-/// The face character `cp` of text in `style` is set in, as Prawn's
-/// fallback processing finds it: the style's own font when it has the
-/// character, else the first fallback that has it, each found as `font`
-/// finds it in the fragment's own styles `styles` (read only when a
-/// character reaches it), else the style's own.
-fn Document::char_key(
-  self : Document,
-  style : Style,
-  styles : (Bool, Bool),
-  cp : Int,
-) -> (String, Bool, Bool) raise PrawnError {
-  let own = (style.family, style.bold, style.italic)
-  if cp == 0x0A || self.face_by_key(own).has_glyph(cp) {
-    return own
+/// Prawn's `glyph_present?`: a standard font has a character it can encode
+/// (a line break included); a TrueType font, one its cmap maps.
+fn glyph_present(face : Face, cp : Int) -> Bool {
+  if face.standard {
+    cp < 0x80 || winansi_code_of(cp) is Some(_)
+  } else {
+    face.has_glyph(cp)
   }
-  for name in self.fallbacks {
-    let (family, flags, _) = self.find_font(name, style_of_flags(styles))
-    let key = self.catalog_key(family, flags)
-    if self.face_by_key(key).has_glyph(cp) {
-      return key
-    }
-  }
-  own
 }
 
 ///|
-/// The styles a fragment asks for itself (Prawn's fragment `styles`, which
-/// its fallback fonts are found in).
-fn Document::own_styles(self : Document, style : Style) -> (Bool, Bool) {
+/// A fragment's own `:font` and styles (Prawn's fragment hash), which its
+/// fallback fonts are looked up with.
+fn Document::own_font(
+  self : Document,
+  style : Style,
+) -> (String?, (Bool, Bool)) {
   match self.fragment_meta.get(style.callback) {
-    Some(meta) => meta.styles
-    None => (false, false)
+    Some(meta) => (meta.font, meta.styles)
+    None => (None, (false, false))
+  }
+}
+
+///|
+/// The face font `name` stands for in the fragment's own styles `flags`,
+/// found as Prawn's `font(name, style:)` finds it (read as needed); None
+/// for the current font as it is (a current font of no family).
+fn Document::fallback_face(
+  self : Document,
+  name : String?,
+  flags : (Bool, Bool),
+) -> Face raise PrawnError {
+  match name {
+    None => self.face_by_key(self.font_key)
+    Some(name) => {
+      let (family, face_flags, _) = self.find_font(name, style_of_flags(flags))
+      self.face_by_key(self.catalog_key(family, face_flags))
+    }
+  }
+}
+
+///|
+/// Prawn's `find_font_for_this_glyph`: the font character `cp` of a
+/// fragment in `style` is set in, by name. The fragment's font (its own
+/// `:font`, else the current font's family; None when that has no family)
+/// when it has the character, else the first fallback that has it, else
+/// the fragment's font, each looked up in the fragment's own styles and
+/// read only when the character reaches it. None also when it is the
+/// fragment's font and the fragment named none: it keeps its font.
+fn Document::glyph_font(
+  self : Document,
+  style : Style,
+  cp : Int,
+) -> String? raise PrawnError {
+  let (own, flags) = self.own_font(style)
+  let fragment_font = match own {
+    Some(font) => Some(font)
+    None if self.font_family_known => Some(self.family)
+    None => None
+  }
+  let candidates = [..self.fallbacks.map(name => Some(name)), fragment_font]
+  let mut chosen = fragment_font
+  if !glyph_present(self.fallback_face(fragment_font, flags), cp) {
+    for i, candidate in candidates {
+      chosen = candidate
+      if i == candidates.length() - 1 ||
+        glyph_present(self.fallback_face(candidate, flags), cp) {
+        break
+      }
+    }
+  }
+  if own is None && chosen == fragment_font {
+    None
+  } else {
+    chosen
+  }
+}
+
+///|
+/// The face character `cp` of a fragment in `style` is set in (Prawn's
+/// fallback processing).
+fn Document::glyph_face(
+  self : Document,
+  style : Style,
+  cp : Int,
+) -> Face raise PrawnError {
+  match self.glyph_font(style, cp) {
+    None => self.face_of(style)
+    Some(name) => self.fallback_face(Some(name), self.own_font(style).1)
   }
 }
 
 ///|
 /// Prawn's fallback processing (`process_fallback_fonts`): each fragment
-/// split where the font its characters are set in changes, a piece in a
-/// fallback font set in it.
+/// split where the font its characters are set in changes; a piece in
+/// another font is set in it, in the fragment's own styles, and is drawn
+/// in it (callbacks see it current).
 fn Document::split_fallbacks(
   self : Document,
   fragments : Array[Fragment],
@@ -181,26 +239,45 @@ fn Document::split_fallbacks(
       out.push(fragment)
       continue
     }
-    let styles = self.own_styles(fragment.style)
+    let flags = self.own_font(fragment.style).1
     let sb = StringBuilder()
-    let mut current = (
-      fragment.style.family,
-      fragment.style.bold,
-      fragment.style.italic,
-    )
-    let flush = (key : (String, Bool, Bool)) => {
+    let mut current : String? = None
+    let mut first = true
+    let flush = (font : String?) => {
       if !sb.is_empty() {
-        let own = key ==
-          (fragment.style.family, fragment.style.bold, fragment.style.italic)
-        let style = if own {
-          fragment.style
-        } else {
-          {
-            ..fragment.style,
-            family: key.0,
-            bold: key.1,
-            italic: key.2,
-            font_set: true,
+        let style = match font {
+          None => fragment.style
+          Some(name) => {
+            let (family, face_flags, known) = self.find_font(
+              name,
+              style_of_flags(flags),
+            )
+            let key = self.catalog_key(family, face_flags)
+            // its own record: the font it is drawn in, current while it is
+            let meta = self.fragment_meta.length()
+            match self.fragment_meta.get(fragment.style.callback) {
+              Some(m) =>
+                self.fragment_meta.push({
+                  ..m,
+                  font_name: family,
+                  font_flags: face_flags,
+                  family_known: Some(known),
+                  font: Some(name),
+                })
+              None => ()
+            }
+            {
+              ..fragment.style,
+              family: key.0,
+              bold: key.1,
+              italic: key.2,
+              font_set: true,
+              callback: if meta < self.fragment_meta.length() {
+                meta
+              } else {
+                fragment.style.callback
+              },
+            }
           }
         }
         out.push({ ..fragment, text: sb.to_string(), style, })
@@ -208,11 +285,12 @@ fn Document::split_fallbacks(
       }
     }
     for c in fragment.text {
-      let key = self.char_key(fragment.style, styles, c.to_int())
-      if key != current {
+      let font = self.glyph_font(fragment.style, c.to_int())
+      if !first && font != current {
         flush(current)
-        current = key
       }
+      current = font
+      first = false
       sb.write_char(c)
     }
     flush(current)

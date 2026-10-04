@@ -59,5 +59,24 @@
     ["text", "DV3 after its file changes"],
     ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
     ["!raises", "PDF::Core::Text::BadFontFamily", ["draw_text", "x", { "at": [0.0, 100.0], "style": ":bold" }]]
+,
+    ["font", "Helvetica"],
+    ["fallback_fonts", ["DV"]],
+    ["formatted_text", [{ "text": "α", "callback": { "trace": "fb", "phase": "in_front", "draw": [["?width_of", "α"], ["?font.inspect"]] } }]],
+    ["fallback_fonts", []],
+    ["font_families.update", { "=DV4": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf" } }],
+    ["font", "DV4"],
+    ["font_families.update", { "=DV4": { "normal": "$PRAWN/data/fonts/Dustismo_Roman.ttf" } }],
+    ["?width_of", "α"],
+    ["?font.inspect"],
+    ["font_families.update", { "=Mixed": { "normal": "$PRAWN/data/fonts/gkai00mp.ttf", "bold": "$PRAWN/data/fonts/DejaVuSans-Bold.ttf" } }],
+    ["font", "Mixed", { "style": ":bold" }],
+    ["fallback_fonts", ["Missing"]],
+    ["!raises", "ArgumentError", ["text", "Ж"]],
+    ["font", "DV"],
+    ["!raises", "ArgumentError", ["text", "a\nb"]],
+    ["fallback_fonts", []],
+    ["font", "Helvetica"],
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["formatted_text", [{ "text": "file", "font": "$PRAWN/data/fonts/DejaVuSans.ttf", "callback": { "trace": "ff", "phase": "in_front", "draw": [["draw_text", "x", { "at": [0.0, 50.0], "style": ":bold" }]] } }]]]
   ]
 }

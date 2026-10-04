@@ -35,11 +35,13 @@ pub fn Document::font(
   body? : () -> Unit raise,
 ) -> Unit raise {
   let (family, face_style, known) = self.find_font(name, style)
+  let key = self.catalog_key(family, face_style)
   match body {
     None => {
       self.family = family
       self.face_style = face_style
       self.font_family_known = known
+      self.font_key = key
       self.size = size.unwrap_or(self.size)
     }
     Some(body) => {
@@ -49,16 +51,19 @@ pub fn Document::font(
         self.face_style,
         self.size,
         self.font_family_known,
+        self.font_key,
       )
       defer {
         self.family = saved.0
         self.face_style = saved.1
         self.size = saved.2
         self.font_family_known = saved.3
+        self.font_key = saved.4
       }
       self.family = family
       self.face_style = face_style
       self.font_family_known = known
+      self.font_key = key
       self.size = size.unwrap_or(self.size)
       body()
     }
@@ -123,19 +128,18 @@ pub fn Document::with_font_size(
 /// The current font's name (Prawn's `font.name`): a standard font's own
 /// name (`Times-Bold`).
 pub fn Document::font_name(self : Document) -> String {
-  let (bold, italic) = self.face_style
   // a TrueType font: its file
-  let key = self.catalog_key(self.family, (bold, italic))
-  if is_font_file(key.0) {
-    return key.0
+  let (family, bold, italic) = self.font_key
+  if is_font_file(family) {
+    return family
   }
   for entry in standard_families {
-    if entry.0 == self.family {
+    if entry.0 == family {
       let index = (if bold { 1 } else { 0 }) + (if italic { 2 } else { 0 })
       return entry.1.get(index).unwrap_or(entry.1[0])
     }
   }
-  self.family
+  family
 }
 
 ///|
@@ -148,4 +152,41 @@ pub fn Document::font_class(self : Document) -> String {
   } else {
     "Prawn::Fonts::TTF"
   }
+}
+
+///|
+/// What `apply_style` saves of the current font.
+priv struct SavedFont {
+  face_style : (Bool, Bool)
+  font_key : (String, Bool, Bool)
+}
+
+///|
+/// The current font in `style`, when given (Prawn's text `:style` option:
+/// `font(font.family, style:)`), raising `no_family` for a font of no
+/// family; what it was before, for `restore_style`.
+fn Document::apply_style(
+  self : Document,
+  style : FontStyle?,
+  no_family : PrawnError,
+) -> SavedFont raise PrawnError {
+  let saved = { face_style: self.face_style, font_key: self.font_key, }
+  match style {
+    Some(style) => {
+      if !self.font_family_known {
+        raise no_family
+      }
+      self.ensure_font(self.family, style.flags())
+      self.face_style = style.flags()
+      self.font_key = self.catalog_key(self.family, style.flags())
+    }
+    None => ()
+  }
+  saved
+}
+
+///|
+fn Document::restore_style(self : Document, saved : SavedFont) -> Unit {
+  self.face_style = saved.face_style
+  self.font_key = saved.font_key
 }

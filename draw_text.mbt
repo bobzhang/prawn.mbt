@@ -14,20 +14,11 @@ pub fn Document::draw_text(
 ) -> Unit raise {
   // Prawn's `process_text_options`: the current font in `style`, which a
   // font of no family cannot take
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      if !self.font_family_known {
-        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
-      }
-      self.ensure_font(self.family, style.flags())
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   let base = self.style(size?)
   // the whole string is encoded first (Prawn's `normalize_encoding`), in
   // its own font only: draw_text looks in no fallback

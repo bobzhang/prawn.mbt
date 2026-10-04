@@ -50,8 +50,8 @@ pub(all) struct PlacedFragment {
 /// the text is drawn, `render_in_front` after it and its decorations and
 /// links. Not called in dry runs (measuring, shrinking, aligning).
 pub(all) struct FragmentCallback {
-  render_behind : ((PlacedFragment) -> Unit)?
-  render_in_front : ((PlacedFragment) -> Unit)?
+  render_behind : ((PlacedFragment) -> Unit raise PrawnError)?
+  render_in_front : ((PlacedFragment) -> Unit raise PrawnError)?
 }
 
 ///|
@@ -381,6 +381,8 @@ priv struct FragmentMeta {
   font_name : String
   font_flags : (Bool, Bool)
   styles : (Bool, Bool)
+  /// the font it names itself (Prawn's fragment `:font`)
+  font : String?
   /// whether the font the fragment is set in has a family (None: it keeps
   /// the current font, setting only the size)
   family_known : Bool?
@@ -440,17 +442,23 @@ fn Document::fragment(
     None => (self.family, (f.bold, f.italic), false)
   }
   // read when a TrueType family's face or a file, and the catalog's face
-  // of it
+  // of it: the current font's as it was set, when the fragment keeps it
   self.ensure_font(name, flags)
-  let (family, bold, italic) = self.catalog_key(name, flags)
+  let (family, bold, italic) = if f.font is None && !f.bold && !f.italic {
+    self.font_key
+  } else {
+    self.catalog_key(name, flags)
+  }
   let meta = self.fragment_meta.length()
   self.fragment_meta.push({
     color_set: f.color is Some(_),
     font_name: name,
     font_flags: flags,
     styles: (f.bold, f.italic),
+    font: f.font,
     family_known: match f.font {
-      Some(name) => Some(standard_face(name) is None)
+      // a face by its own name, or a file: a font of no family
+      Some(name) => Some(standard_face(name) is None && !is_font_file(name))
       None if f.bold || f.italic => Some(true)
       None => None
     },
@@ -510,25 +518,15 @@ pub fn Document::formatted_text(
   style? : FontStyle,
   align? : Alignment = Left,
   leading? : Double,
-  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> Unit raise PrawnError {
   // the current font in `style` while this is set (Prawn's `:style`, which
   // its boxes apply and undo)
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      // a font set by its own name has no family to take a style from
-      if !self.font_family_known {
-        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
-      }
-      self.ensure_font(self.family, style.flags())
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
@@ -741,6 +739,7 @@ priv struct FragmentScope {
   size : Double
   face_style : (Bool, Bool)
   family_known : Bool
+  font_key : (String, Bool, Bool)
   fill : @pagelayout.Color
   stroke : @pagelayout.Color
   color_set : Bool
@@ -759,10 +758,13 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
     size: self.size,
     face_style: self.face_style,
     family_known: self.font_family_known,
+    font_key: self.font_key,
     fill: gs.fill,
     stroke: gs.stroke,
     color_set,
   })
+  // the catalog's face it is set in
+  self.font_key = (style.family, style.bold, style.italic)
   self.size = style.size
   match self.fragment_meta.get(style.callback) {
     Some(meta) => {
@@ -794,6 +796,7 @@ fn Document::end_fragment(self : Document) -> Unit {
   self.size = scope.size
   self.face_style = scope.face_style
   self.font_family_known = scope.family_known
+  self.font_key = scope.font_key
   if scope.color_set {
     let gs = self.gs()
     gs.fill = scope.fill

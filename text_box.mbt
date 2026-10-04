@@ -191,25 +191,15 @@ pub fn Document::text_box(
   leading? : Double,
   rotate? : Double = 0.0,
   rotate_around? : String = "upper_left",
-  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> String raise {
   // the current font in `style` while this is set (Prawn's `:style`, which
   // its boxes apply and undo)
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      // a font set by its own name has no family to take a style from
-      if !self.font_family_known {
-        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
-      }
-      self.ensure_font(self.family, style.flags())
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   // the document's default leading unless given (Prawn's `default_leading`)
   let leading = leading.unwrap_or(self.default_leading)
   let saved_callback = self.draw_text_callback

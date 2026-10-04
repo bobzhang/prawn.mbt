@@ -963,7 +963,7 @@ fn Run::trace_callback(
     _ => []
   }
   let log = fn(event : String) {
-    fn(f : @prawn.PlacedFragment) {
+    fn(f : @prawn.PlacedFragment) raise @prawn.PrawnError {
       self.log.push({
         "trace": id,
         "event": event.to_json(),
@@ -998,12 +998,12 @@ fn Run::trace_callback(
 fn Run::trace_draw_text(
   self : Run,
   opts : Map[String, Json],
-) -> ((String, (Double, Double), Bool) -> Unit)? raise ScriptError {
+) -> ((String, (Double, Double), Bool) -> Unit raise @prawn.PrawnError)? raise ScriptError {
   match opts.get("draw_text_callback") {
     Some(Object(map)) =>
       match map.get("trace") {
         Some(id) =>
-          Some(fn(text, at, kerning) {
+          Some(fn(text, at, kerning) raise @prawn.PrawnError {
             self.log.push({
               "trace": id,
               "event": "draw_text",
@@ -1025,10 +1025,21 @@ fn Run::trace_draw_text(
 }
 
 ///|
-/// The ops a traced callback draws with; a callback cannot raise, so an
-/// error is logged instead.
-fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
+/// The ops a traced callback draws with: Prawn's errors leave the callback,
+/// as in Ruby; any other (a script error) is logged.
+fn Run::draw_in_callback(
+  self : Run,
+  ops : Array[Json],
+) -> Unit raise @prawn.PrawnError {
   self.ops(ops) catch {
+    @prawn.CannotFit => raise @prawn.CannotFit
+    @prawn.IncompatibleStringEncoding(s) =>
+      raise @prawn.IncompatibleStringEncoding(s)
+    @prawn.ArgumentError(s) => raise @prawn.ArgumentError(s)
+    @prawn.Unsupported(s) => raise @prawn.Unsupported(s)
+    @prawn.UnknownFont(s) => raise @prawn.UnknownFont(s)
+    @prawn.BadFontFamily(s) => raise @prawn.BadFontFamily(s)
+    @prawn.EmptyGraphicStateStack => raise @prawn.EmptyGraphicStateStack
     e => self.log.push({ "callback_error": e.to_string().to_json() })
   }
 }
