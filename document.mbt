@@ -271,8 +271,22 @@ pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
 ///|
 /// The PDF.
 pub fn Document::render(self : Document) -> Bytes raise {
+  // groups left open on a page close at its end (the innermost first)
+  let pages = self.model.pages.mapi((i, page) => {
+    let open = self.pages[i].open
+    if open.is_empty() {
+      return page
+    }
+    let items = page.items.copy()
+    let innermost_first = open.copy()
+    innermost_first.sort_by_key(group => -group.0)
+    for group in innermost_first {
+      wrap_group(items, group.0, group.1)
+    }
+    { ..page, items, }
+  })
   @pdf.render_pdf(
-    self.model,
+    { fonts: self.model.fonts, pages, },
     options=@pdf.RenderOptions::new(
       fonts=self.catalog.registry,
       truncate_widths=true,

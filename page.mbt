@@ -23,6 +23,11 @@ priv struct PageState {
   /// landscape page reverses the size, whatever its shape); a new page
   /// takes the current page's
   geometry : ((Double, Double), String)
+  /// the groups left open on the page (a block that saves the graphics
+  /// state and ended on another page, or raised): where each starts and
+  /// what it sets up; what follows on the page stays in them, as Prawn
+  /// writes no Q here (`render` closes them at the end of the page)
+  open : Array[(Int, Array[@pagelayout.GraphicOp])]
 }
 
 ///|
@@ -82,5 +87,6 @@ fn Document::page_made(
     ctm: @pagelayout.identity,
     path: [],
     geometry,
+    open: [],
   })
 }

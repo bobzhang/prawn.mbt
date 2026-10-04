@@ -76,36 +76,48 @@ fn Document::group(
     [Transform(m)] => page.ctm = saved_ctm.after(m)
     _ => ()
   }
-  // the block's items wrapped in Save and Restore, whatever happens
-  let finish = fn() {
-    page.ctm = saved_ctm
-    let items = page.items
-    let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
-    let kept : Array[@pagelayout.PageItem] = []
-    for item in items[start:] {
-      match item_ops(item) {
-        Some(more) => ops.append(more)
-        None => kept.push(item)
-      }
-    }
-    ops.push(Restore)
-    items.truncate(start)
-    items.push(Graphic({ x_pt: 0.0, y_pt: 0.0, ops, }))
-    items.append(kept)
-  }
-  // an error in the block leaves the state it saved on the stack, as
-  // Prawn restores only after the block returns
-  errdefer finish()
+  // a block that raises, or ends on another page, leaves its group open
+  // here: Prawn writes its Q on the page current then (or none), so this
+  // page keeps the state and transformation it set up, for what follows
+  errdefer page.open.push((start, setup))
   body()
   // Q: the stack of the page current now; one with nothing left to
   // restore (a new page holds one state, so two blocks around a page break
   // empty it) is pdf-core's EmptyGraphicStateStack
-  let stack = self.page().stack
-  if stack.is_empty() {
+  let current = self.page()
+  if current.stack.is_empty() {
     raise EmptyGraphicStateStack
   }
-  stack.pop() |> ignore
-  finish()
+  current.stack.pop() |> ignore
+  if physical_equal(current, page) {
+    page.ctm = saved_ctm
+    wrap_group(page.items, start, setup)
+  } else {
+    page.open.push((start, setup))
+  }
+}
+
+///|
+/// Wraps `items` from `start` in a group: Save, `setup`, their drawing,
+/// Restore (what pagelayout cannot hold in a group, a link, stays after
+/// it).
+fn wrap_group(
+  items : Array[@pagelayout.PageItem],
+  start : Int,
+  setup : Array[@pagelayout.GraphicOp],
+) -> Unit {
+  let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
+  let kept : Array[@pagelayout.PageItem] = []
+  for item in items[start:] {
+    match item_ops(item) {
+      Some(more) => ops.append(more)
+      None => kept.push(item)
+    }
+  }
+  ops.push(Restore)
+  items.truncate(start)
+  items.push(Graphic({ x_pt: 0.0, y_pt: 0.0, ops, }))
+  items.append(kept)
 }
 
 ///|

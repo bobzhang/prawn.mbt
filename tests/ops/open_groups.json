@@ -1,0 +1,22 @@
+{
+  "ops": [
+    ["float", { "block": [["rotate", 60.0, { "block": [["start_new_page"]] }]] }],
+    ["text", "rotated on page 1, as the block left it open"],
+    ["transparent", 0.25, { "block": [["start_new_page"]] }],
+    ["go_to_page", 1],
+    ["text", "translucent on page 1"],
+    ["go_to_page", 3],
+    ["translate", 90.0, -50.0, { "block": [
+      ["bounding_box", [0.0, 240.0], { "width": 320.0, "height": 240.0 }, { "block": [] }],
+      ["formatted_text", [{ "text": "T" }]]
+    ] }],
+    ["text", "after the block on its last page"],
+    ["go_to_page", 3],
+    ["text", "back on the page it started on"],
+    ["!raises", "ArgumentError", ["rotate", 10.0, { "block": [["fill_color", "F00"]] }]],
+    ["text", "after a block that raised: still rotated"],
+    ["stroke_rectangle", [10.0, 200.0], 50.0, 50.0],
+    ["?page_count"],
+    ["?cursor"]
+  ]
+}
