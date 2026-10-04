@@ -1,0 +1,11 @@
+{
+  "ops": [
+    ["column_box", [40.0, 470.0], { "width": 330.0 }, { "block": [
+      ["?bounds"],
+      ["!raises", "Prawn::Errors::CannotFit", ["text_box", "s", { "at": [170.0, 420.0] }]],
+      ["!raises", "Prawn::Errors::CannotFit", ["text_box", "   two  spaces first", { "at": [170.0, 420.0] }]],
+      ["?text_box", "fits", { "at": [10.0, 420.0] }]
+    ] }],
+    ["?cursor"]
+  ]
+}
