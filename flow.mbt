@@ -105,9 +105,14 @@ pub(all) struct Flow {
   mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[
     @pagelayout.PageItem,
   ])?
-  /// draws a run's text instead (text, x, baseline with any rise, style);
-  /// true when it did
-  mut draw_text : ((String, Double, Double, Style) -> Bool)?
+  /// draws a run's text instead (text, x, baseline with any rise, style):
+  /// what it drew, or None to ink the text
+  mut draw_text : ((String, Double, Double, Style) -> Array[
+    @pagelayout.PageItem,
+  ]?)?
+  /// the colour a run is inked in, decided when it is inked (a document
+  /// whose fill colour can change while a line is drawn sets it)
+  mut ink_color : ((Style) -> @pagelayout.Color)?
 }
 
 ///|
@@ -161,6 +166,7 @@ pub fn Flow::new(
     decorate: None,
     underlay: None,
     draw_text: None,
+    ink_color: None,
   }
 }
 
@@ -677,9 +683,13 @@ pub fn Flow::line_items(
     let font = self.model.add_font({ family: style.family, bold, italic, })
     let drawn = match self.draw_text {
       Some(draw) => draw(run.text, x, baseline - rise, style)
-      None => false
+      None => None
     }
-    if !drawn {
+    match drawn {
+      Some(instead) => items.append(instead)
+      None => ()
+    }
+    if drawn is None {
       items.push(
         Text({
           font,
@@ -688,7 +698,10 @@ pub fn Flow::line_items(
           baseline_pt: baseline - rise,
           text: run.text,
           advances_pt: run.advances,
-          color: style.color,
+          color: match self.ink_color {
+            Some(color_of) => color_of(style)
+            None => style.color
+          },
         }),
       )
     }

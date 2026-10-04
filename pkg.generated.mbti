@@ -188,7 +188,8 @@ pub(all) struct Flow {
   mut move_past_bottom : (() -> Unit)?
   mut decorate : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
   mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
-  mut draw_text : ((String, Double, Double, Style) -> Bool)?
+  mut draw_text : ((String, Double, Double, Style) -> Array[@pagelayout.PageItem]?)?
+  mut ink_color : ((Style) -> @pagelayout.Color)?
 }
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit

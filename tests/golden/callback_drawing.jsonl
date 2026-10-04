@@ -1,0 +1,5 @@
+{"trace":"front","event":"render_in_front","text":"boxed in front","left":28.68,"baseline":711.384,"width":71.988,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"trace":"back","event":"render_behind","text":" and behind","left":100.668,"baseline":711.384,"width":62.712,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"trace":"state","event":"render_in_front","text":"red fragment","left":0,"baseline":691.7679999999999,"width":113.18,"height":18.5,"top":706.1279999999999,"bottom":687.6279999999999}
+{"trace":"redraw","event":"draw_text","text":"redrawn","at":[0,674.3919999999999],"kerning":true}
+{"query":"cursor","value":669.1359999999999}

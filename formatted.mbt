@@ -605,12 +605,16 @@ fn Document::decorations(
   match meta {
     Some(m) if !self.dry_run && !m.callbacks.is_empty() => {
       let fragment = self.placed(x, width, baseline, style, face, text)
-      for callback in m.callbacks {
-        match callback.render_in_front {
-          Some(f) => f(fragment)
-          None => ()
-        }
-      }
+      out.append(
+        self.in_fragment(style, () => {
+          for callback in m.callbacks {
+            match callback.render_in_front {
+              Some(f) => f(fragment)
+              None => ()
+            }
+          }
+        }),
+      )
     }
     _ => ()
   }
@@ -767,16 +771,17 @@ fn Document::underlays(
   match self.fragment_meta.get(style.callback) {
     Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
       let fragment = self.placed(x, width, baseline, style, face, text)
-      for callback in meta.callbacks {
-        match callback.render_behind {
-          Some(f) => f(fragment)
-          None => ()
+      self.in_fragment(style, () => {
+        for callback in meta.callbacks {
+          match callback.render_behind {
+            Some(f) => f(fragment)
+            None => ()
+          }
         }
-      }
+      })
     }
-    _ => ()
+    _ => []
   }
-  []
 }
 
 ///|
@@ -788,23 +793,60 @@ fn Document::draw_text_instead(
   text : String,
   x : Double,
   baseline : Double,
-  _style : Style,
-) -> Bool {
+  style : Style,
+) -> Array[@pagelayout.PageItem]? {
   match self.draw_text_callback {
     Some(draw) => {
-      if !self.dry_run {
-        let box = self.current_box()
-        draw(
-          text,
-          (
-            x - box.left,
-            self.flow.page_h() - baseline - box.bottom_at(self.y()),
-          ),
-          true,
-        )
+      // a dry run draws nothing either way
+      if self.dry_run {
+        return Some([])
       }
-      true
+      let box = self.current_box()
+      let at = (
+        x - box.left,
+        self.flow.page_h() - baseline - box.bottom_at(self.y()),
+      )
+      Some(self.in_fragment(style, () => draw(text, at, true)))
     }
-    None => false
+    None => None
   }
+}
+
+///|
+/// Runs a callback as Prawn's arranger does, in the fragment's state (its
+/// font, size, and colour as fill and stroke when it sets one), and
+/// returns what it drew on the page, taken off the page so the run can put
+/// it where Prawn would: behind or in front of the text.
+fn Document::in_fragment(
+  self : Document,
+  style : Style,
+  body : () -> Unit,
+) -> Array[@pagelayout.PageItem] {
+  let page = self.flow.page
+  let mark = self.flow.model.pages[page].items.length()
+  let (family, size) = (self.family, self.size)
+  let gs = self.gs()
+  let (fill, stroke) = (gs.fill, gs.stroke)
+  self.family = style.family
+  self.size = style.size
+  // a fragment's own colour is the fill and stroke colour while it is
+  // drawn, then the colours are put back; without one, what the callback
+  // sets stays (Prawn's arranger)
+  let color_set = self.fragment_meta.get(style.callback)
+    is Some({ color_set: true, .. })
+  if color_set {
+    gs.fill = style.color
+    gs.stroke = style.color
+  }
+  body()
+  self.family = family
+  self.size = size
+  if color_set {
+    gs.fill = fill
+    gs.stroke = stroke
+  }
+  let items = self.flow.model.pages[page].items
+  let drawn = items[mark:].to_owned()
+  items.truncate(mark)
+  drawn
 }

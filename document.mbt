@@ -181,6 +181,13 @@ pub fn Document::new(
   flow.draw_text = Some((text, x, baseline, style) => {
     doc.draw_text_instead(text, x, baseline, style)
   })
+  // text without its own colour is inked in the fill colour current then
+  flow.ink_color = Some(style => {
+    match doc.fragment_meta.get(style.callback) {
+      Some({ color_set: false, .. }) => doc.gs().fill
+      _ => style.color
+    }
+  })
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))

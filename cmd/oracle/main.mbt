@@ -718,6 +718,11 @@ fn Run::trace_callback(
     Some(String(p)) => p
     _ => "both"
   }
+  // then the ops it draws with, if any
+  let draw = match map.get("draw") {
+    Some(Array(ops)) => ops
+    _ => []
+  }
   let log = fn(event : String) {
     fn(f : @prawn.PlacedFragment) {
       self.log.push({
@@ -731,6 +736,7 @@ fn Run::trace_callback(
         "top": f.top.to_json(),
         "bottom": f.bottom.to_json(),
       })
+      self.draw_in_callback(draw)
     }
   }
   {
@@ -766,9 +772,24 @@ fn Run::trace_draw_text(
               "at": [at.0, at.1].to_json(),
               "kerning": kerning.to_json(),
             })
+            self.draw_in_callback(
+              match map.get("draw") {
+                Some(Array(ops)) => ops
+                _ => []
+              },
+            )
           })
         None => raise ScriptError("draw_text_callback needs a trace id")
       }
     _ => None
+  }
+}
+
+///|
+/// The ops a traced callback draws with; a callback cannot raise, so an
+/// error is logged instead.
+fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
+  self.ops(ops) catch {
+    e => self.log.push({ "callback_error": e.to_string().to_json() })
   }
 }

@@ -1,0 +1,14 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "plain " },
+      { "text": "boxed in front", "callback": { "trace": "front", "phase": "in_front", "draw": [["fill_color", "FFCC00"], ["fill_rectangle", [40, 720], 60, 20]] } },
+      { "text": " and behind", "callback": { "trace": "back", "phase": "behind", "draw": [["fill_rectangle", [140, 720], 60, 20]] } }
+    ]],
+    ["formatted_text", [
+      { "text": "red fragment", "color": "FF0000", "size": 20, "callback": { "trace": "state", "phase": "in_front", "draw": [["stroke_rectangle", [0, 640], 100, 10]] } }
+    ]],
+    ["text", "redrawn", { "draw_text_callback": { "trace": "redraw", "draw": [["fill_rectangle", [0, 600], 10, 10]] } }],
+    ["?cursor"]
+  ]
+}
