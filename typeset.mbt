@@ -452,6 +452,22 @@ fn split_first_line(
   width : Double,
   align : Alignment,
 ) -> (Line, Array[Fragment]) {
+  let (line, remaining, _) = split_first_line_from(
+    first, rest, ctx, width, align,
+  )
+  (line, remaining)
+}
+
+///|
+/// `split_first_line`, and the last of `rest` what follows draws on (-1
+/// when nothing follows).
+fn split_first_line_from(
+  first : Array[Fragment],
+  rest : Array[Fragment],
+  ctx : TextContext,
+  width : Double,
+  align : Alignment,
+) -> (Line, Array[Fragment], Int) {
   let (items, faces, ranges) = break_lines(first, ctx, width, width)
   let (from, to, hard) = ranges[0]
   let next = if hard { to + 1 } else { to }
@@ -478,7 +494,7 @@ fn split_first_line(
   let line = place_line(
     ctx, first, faces, items, from, to, width, align, justify, hard,
   )
-  (line, remaining)
+  (line, remaining, previous)
 }
 
 ///|

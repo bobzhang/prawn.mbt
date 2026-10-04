@@ -1,0 +1,25 @@
+{
+  "document": { "page_size": [200, 100], "margin": 10 },
+  "ops": [
+    ["text", "X", { "size": 100 }],
+    ["?cursor"],
+    ["?page_count"],
+    ["start_new_page", { "size": "LETTER" }],
+    ["formatted_text", [{ "text": " ", "size": 50 }, { "text": "x", "size": 12 }]],
+    ["?cursor"],
+    ["formatted_text", [{ "text": "x\n", "size": 12 }, { "text": " ", "size": 50 }]],
+    ["?cursor"],
+    ["formatted_text", [{ "text": " \nx", "size": 50 }]],
+    ["?cursor"],
+    ["text", " "],
+    ["?cursor"],
+    ["?height_of", " "],
+    ["?height_of", "\t\tx", { "size": 30 }],
+    ["text", "a"],
+    ["?cursor"],
+    ["text", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.", { "size": 30 }],
+    ["?cursor"],
+    ["?page_count"],
+    ["?height_of", "supercalifragilisticexpialidocious-and-more-words-joined-by-hyphens and spaces   with   runs\nof\n\nnewlines", { "width": 60 }]
+  ]
+}
