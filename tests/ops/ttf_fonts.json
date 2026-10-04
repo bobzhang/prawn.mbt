@@ -90,6 +90,9 @@
     ["?text_box", "box 中文", { "at": [300.0, 200.0], "width": 150.0, "height": 40.0 }],
     ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
     ["!raises", "Prawn::Text::Formatted::Arranger::BadFontFamily", ["text", "中文"]],
-    ["fallback_fonts", []]
+    ["fallback_fonts", []],
+    ["font_families.update", { "=DV6": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf" } }],
+    ["font", "DV6"],
+    ["!raises", "Prawn::Errors::UnknownFont", ["?text_box", "callback in a box", { "at": [300.0, 150.0], "width": 150.0, "height": 40.0, "draw_text_callback": { "trace": "dtc6", "draw": [["draw_text", "i", { "at": [0.0, 20.0], "style": ":italic" }]] } }]]
   ]
 }

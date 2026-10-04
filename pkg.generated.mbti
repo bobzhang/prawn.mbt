@@ -147,7 +147,6 @@ pub fn Document::scale(Self, Double, origin? : (Double, Double), () -> Unit rais
 pub fn Document::set_cap_style(Self, @pagelayout.LineCap) -> Unit
 pub fn Document::set_default_leading(Self, Double) -> Unit
 pub fn Document::set_fill_color(Self, @pagelayout.Color) -> Unit
-pub fn Document::set_font(Self, String) -> Unit
 pub fn Document::set_font_size(Self, Double) -> Unit
 pub fn Document::set_join_style(Self, @pagelayout.LineJoin) -> Unit
 pub fn Document::set_line_width(Self, Double) -> Unit

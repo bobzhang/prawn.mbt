@@ -32,3 +32,5 @@
 {"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
 {"query":["text_box","box 中文",{"at":[300.0,200.0],"width":150.0,"height":40.0}],"value":""}
 {"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}
+{"trace":"dtc6","event":"draw_text","text":"callback in a box","at":[300.0,139.374],"kerning":true}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}

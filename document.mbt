@@ -295,13 +295,6 @@ pub fn Document::start_new_page(
 }
 
 ///|
-/// Prawn's `font` (without a block): the family text is set in from now
-/// on.
-pub fn Document::set_font(self : Document, family : String) -> Unit {
-  self.family = family
-}
-
-///|
 /// Prawn's `font_size=`.
 pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
   self.size = size

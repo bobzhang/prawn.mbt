@@ -772,10 +772,9 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
       self.family = meta.font_name
       self.face_style = meta.font_flags
     }
-    None => {
-      self.family = style.family
-      self.face_style = style.face_style()
-    }
+    // text of no record (a text box's) is in the current font, which it
+    // keeps by family and style
+    None => ()
   }
   match self.fragment_meta.get(style.callback) {
     Some({ family_known: Some(known), .. }) => self.font_family_known = known
