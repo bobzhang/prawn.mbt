@@ -6,4 +6,6 @@
 {"query":["text_box","hard­\nbreak",{"at":[300,660],"width":80,"height":40}],"value":""}
 {"query":["text_box","supercalifragilis",{"at":[400,300],"width":60,"align":":right"}],"value":""}
 {"query":["text_box","WAVE AVATAR To",{"at":[400,200],"width":50,"align":":right"}],"value":""}
+{"query":["text_box","a­­­­­­­­­­­­­­­­­­­­b",{"at":[300,300],"width":20,"height":40}],"value":""}
+{"query":["text_box","ab­\r",{"at":[300,200],"width":80,"height":40,"align":":right"}],"value":""}
 {"query":"cursor","value":436.35999999999996}

@@ -698,7 +698,7 @@ fn place_line(
       }
       if item.unit == pad_unit || item.anchor is Some(_) {
         k -= 1
-      } else if item.unit == 0x20 || item.unit == 0x09 {
+      } else if is_rstripped(item.unit) {
         k -= 1
       } else if item.unit == 0x200B {
         deciding = item.fragment
@@ -980,4 +980,11 @@ fn first_line_break(
     ctx, fragments, faces, items, from, to, width, align, justify, hard,
   )
   (line, after)
+}
+
+///|
+/// What Ruby's `rstrip` takes off the end of a string: NUL and ASCII
+/// white space but the line break.
+fn is_rstripped(unit : Int) -> Bool {
+  unit == 0x20 || (unit >= 0x09 && unit <= 0x0D && unit != 0x0A) || unit == 0
 }
