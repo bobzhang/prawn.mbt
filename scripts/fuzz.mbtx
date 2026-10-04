@@ -470,7 +470,7 @@ async fn run_all(
     )
   }
   @fs.write_file("\{dir}/list", list.to_string(), create_mode=CreateOrTruncate)
-  let (_, out) = @process.collect_output_merged(ruby, [
+  let (ruby_code, out) = @process.collect_output_merged(ruby, [
     driver, "--batch", "\{dir}/list",
   ])
   // Ruby's verdict on each script, by its path: Ok, or what it raised
@@ -483,6 +483,13 @@ async fn run_all(
         verdicts[path] = Err(if parts.length() > 2 { parts[2] } else { "" })
       _ => ()
     }
+  }
+  // every script needs Ruby's verdict: without one nothing was compared
+  let missing = scripts.filter(s => !verdicts.contains("\{dir}/ops/\{s.0}.json"))
+  if ruby_code != 0 || !missing.is_empty() {
+    fail(
+      "the Ruby driver (exit \{ruby_code}) gave no verdict on \{missing.length()} script(s):\n\{out.text()}",
+    )
   }
   let outcomes = []
   for entry in scripts {
@@ -500,8 +507,7 @@ async fn run_all(
     // ArgumentError, this module's `PrawnError.CannotFit`); anything else
     // Ruby raises means the driver refused the script
     let ruby_error = match verdicts.get(path) {
-      None => Some(Err("no verdict from the Ruby driver"))
-      Some(Ok(_)) => None
+      None | Some(Ok(_)) => None
       Some(Err(e)) =>
         if e.has_prefix("Prawn::Errors::") {
           Some(Ok(e["Prawn::Errors::".length():].to_owned().split(":").next().unwrap().to_owned()))
