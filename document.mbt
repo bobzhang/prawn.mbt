@@ -207,8 +207,6 @@ pub fn Document::text(
   inline_format? : Bool = false,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
-  // the document's default leading unless given (Prawn's `default_leading`)
-  let leading = leading.unwrap_or(self.default_leading)
   // set as one plain fragment, or the fragments of its markup
   // (`formatted.mbt`)
   let fragments = if inline_format {
@@ -216,7 +214,7 @@ pub fn Document::text(
   } else {
     [TextFragment::new(string)]
   }
-  self.formatted_text(fragments, size?, align~, leading~, draw_text_callback?)
+  self.formatted_text(fragments, size?, align~, leading?, draw_text_callback?)
 }
 
 ///|

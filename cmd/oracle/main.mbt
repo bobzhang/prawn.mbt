@@ -167,7 +167,8 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     }
     "default_leading" | "default_leading=" if args.length() == 1 => {
       doc.set_default_leading(number(args[0]))
-      Some(Json::null())
+      // the value set, as Prawn returns it
+      Some(args[0])
     }
     "default_leading" if args.is_empty() =>
       Some(doc.default_leading().to_json())

@@ -479,8 +479,6 @@ pub fn Document::formatted_text(
   leading? : Double,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
-  // the document's default leading unless given (Prawn's `default_leading`)
-  let leading = leading.unwrap_or(self.default_leading)
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
@@ -489,7 +487,7 @@ pub fn Document::formatted_text(
   }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
-    self.move_down(leading)
+    self.move_down(leading.unwrap_or(self.default_leading))
     return
   }
   let set = pieces.map(f => self.fragment(f, size))
@@ -530,8 +528,11 @@ fn Document::fill_box(
   fragments : Array[Fragment],
   base : Style,
   align : Alignment,
-  leading : Double,
+  leading : Double?,
 ) -> Array[Fragment] raise PrawnError {
+  // the document's default leading unless given, read as each box is made
+  // (Prawn's Box, which a callback changing it affects)
+  let leading = leading.unwrap_or(self.default_leading)
   let box = self.bbox
   let y = self.y()
   let bottom = if box.height is None {
