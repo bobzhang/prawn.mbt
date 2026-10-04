@@ -26,6 +26,32 @@ pub(all) struct TextFragment {
   link : String?
   /// a named destination the text links to
   anchor : String?
+  /// called as each piece of the fragment is drawn (Prawn's `callback`)
+  callbacks : Array[FragmentCallback]
+}
+
+///|
+/// A piece of a fragment as it is drawn (Prawn's fragment, as callbacks
+/// see it), in the coordinates of the bounds: its left side, baseline,
+/// width, and its font's top (baseline plus ascender) and bottom
+/// (baseline less descender).
+pub(all) struct PlacedFragment {
+  text : String
+  left : Double
+  baseline : Double
+  width : Double
+  height : Double
+  top : Double
+  bottom : Double
+}
+
+///|
+/// A fragment callback (Prawn's callback object): `render_behind` before
+/// the text is drawn, `render_in_front` after it and its decorations and
+/// links. Not called in dry runs (measuring, shrinking, aligning).
+pub(all) struct FragmentCallback {
+  render_behind : ((PlacedFragment) -> Unit)?
+  render_in_front : ((PlacedFragment) -> Unit)?
 }
 
 ///|
@@ -46,6 +72,7 @@ pub fn TextFragment::new(text : String) -> TextFragment {
     character_spacing: None,
     link: None,
     anchor: None,
+    callbacks: [],
   }
 }
 
@@ -334,6 +361,7 @@ fn fragment_of(
     character_spacing: spacing,
     link,
     anchor,
+    callbacks: [],
   }
 }
 
@@ -348,6 +376,7 @@ fn fragment_of(
 priv struct FragmentMeta {
   color_set : Bool
   anchor : String?
+  callbacks : Array[FragmentCallback]
 }
 
 ///|
@@ -398,6 +427,7 @@ fn Document::fragment(
     } else {
       None
     },
+    callbacks: f.callbacks,
   })
   let mut size = f.size.unwrap_or(base.size)
   if f.subscript || f.superscript {
@@ -447,7 +477,14 @@ pub fn Document::formatted_text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the pieces drawn by the callback instead (text, where, kerning)
+  let saved_callback = self.draw_text_callback
+  self.draw_text_callback = draw_text_callback
+  defer {
+    self.draw_text_callback = saved_callback
+  }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
     self.move_down(leading)
@@ -498,6 +535,7 @@ fn Document::decorations(
   baseline : Double,
   style : Style,
   face : Face,
+  text : String,
 ) -> Array[@pagelayout.PageItem] {
   let a = face.ascender_pt(style.size)
   let d = face.descender_pt(style.size)
@@ -561,6 +599,19 @@ fn Document::decorations(
           target: Named(name),
         }),
       )
+    _ => ()
+  }
+  // then the fragment's `render_in_front` callbacks (not in dry runs)
+  match meta {
+    Some(m) if !self.dry_run && !m.callbacks.is_empty() => {
+      let fragment = self.placed(x, width, baseline, style, face, text)
+      for callback in m.callbacks {
+        match callback.render_in_front {
+          Some(f) => f(fragment)
+          None => ()
+        }
+      }
+    }
     _ => ()
   }
   out
@@ -666,5 +717,94 @@ fn ruby_float(s : String) -> Double raise PrawnError {
   }
   @string.parse_double(n) catch {
     _ => raise bad
+  }
+}
+
+///|
+/// A run as Prawn's fragment: in the coordinates of the current bounds,
+/// the baseline at the run's rise (a sub- or superscript's).
+fn Document::placed(
+  self : Document,
+  x : Double,
+  width : Double,
+  baseline : Double,
+  style : Style,
+  face : Face,
+  text : String,
+) -> PlacedFragment {
+  let a = face.ascender_pt(style.size)
+  let d = face.descender_pt(style.size)
+  let rise = match style.script {
+    1 => 0.85 * a
+    -1 => -d
+    _ => 0.0
+  }
+  let box = self.current_box()
+  let base = self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y())
+  {
+    text,
+    left: x - box.left,
+    baseline: base,
+    width,
+    height: a + d,
+    top: base + a,
+    bottom: base - d,
+  }
+}
+
+///|
+/// What goes behind a run: its fragment's `render_behind` callbacks (not in
+/// dry runs).
+fn Document::underlays(
+  self : Document,
+  x : Double,
+  width : Double,
+  baseline : Double,
+  style : Style,
+  face : Face,
+  text : String,
+) -> Array[@pagelayout.PageItem] {
+  match self.fragment_meta.get(style.callback) {
+    Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
+      let fragment = self.placed(x, width, baseline, style, face, text)
+      for callback in meta.callbacks {
+        match callback.render_behind {
+          Some(f) => f(fragment)
+          None => ()
+        }
+      }
+    }
+    _ => ()
+  }
+  []
+}
+
+///|
+/// A run drawn by the `draw_text_callback` of the text being set, when it
+/// has one: the text and where it goes (`at`, in the coordinates of the
+/// bounds) with Prawn's default kerning.
+fn Document::draw_text_instead(
+  self : Document,
+  text : String,
+  x : Double,
+  baseline : Double,
+  _style : Style,
+) -> Bool {
+  match self.draw_text_callback {
+    Some(draw) => {
+      if !self.dry_run {
+        let box = self.current_box()
+        draw(
+          text,
+          (
+            x - box.left,
+            self.flow.page_h() - baseline - box.bottom_at(self.y()),
+          ),
+          true,
+        )
+      }
+      true
+    }
+    None => false
   }
 }

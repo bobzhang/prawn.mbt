@@ -97,9 +97,17 @@ pub(all) struct Flow {
   /// draws what goes over each run (x, width, baseline, style, face) in
   /// place of the underline and strikethrough below: a document with
   /// Prawn's own overlays (decorations, links) sets it
-  mut decorate : ((Double, Double, Double, Style, Face) -> Array[
+  mut decorate : ((Double, Double, Double, Style, Face, String) -> Array[
     @pagelayout.PageItem,
   ])?
+  /// called before each run's text is inked (x, width, baseline, style,
+  /// face, text): what goes behind it
+  mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[
+    @pagelayout.PageItem,
+  ])?
+  /// draws a run's text instead (text, x, baseline with any rise, style);
+  /// true when it did
+  mut draw_text : ((String, Double, Double, Style) -> Bool)?
 }
 
 ///|
@@ -151,6 +159,8 @@ pub fn Flow::new(
     page_started: (_, _) => (),
     move_past_bottom: None,
     decorate: None,
+    underlay: None,
+    draw_text: None,
   }
 }
 
@@ -655,19 +665,33 @@ pub fn Flow::line_items(
         )
       None => ()
     }
+    // what the document puts behind the text
+    match self.underlay {
+      Some(underlay) =>
+        items.append(
+          underlay(x, run.width, baseline, style, run.face, run.text),
+        )
+      None => ()
+    }
     let (bold, italic) = style.face_style()
     let font = self.model.add_font({ family: style.family, bold, italic, })
-    items.push(
-      Text({
-        font,
-        size_pt: style.size,
-        x_pt: x,
-        baseline_pt: baseline - rise,
-        text: run.text,
-        advances_pt: run.advances,
-        color: style.color,
-      }),
-    )
+    let drawn = match self.draw_text {
+      Some(draw) => draw(run.text, x, baseline - rise, style)
+      None => false
+    }
+    if !drawn {
+      items.push(
+        Text({
+          font,
+          size_pt: style.size,
+          x_pt: x,
+          baseline_pt: baseline - rise,
+          text: run.text,
+          advances_pt: run.advances,
+          color: style.color,
+        }),
+      )
+    }
     let thickness = style.size / 18.0
     if style.underline && self.decorate is None {
       items.push(
@@ -708,7 +732,9 @@ pub fn Flow::line_items(
     // link, anchor)
     match self.decorate {
       Some(decorate) =>
-        items.append(decorate(x, run.width, baseline, style, run.face))
+        items.append(
+          decorate(x, run.width, baseline, style, run.face, run.text),
+        )
       _ => ()
     }
   }

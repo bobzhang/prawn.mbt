@@ -105,7 +105,7 @@ pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise
-pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, align? : Alignment, leading? : Double) -> Unit raise PrawnError
+pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, align? : Alignment, leading? : Double, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
 pub fn Document::go_to_page(Self, Int) -> Unit
 pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
@@ -136,8 +136,8 @@ pub fn Document::set_stroke_color(Self, @pagelayout.Color) -> Unit
 pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)) -> Unit
 pub fn Document::stroke(Self) -> Unit
 pub fn Document::stroke_bounds(Self) -> Unit
-pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double, inline_format? : Bool) -> Unit raise PrawnError
-pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String) -> String raise
+pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double, inline_format? : Bool, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
+pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> String raise
 pub fn Document::transformation_matrix(Self, (Double, Double, Double, Double, Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::translate(Self, Double, Double, () -> Unit raise) -> Unit raise
 pub fn Document::transparent(Self, Double, stroke_opacity? : Double, () -> Unit raise) -> Unit raise
@@ -186,7 +186,9 @@ pub(all) struct Flow {
   mut page_height_now : Double
   mut page_started : (Int, Int) -> Unit
   mut move_past_bottom : (() -> Unit)?
-  mut decorate : ((Double, Double, Double, Style, Face) -> Array[@pagelayout.PageItem])?
+  mut decorate : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
+  mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[@pagelayout.PageItem])?
+  mut draw_text : ((String, Double, Double, Style) -> Bool)?
 }
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit
@@ -235,6 +237,11 @@ pub(all) struct Fragment {
   text : String
   style : Style
   anchor : String?
+}
+
+pub(all) struct FragmentCallback {
+  render_behind : ((PlacedFragment) -> Unit)?
+  render_in_front : ((PlacedFragment) -> Unit)?
 }
 
 pub(all) struct Hooks {
@@ -313,6 +320,16 @@ pub(all) struct PageSetup {
   margin_left : Double
 }
 
+pub(all) struct PlacedFragment {
+  text : String
+  left : Double
+  baseline : Double
+  width : Double
+  height : Double
+  top : Double
+  bottom : Double
+}
+
 pub(all) struct Style {
   family : String
   size : Double
@@ -362,6 +379,7 @@ pub(all) struct TextFragment {
   character_spacing : Double?
   link : String?
   anchor : String?
+  callbacks : Array[FragmentCallback]
 }
 pub fn TextFragment::new(String) -> Self
 

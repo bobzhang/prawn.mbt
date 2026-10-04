@@ -1,0 +1,9 @@
+{"trace":"split","event":"render_behind","text":"a traced fragment long enough to be split across two lines of justified text","left":150.00070588235292,"baseline":711.384,"width":389.999294117647,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"trace":"split","event":"render_in_front","text":"a traced fragment long enough to be split across two lines of justified text","left":150.00070588235292,"baseline":711.384,"width":389.999294117647,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"trace":"split","event":"render_behind","text":"here","left":0,"baseline":697.512,"width":24.012,"height":11.100000000000023,"top":706.1279999999999,"bottom":695.0279999999999}
+{"trace":"split","event":"render_in_front","text":"here","left":0,"baseline":697.512,"width":24.012,"height":11.100000000000023,"top":706.1279999999999,"bottom":695.0279999999999}
+{"trace":"sup","event":"render_in_front","text":"2","left":6.0,"baseline":-4.3463412,"width":3.889776,"height":6.471299999999999,"top":0.6767867999999995,"bottom":-5.7945132}
+{"trace":"box","event":"draw_text","text":"centered with a callback","at":[300,555.692],"kerning":true}
+{"query":["text_box","centered with a callback",{"at":[300,600],"width":150,"height":80,"valign":":center","draw_text_callback":{"trace":"box"}}],"value":""}
+{"trace":"lines","event":"draw_text","text":"Drawn line by line by the callback, which is long enough to wrap onto a second line.","at":[0,577.512],"kerning":true}
+{"query":"cursor","value":572.2559999999999}
