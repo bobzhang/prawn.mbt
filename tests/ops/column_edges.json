@@ -1,0 +1,29 @@
+{
+  "document": { "page_size": [200, 200], "margin": 20 },
+  "ops": [
+    ["column_box", [0, 160], { "width": 300, "height": 100, "columns": 2, "spacer": 20 }, { "block": [
+      ["indent", 10, 10, { "block": [["?bounds"], ["text", "indented columns go on and on so that they wrap into the second column as well"], ["?bounds"]] }],
+      ["?bounds"]
+    ] }],
+    ["start_new_page"],
+    ["column_box", [0, 60], { "width": 160, "spacer": 20, "columns": 2 }, { "block": [
+      ["text", "a\nb\nc\nd\ne\nf"],
+      ["?bounds"]
+    ] }],
+    ["?cursor"],
+    ["start_new_page"],
+    ["bounding_box", [20, 150], { "width": 100, "height": 100 }, { "block": [
+      ["start_new_page", { "size": [300, 300] }],
+      ["?bounds"],
+      ["text", "in the margin box of the bigger page"],
+      ["?bounds"]
+    ] }],
+    ["?bounds"],
+    ["indent", 15, { "block": [
+      ["bounding_box", [0, 100], { "width": 80 }, { "block": [["text", "box"]] }],
+      ["?bounds"],
+      ["text", "after the box, still indented"]
+    ] }],
+    ["?bounds"]
+  ]
+}

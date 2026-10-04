@@ -19,6 +19,9 @@ priv struct Box {
   margin_bottom : Double
   /// a column box's columns
   columns : ColumnState?
+  /// a column box's indentation, taken off each column's width (Prawn's
+  /// `ColumnBox` keeps its total width)
+  mut padding : Double
 }
 
 ///|
@@ -40,7 +43,10 @@ fn Box::side(self : Box) -> (Double, Double) {
     Some(c) => {
       let bare = (self.width - c.spacer * (c.count - 1).to_double()) /
         c.count.to_double()
-      (self.left + (bare + c.spacer) * c.current.to_double(), bare)
+      (
+        self.left + (bare + c.spacer) * c.current.to_double(),
+        bare - self.padding,
+      )
     }
   }
 }
@@ -75,7 +81,7 @@ fn Document::set_y(self : Document, y : Double) -> Unit {
 /// stretchy box keeps the depth its content reached, even when the
 /// position moves back up (`float`). Called after every move.
 fn Document::track(self : Document) -> Unit {
-  match self.boxes.last() {
+  match self.innermost() {
     Some(box) if box.height is None => box.height_at(self.y()) |> ignore
     _ => ()
   }
@@ -84,21 +90,43 @@ fn Document::track(self : Document) -> Unit {
 ///|
 /// The innermost box: a bounding box, or the page's margin box.
 fn Document::current_box(self : Document) -> Box {
-  match self.boxes.last() {
+  match self.innermost() {
     Some(box) => box
-    None => {
-      let page_h = self.flow.page_h()
-      {
-        left: self.flow.left,
-        top: page_h - self.flow.top,
-        width: self.flow.right - self.flow.left,
-        height: Some(self.flow.bottom - self.flow.top),
-        stretched: 0.0,
-        margin_bottom: self.flow.bottom,
-        columns: None,
+    None =>
+      match self.stale_root {
+        Some(root) => root
+        None => self.root_box()
+      }
+  }
+}
+
+///|
+/// The innermost open box content goes in: none in the margin box, or
+/// while a page of another size overrides the boxes open then.
+fn Document::innermost(self : Document) -> Box? {
+  match self.margin_override {
+    Some(n) if self.boxes.length() >= n => None
+    _ => self.boxes.last()
+  }
+}
+
+///|
+/// Content leaves a box: Flow's frame is the parent's again, rebuilt
+/// from the parent on the page it is now on; a page-size override ends
+/// with the box that was innermost when it began.
+fn Document::leave_box(self : Document, parent : Box) -> Unit {
+  self.boxes.pop() |> ignore
+  match self.margin_override {
+    Some(n) if self.boxes.length() < n => {
+      self.margin_override = None
+      // back to the margin box it was opened in, however the page changed
+      if self.boxes.is_empty() {
+        self.stale_root = Some(parent)
       }
     }
+    _ => ()
   }
+  self.frame(self.current_box())
 }
 
 ///|
@@ -154,24 +182,12 @@ pub fn Document::bounding_box(
     stretched: 0.0,
     margin_bottom: parent.margin_bottom,
     columns: None,
+    padding: 0.0,
   }
-  let flow = self.flow
-  let (left, right, frame_top, bottom) = (
-    flow.left,
-    flow.right,
-    flow.top,
-    flow.bottom,
-  )
   self.boxes.push(box)
   self.frame(box)
   self.set_y(top)
-  defer {
-    self.boxes.pop() |> ignore
-    flow.left = left
-    flow.right = right
-    flow.top = frame_top
-    flow.bottom = bottom
-  }
+  defer self.leave_box(parent)
   body()
   // nothing set: the position is where it was
   if self.y() == top {
@@ -192,27 +208,36 @@ pub fn Document::indent(
   right? : Double = 0.0,
   body : () -> Unit raise,
 ) -> Unit raise {
-  let box = self.boxes.last()
-  match box {
-    Some(b) => {
-      b.left += left
-      b.width -= left + right
-    }
-    None => ()
-  }
-  self.flow.left += left
-  self.flow.right -= right
-  defer {
+  // a box moves its left side in and narrows; a column box narrows each
+  // column instead (Prawn's `ColumnBox` padding); the margin box keeps
+  // its indentation across pages
+  let box = self.innermost()
+  let shift = fn(sign : Double) {
     match box {
-      Some(b) => {
-        b.left -= left
-        b.width += left + right
+      Some({ columns: Some(_), .. } as b) => {
+        b.left += sign * left
+        b.padding += sign * (left + right)
       }
-      None => ()
+      Some(b) => {
+        b.left += sign * left
+        b.width -= sign * (left + right)
+      }
+      None =>
+        match self.stale_root {
+          Some(r) => {
+            r.left += sign * left
+            r.width -= sign * (left + right)
+          }
+          None => {
+            self.pad_left += sign * left
+            self.pad_right += sign * right
+          }
+        }
     }
-    self.flow.left -= left
-    self.flow.right += right
+    self.frame(self.current_box())
   }
+  shift(1.0)
+  defer shift(-1.0)
   body()
 }
 
@@ -253,13 +278,11 @@ fn Document::frame(self : Document, box : Box) -> Unit {
 /// After a change of page: the innermost box carries over (Prawn keeps its
 /// bounds), and the position is at its top.
 fn Document::reframe(self : Document) -> Unit {
-  match self.boxes.last() {
-    Some(box) => {
-      self.frame(box)
-      self.set_y(box.top)
-    }
-    None => self.flow.y = self.flow.top
-  }
+  // a new page has its own margin box
+  self.stale_root = None
+  let box = self.current_box()
+  self.frame(box)
+  self.set_y(box.top)
 }
 
 ///|
@@ -268,7 +291,11 @@ fn Document::reframe(self : Document) -> Unit {
 /// `reflow_margins`, at the top of its parent); any other box to the next
 /// page, made if there is none.
 fn Document::move_past_bottom(self : Document) -> Unit {
-  match self.boxes.last() {
+  // a stretchy box keeps the depth reached before the position moves on,
+  // below the line gap Prawn's `text` moves down by first
+  self.flow.y += self.pending_gap
+  self.track()
+  match self.innermost() {
     Some({ columns: Some(c), .. } as box) => {
       c.current = (c.current + 1) % c.count
       if c.current != 0 {
@@ -303,20 +330,20 @@ fn Document::move_past_bottom(self : Document) -> Unit {
 fn Document::root_box(self : Document) -> Box {
   let flow = self.flow
   let page_h = flow.page_h()
-  let bottom = match self.boxes.get(0) {
-    Some(b) => b.margin_bottom
-    None => flow.bottom
-  }
+  let bottom = page_h - flow.setup.margin_bottom
   {
-    left: flow.margin_left,
+    left: flow.margin_left + self.pad_left,
     top: page_h - flow.page_top,
     width: flow.model.pages[flow.page].width_pt -
     flow.margin_left -
-    flow.margin_right,
+    flow.margin_right -
+    self.pad_left -
+    self.pad_right,
     height: Some(bottom - flow.page_top),
     stretched: 0.0,
     margin_bottom: bottom,
     columns: None,
+    padding: 0.0,
   }
 }
 
@@ -350,24 +377,12 @@ pub fn Document::column_box(
       current: 0,
       reflow_margins,
     }),
+    padding: 0.0,
   }
-  let flow = self.flow
-  let (left, right, frame_top, bottom) = (
-    flow.left,
-    flow.right,
-    flow.top,
-    flow.bottom,
-  )
   self.boxes.push(box)
   self.frame(box)
   self.set_y(top)
-  defer {
-    self.boxes.pop() |> ignore
-    flow.left = left
-    flow.right = right
-    flow.top = frame_top
-    flow.bottom = bottom
-  }
+  defer self.leave_box(parent)
   body()
   self.set_y(box.top - box.height_at(self.y()))
 }

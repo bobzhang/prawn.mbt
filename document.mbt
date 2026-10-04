@@ -63,6 +63,20 @@ pub struct Document {
   /// op (`transform.mbt`), in pagelayout's page space; a new page starts
   /// without one
   priv ctms : Array[@pagelayout.Matrix]
+  /// the margin box's indentation (`indent` outside any box), which it
+  /// keeps across pages
+  priv mut pad_left : Double
+  priv mut pad_right : Double
+  /// a new page of another size or layout puts content in its margin box
+  /// while the boxes open then stay open (Prawn): how many there were
+  priv mut margin_override : Int?
+  /// the margin box a box left after such an override goes back to: the
+  /// one it was opened in (Prawn restores that object), until the page
+  /// changes
+  priv mut stale_root : Box?
+  /// while `text` sets lines: the line gap and leading Prawn moves down by
+  /// before content moves on to the next column or page
+  priv mut pending_gap : Double
   /// the pages the open transformation blocks started on, kept current as
   /// pages are inserted before them
   priv open_pages : Array[Ref[Int]]
@@ -111,6 +125,11 @@ pub fn Document::new(
     stacks: [],
     ctms: [],
     open_pages: [],
+    pad_left: 0.0,
+    pad_right: 0.0,
+    margin_override: None,
+    stale_root: None,
+    pending_gap: 0.0,
     paths: [],
   }
   // a new page starts with the graphics state of the page it was made from,
@@ -186,6 +205,10 @@ pub fn Document::text(
   }
   let style = self.style(size?)
   self.check(string, style, Some(self.flow.width()))
+  self.pending_gap = self.flow.font(style).line_gap_pt(style.size) + leading
+  defer {
+    self.pending_gap = 0.0
+  }
   self.flow.typeset(
     [{ text: string, style, anchor: None, }],
     // after the text box, the line gap and leading (`final_gap`, Prawn's
@@ -236,8 +259,14 @@ pub fn Document::start_new_page(
   layout? : String,
   size? : (Double, Double),
 ) -> Unit {
+  let before = (self.page_size, self.layout)
   self.page_size = size.unwrap_or(self.page_size)
   self.layout = layout.unwrap_or(self.layout)
+  // a page of another size or layout: content goes in its margin box
+  // until the box open now is left (Prawn)
+  if (self.page_size, self.layout) != before && !self.boxes.is_empty() {
+    self.margin_override = Some(self.boxes.length())
+  }
   self.flow.start_new_page(size=oriented(self.page_size, self.layout))
   self.reframe()
 }
