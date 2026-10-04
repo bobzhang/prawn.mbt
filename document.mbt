@@ -49,28 +49,15 @@ pub struct Document {
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
-  /// each page's size as given and its layout (Prawn keeps them apart: a
-  /// landscape page reverses the size, whatever its shape); a new page
-  /// takes the current page's
-  priv geometry : Array[((Double, Double), String)]
+  /// each page's record (`page.mbt`), as Flow's pages are ordered
+  priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
   /// page's margin box (`bounds.mbt`)
   priv mut bbox : Box
   priv mut margin : Box
-  /// each page's stack of graphics states (`graphics.mbt`; pdf-core's
-  /// `GraphicStateStack`): a new page starts with a copy of the state of
-  /// the page it was made from
-  priv stacks : Array[Array[GraphicState]]
-  /// each page's transformation, set up by the blocks around the current
-  /// op (`transform.mbt`), in pagelayout's page space; a new page starts
-  /// without one
-  priv ctms : Array[@pagelayout.Matrix]
   /// while `text` sets lines: the line gap and leading Prawn moves down by
   /// before content moves on to the next column or page
   priv mut pending_gap : Double
-  /// the pages the open transformation blocks started on, kept current as
-  /// pages are inserted before them
-  priv open_pages : Array[Ref[Int]]
   /// what Prawn knows of each fragment set that its style does not carry
   /// (`formatted.mbt`), by the style's `callback` index
   priv fragment_meta : Array[FragmentMeta]
@@ -90,9 +77,6 @@ pub struct Document {
   /// here
   priv mut text_start : Double
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
-  /// each page's path being built (Prawn writes it into that page's
-  /// content, to be painted there)
-  priv paths : Array[Array[@pagelayout.PathSegment]]
 }
 
 ///|
@@ -141,14 +125,10 @@ pub fn Document::new(
     catalog,
     family: "Helvetica",
     size: 12.0,
-    geometry: [],
+    pages: [],
     bbox: margin,
     margin,
-    stacks: [],
-    ctms: [],
-    open_pages: [],
     pending_gap: 0.0,
-    paths: [],
     fragment_meta: [],
     dry_run: false,
     draw_text_callback: None,
@@ -156,34 +136,8 @@ pub fn Document::new(
     text_y: None,
     text_start: 0.0,
   }
-  // a new page starts with the graphics state of the page it was made from,
-  // as it is then (a page made by a page break included)
-  flow.page_started = (from, to) => {
-    let state = if from >= 0 && from < doc.stacks.length() {
-      match doc.stacks[from].last() {
-        Some(s) => s.copy()
-        None => GraphicState::new()
-      }
-    } else {
-      GraphicState::new()
-    }
-    doc.stacks.insert(to, [state])
-    doc.ctms.insert(to, @pagelayout.identity)
-    for page in doc.open_pages {
-      if page.val >= to {
-        page.val += 1
-      }
-    }
-    doc.paths.insert(to, [])
-    // the page it was made from's size and layout (start_new_page sets
-    // others afterwards)
-    let geometry = if from >= 0 && from < doc.geometry.length() {
-      doc.geometry[from]
-    } else {
-      (size, layout)
-    }
-    doc.geometry.insert(to, geometry)
-  }
+  // each new page's record (a page made by a page break included)
+  flow.page_started = (from, to) => doc.page_made(from, to, (size, layout))
   // underlines and strikethroughs as Prawn draws them (`formatted.mbt`)
   flow.decorate = Some((x, w, baseline, style, face, text) => {
     doc.decorations(x, w, baseline, style, face, text)
@@ -297,10 +251,10 @@ pub fn Document::start_new_page(
   layout? : String,
   size? : (Double, Double),
 ) -> Unit {
-  let before = self.geometry[self.flow.page]
+  let before = self.page().geometry
   let after = (size.unwrap_or(before.0), layout.unwrap_or(before.1))
   self.flow.start_new_page(size=oriented(after.0, after.1))
-  self.geometry[self.flow.page] = after
+  self.page().geometry = after
   // a page of another size or layout: content goes in its margin box
   self.page_changed(size_changed=after != before)
 }
