@@ -271,19 +271,18 @@ pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
 ///|
 /// The PDF.
 pub fn Document::render(self : Document) -> Bytes raise {
-  // groups left open on a page close at its end (the innermost first)
+  // pdf-core's finalize: on each page in turn (Prawn's render goes to
+  // each), every graphics state left on its stack is restored, each a Q
+  for i in 0..<self.pages.length() {
+    self.go_to_page(i + 1)
+    let page = self.page()
+    while page.stack.pop() is Some(_) {
+      page.restore()
+    }
+  }
   let pages = self.model.pages.mapi((i, page) => {
-    let open = self.pages[i].open
-    if open.is_empty() {
-      return page
-    }
-    let items = page.items.copy()
-    let innermost_first = open.copy()
-    innermost_first.sort_by_key(group => -group.0)
-    for group in innermost_first {
-      wrap_group(items, group.0, group.1)
-    }
-    { ..page, items, }
+    ..page,
+    items: self.pages[i].nested(),
   })
   @pdf.render_pdf(
     { fonts: self.model.fonts, pages, },

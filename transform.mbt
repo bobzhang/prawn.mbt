@@ -52,17 +52,16 @@ fn item_ops(item : @pagelayout.PageItem) -> Array[@pagelayout.GraphicOp]? {
 /// starts with `setup` (a transform, an opacity) inside save and restore,
 /// which also save and restore the graphics state (colours, line style).
 /// What lands on other pages is drawn as it is: a new page starts without
-/// the block's state, as in Prawn.
+/// the block's state, and the page it started on stays as the block set it
+/// up when it ends on another (Prawn writes its Q there).
 fn Document::group(
   self : Document,
   setup : Array[@pagelayout.GraphicOp],
   body : () -> Unit raise,
 ) -> Unit raise {
-  // the page it starts on (its record holds it through insertions)
   let page = self.page()
-  let start = page.items.length()
-  // q: a copy of the graphics state goes on the page's stack; Q pops the
-  // stack of the page current then (pdf-core's GraphicStateStack)
+  // q: a copy of the graphics state goes on the page's stack (pdf-core's
+  // GraphicStateStack), and the page's content saves it
   page.stack.push(
     match page.stack.last() {
       Some(state) => state.copy()
@@ -71,53 +70,19 @@ fn Document::group(
       None => GraphicState::new()
     },
   )
-  let saved_ctm = page.ctm
-  match setup {
-    [Transform(m)] => page.ctm = saved_ctm.after(m)
-    _ => ()
-  }
-  // a block that raises, or ends on another page, leaves its group open
-  // here: Prawn writes its Q on the page current then (or none), so this
-  // page keeps the state and transformation it set up, for what follows
-  errdefer page.open.push((start, setup))
+  page.save(setup)
+  // a block that raises writes no Q: its page stays as it set it up
   body()
-  // Q: the stack of the page current now; one with nothing left to
-  // restore (a new page holds one state, so two blocks around a page break
-  // empty it) is pdf-core's EmptyGraphicStateStack
+  // Q, on the page current now (Prawn's is, wherever the block ended):
+  // its stack pops, one with nothing left to restore (a new page holds one
+  // state, so two blocks around a page break empty it) being pdf-core's
+  // EmptyGraphicStateStack, and its content restores
   let current = self.page()
   if current.stack.is_empty() {
     raise EmptyGraphicStateStack
   }
   current.stack.pop() |> ignore
-  if physical_equal(current, page) {
-    page.ctm = saved_ctm
-    wrap_group(page.items, start, setup)
-  } else {
-    page.open.push((start, setup))
-  }
-}
-
-///|
-/// Wraps `items` from `start` in a group: Save, `setup`, their drawing,
-/// Restore (what pagelayout cannot hold in a group, a link, stays after
-/// it).
-fn wrap_group(
-  items : Array[@pagelayout.PageItem],
-  start : Int,
-  setup : Array[@pagelayout.GraphicOp],
-) -> Unit {
-  let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
-  let kept : Array[@pagelayout.PageItem] = []
-  for item in items[start:] {
-    match item_ops(item) {
-      Some(more) => ops.append(more)
-      None => kept.push(item)
-    }
-  }
-  ops.push(Restore)
-  items.truncate(start)
-  items.push(Graphic({ x_pt: 0.0, y_pt: 0.0, ops, }))
-  items.append(kept)
+  current.restore()
 }
 
 ///|

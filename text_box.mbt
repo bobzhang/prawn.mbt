@@ -94,7 +94,7 @@ fn Document::set_box(
             first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) >
             width => {
             if dry_run {
-              page.items.truncate(mark)
+              page.truncate(mark)
             }
             raise CannotFit
           }
@@ -148,7 +148,7 @@ fn Document::set_box(
     }
   }
   if dry_run {
-    page.items.truncate(mark)
+    page.truncate(mark)
   }
   let remaining : Array[Fragment] = []
   if at_fragment < text.length() {

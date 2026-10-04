@@ -13,9 +13,24 @@
     ["text", "after the block on its last page"],
     ["go_to_page", 3],
     ["text", "back on the page it started on"],
-    ["!raises", "ArgumentError", ["rotate", 10.0, { "block": [["fill_color", "F00"]] }]],
+    ["!raises", "ArgumentError", ["rotate", 10.0, { "block": [["dash", 0.0]] }]],
     ["text", "after a block that raised: still rotated"],
     ["stroke_rectangle", [10.0, 200.0], 50.0, 50.0],
+    ["start_new_page"],
+    ["translate", 20.0, -20.0, { "block": [
+      ["stroke_rectangle", [10.0, 700.0], 30.0, 30.0],
+      ["stroke_rectangle", [50.0, 700.0], 30.0, 30.0],
+      ["float", { "block": [["scale", 2.0, { "block": [["start_new_page"]] }]] }],
+      ["stroke_rectangle", [90.0, 700.0], 30.0, 30.0]
+    ] }],
+    ["text", "after an outer block closed an inner one left open"],
+    ["float", { "block": [["transparent", 0.2, { "block": [["start_new_page"]] }]] }],
+    ["float", { "block": [["transparent", 0.8, { "block": [["start_new_page"]] }]] }],
+    ["text", "two opacities left open, the later innermost"],
+    ["float", { "block": [["translate", 30.0, -30.0, { "block": [["start_new_page"]] }]] }],
+    ["go_to_page", 2],
+    ["scale", 2.0, { "block": [["go_to_page", 4]] }],
+    ["text", "a Q on this page closed the translation left open"],
     ["?page_count"],
     ["?cursor"]
   ]
