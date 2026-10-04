@@ -271,8 +271,21 @@ pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
 ///|
 /// The PDF.
 pub fn Document::render(self : Document) -> Bytes raise {
+  // pdf-core's finalize: on each page in turn (Prawn's render goes to
+  // each), every graphics state left on its stack is restored, each a Q
+  for i in 0..<self.pages.length() {
+    self.go_to_page(i + 1)
+    let page = self.page()
+    while page.stack.pop() is Some(_) {
+      page.restore()
+    }
+  }
+  let pages = self.model.pages.mapi((i, page) => {
+    ..page,
+    items: self.pages[i].nested(),
+  })
   @pdf.render_pdf(
-    self.model,
+    { fonts: self.model.fonts, pages, },
     options=@pdf.RenderOptions::new(
       fonts=self.catalog.registry,
       truncate_widths=true,
