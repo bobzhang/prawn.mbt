@@ -1,28 +1,28 @@
 ///|
 /// Prawn's `draw_text`: `text` on one line, its baseline starting at `at`
 /// (a point of the bounds), in the current font at `size` (the current
-/// size), in `style` ("bold", "italic", "bold_italic"; the current one by
-/// default), kerned unless `kerning` is false, turned `rotate` degrees
+/// size), in `style` (by default the current one), kerned unless `kerning` is false, turned `rotate` degrees
 /// about `at`. No wrapping, no page break; the cursor does not move.
 pub fn Document::draw_text(
   self : Document,
   text : String,
   at~ : (Double, Double),
   size? : Double,
-  style? : String,
+  style? : FontStyle,
   rotate? : Double = 0.0,
   kerning? : Bool = true,
 ) -> Unit raise {
+  // Prawn's `process_text_options`: the current font in `style`, which a
+  // font of no family cannot take
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   let base = self.style(size?)
-  let base = match style {
-    None | Some("normal") => base
-    Some("bold") => { ..base, bold: true, }
-    Some("italic") => { ..base, italic: true, }
-    Some("bold_italic") => { ..base, bold: true, italic: true, }
-    Some(other) => raise ArgumentError("style \{other}")
-  }
-  // the whole string is encoded first (Prawn's `normalize_encoding`)
-  self.check(text, base, None)
+  // the whole string is encoded first (Prawn's `normalize_encoding`), in
+  // its own font only: draw_text looks in no fallback
+  self.check(text, base, None, fallbacks=false)
   let draw = () => {
     let face = self.face_of(base)
     // Prawn's `draw_text!`: text beyond ASCII in a built-in font is warned
@@ -36,14 +36,20 @@ pub fn Document::draw_text(
     }
     let scale = base.size / 1000.0
     let codes = text.iter().map(c => c.to_int()).to_array()
-    let advances = codes.mapi((i, code) => {
+    // one advance per UTF-16 unit, as the text is drawn: a character
+    // beyond the BMP's second unit advances nothing
+    let advances = []
+    for i, code in codes {
       let kern = if kerning && i + 1 < codes.length() {
         face.kerning(code, codes[i + 1])
       } else {
         0.0
       }
-      (face.drawn_width(code) + kern) * scale
-    })
+      advances.push((face.drawn_width(code) + kern) * scale)
+      if code > 0xFFFF {
+        advances.push(0.0)
+      }
+    }
     // on the page: Prawn's `map_to_absolute`
     let b = self.bounds()
     let x = b.absolute_left + at.0

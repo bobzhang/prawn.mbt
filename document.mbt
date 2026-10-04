@@ -52,9 +52,17 @@ pub struct Document {
   priv mut position : Double
   /// the margins pages are made with: top, right, bottom, left
   priv margins : (Double, Double, Double, Double)
-  catalog : FontCatalog
+  priv mut catalog : FontCatalog
+  /// the font families registered (`font_families_update`): family → its
+  /// styles' files; the TrueType faces loaded so far, which the catalog is
+  /// made from; the fallback families (`fallback_fonts`); and where files
+  /// are read from (`ttf.mbt`)
+  priv families : Map[String, Array[(FontStyle, String)]]
+  priv mut font_files : Array[(String, Bytes)]
+  priv mut fallbacks : Array[String]
+  priv assets : (String) -> Bytes?
   /// what text is set with: the fonts
-  priv text_context : TextContext
+  priv mut text_context : TextContext
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
@@ -64,6 +72,9 @@ pub struct Document {
   /// whether the current font is a family's (Prawn's `font.family`), not a
   /// font set by its own name
   priv mut font_family_known : Bool
+  /// the catalog's face of the current font, as it was found when the font
+  /// was set (Prawn keeps the font object until another is set)
+  priv mut font_key : (String, Bool, Bool)
   /// each page's record (`page.mbt`), as the model's pages are ordered
   priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
@@ -80,7 +91,7 @@ pub struct Document {
   /// the fragments being drawn, innermost last: text set from inside a
   /// callback nests (`formatted.mbt`)
   priv scopes : Array[FragmentScope]
-  priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
+  priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit raise PrawnError)?
   /// what Prawn's warnings (`Kernel#warn`) go to (`on_warning`), and
   /// whether the one about built-in fonts and text beyond ASCII was given:
   /// once per document here; Prawn's flag (`Prawn::Fonts::AFM
@@ -103,11 +114,13 @@ fn oriented(size : (Double, Double), layout : String) -> (Double, Double) {
 ///|
 /// A document with pages `size` (points; Prawn's default is LETTER) in
 /// `layout` ("portrait" or "landscape") with `margin` (Prawn's default 36
-/// all round). Like Prawn, it starts with a page.
+/// all round). Font files are read through `assets`, given a path as it
+/// was named (none by default). Like Prawn, it starts with a page.
 pub fn Document::new(
   size? : (Double, Double) = (612.0, 792.0),
   layout? : String = "portrait",
   margin? : Array[Double] = [36.0],
+  assets? : (String) -> Bytes? = _ => None,
 ) -> Document raise {
   let (w, h) = oriented(size, layout)
   let (top, right, bottom, left) = margins_of(margin)
@@ -131,9 +144,14 @@ pub fn Document::new(
     margins: (top, right, bottom, left),
     catalog,
     text_context: { catalog, hooks: Hooks::new(), },
+    families: Map([]),
+    font_files: [],
+    fallbacks: [],
+    assets,
     family: "Helvetica",
     face_style: (false, false),
     font_family_known: true,
+    font_key: ("Helvetica", false, false),
     size: 12.0,
     pages: [],
     bbox: margin,
@@ -177,11 +195,13 @@ fn Document::face_of(self : Document, style : Style) -> Face {
 ///|
 /// The style text is set in: the current font and size, black.
 fn Document::style(self : Document, size? : Double) -> Style {
+  // the catalog's face of the current font (a TrueType one is its file)
+  let (family, bold, italic) = self.font_key
   {
-    family: self.family,
+    family,
     size: size.unwrap_or(self.size),
-    bold: self.face_style.0,
-    italic: self.face_style.1,
+    bold,
+    italic,
     color: self.gs().fill,
     link: None,
     background: None,
@@ -214,24 +234,15 @@ pub fn Document::text(
   align? : Alignment = Left,
   leading? : Double,
   inline_format? : Bool = false,
-  draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
+  draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> Unit raise PrawnError {
   // the current font in `style` while this is set (Prawn's `:style`, which
   // its boxes apply and undo)
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      // a font set by its own name has no family to take a style from
-      if !self.font_family_known {
-        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
-      }
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   // set as one plain fragment, or the fragments of its markup
   // (`formatted.mbt`)
   let fragments = if inline_format {
@@ -284,13 +295,6 @@ pub fn Document::start_new_page(
 }
 
 ///|
-/// Prawn's `font` (without a block): the family text is set in from now
-/// on.
-pub fn Document::set_font(self : Document, family : String) -> Unit {
-  self.family = family
-}
-
-///|
 /// Prawn's `font_size=`.
 pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
   self.size = size
@@ -337,26 +341,18 @@ pub fn Document::width_of(
   kerning? : Bool = false,
 ) -> Double raise PrawnError {
   // the current font in `style` while this is measured (Prawn's `:style`)
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      // Prawn looks up a family of no name
-      if !self.font_family_known {
-        raise UnknownFont(" is not a known font.")
-      }
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(style, UnknownFont(" is not a known font."))
+  defer self.restore_style(saved_font)
   let style = self.style(size?)
-  self.check(string, style, None)
+  self.check(string, style, None, fallbacks=false)
   let face = self.face_of(style)
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
   for i, cp in chars {
+    // a TrueType font gives a newline no width (Prawn's TTF does so)
+    if cp == 0x0A && !face.standard {
+      continue
+    }
     width += face.prawn_width(cp)
     if kerning && i + 1 < chars.length() {
       width += face.kerning(cp, chars[i + 1])
@@ -380,20 +376,11 @@ pub fn Document::height_of(
 ) -> Double raise PrawnError {
   // the current font in `style` while this is set (Prawn's `:style`, which
   // its boxes apply and undo)
-  let saved_style = self.face_style
-  defer {
-    self.face_style = saved_style
-  }
-  match style {
-    Some(style) => {
-      // a font set by its own name has no family to take a style from
-      if !self.font_family_known {
-        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
-      }
-      self.face_style = style.flags()
-    }
-    None => ()
-  }
+  let saved_font = self.apply_style(
+    style,
+    BadFontFamily("PDF::Core::Text::BadFontFamily"),
+  )
+  defer self.restore_style(saved_font)
   // the document's default leading unless given (Prawn's `default_leading`)
   let leading = leading.unwrap_or(self.default_leading)
   // an empty box: its final gap is the leading alone
@@ -427,21 +414,32 @@ fn Document::check(
   string : String,
   style : Style,
   width : Double?,
+  fallbacks? : Bool = true,
 ) -> Unit raise PrawnError {
   let face = self.face_of(style)
+  // each character in the font it is set in: its own, or the first
+  // fallback that has it (Prawn splits the text across them before it
+  // encodes it; `width_of` and `draw_text` do not)
+  let face_for = fn(cp : Int) raise PrawnError {
+    if fallbacks && !self.fallbacks.is_empty() {
+      self.glyph_face(style, cp)
+    } else {
+      face
+    }
+  }
   // the whole string is encoded before anything is wrapped
-  if face.standard {
-    for c in string {
-      let cp = c.to_int()
-      if cp >= 0x80 && winansi_code_of(cp) is None {
-        raise IncompatibleStringEncoding(string)
-      }
+  for c in string {
+    let cp = c.to_int()
+    if face_for(cp).standard && cp >= 0x80 && winansi_code_of(cp) is None {
+      raise IncompatibleStringEncoding(string)
     }
   }
   guard width is Some(w) else { return }
   let scale = style.size / 1000.0
   for c in string {
-    if c != ' ' && c != '\n' && face.prawn_width(c.to_int()) * scale > w {
+    if c != ' ' &&
+      c != '\n' &&
+      face_for(c.to_int()).prawn_width(c.to_int()) * scale > w {
       raise CannotFit
     }
   }

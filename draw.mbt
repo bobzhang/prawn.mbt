@@ -15,7 +15,7 @@ fn Document::ink_line(
   line : Line,
   left : Double,
   baseline : Double,
-) -> Unit {
+) -> Unit raise PrawnError {
   for held in line.held {
     let (fragment, x, style, face) = held
     let runs = line.runs.filter(r => r.fragment == fragment)
@@ -56,9 +56,11 @@ fn Document::draw_fragment(
   style : Style,
   face : Face,
   text : String,
-) -> Unit {
+) -> Unit raise PrawnError {
   // the fragment's font and colour, to its end
   self.begin_fragment(style)
+  // and back to the font before, whatever happens (Prawn's `save_font`)
+  defer self.end_fragment()
   // where it is on the page current at each step (pagelayout's page
   // coordinates): a callback may start another
   let on_page = fn() {
@@ -125,7 +127,6 @@ fn Document::draw_fragment(
       None => ()
     }
   }
-  self.end_fragment()
 }
 
 ///|

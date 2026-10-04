@@ -171,7 +171,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         text,
         at=point(at),
         size?=present(opts.get("size")).map(number),
-        style?=present(opts.get("style")).bind(symbol),
+        style?=font_style(opts.get("style")),
         rotate=present(opts.get("rotate")).map(number).unwrap_or(0.0),
         kerning=!(opts.get("kerning") is Some(False)),
       )
@@ -308,7 +308,37 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       Some(before.to_json())
     }
     // a font, as the driver logs objects: its class
-    "font" if args.is_empty() => Some({ "class": "Prawn::Fonts::AFM" })
+    "font_families.update" if args is [Object(families)] => {
+      for key, value in families {
+        // "=Name": a string key
+        let family = if key.has_prefix("=") { key[1:].to_owned() } else { key }
+        guard value is Object(styles) else {
+          raise ScriptError("a family's styles")
+        }
+        let files = []
+        for style, file in styles {
+          let style : @prawn.FontStyle = match style {
+            "normal" => Normal
+            "bold" => Bold
+            "italic" => Italic
+            "bold_italic" => BoldItalic
+            other => raise ScriptError("style \{other}")
+          }
+          match file {
+            String(path) => files.push((style, path))
+            // a font inside a collection or dfont: not yet
+            _ => return None
+          }
+        }
+        doc.font_families_update(family, files)
+      }
+      Some(Json::null())
+    }
+    "fallback_fonts" if args is [Array(names)] => {
+      doc.fallback_fonts(names.map(string))
+      Some(Json::null())
+    }
+    "font" if args.is_empty() => Some({ "class": doc.font_class().to_json() })
     "font" if only(opts, ["style", "size"]) && args[0] is String(_) => {
       let style = font_style(opts.get("style")).unwrap_or(Normal)
       let size = opts.get("size").map(number)
@@ -317,11 +347,11 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           doc.font(string(args[0]), style~, size?, body=() => self.ops(ops))
         None => doc.font(string(args[0]), style~, size?)
       }
-      Some({ "class": "Prawn::Fonts::AFM" })
+      Some({ "class": doc.font_class().to_json() })
     }
     "font.inspect" if args.is_empty() =>
       Some(
-        "Prawn::Fonts::AFM< \{doc.font_name()}: \{@prawn.ruby_number(doc.font_size())} >".to_json(),
+        "\{doc.font_class()}< \{doc.font_name()}: \{@prawn.ruby_number(doc.font_size())} >".to_json(),
       )
     "start_new_page" if only(opts, ["layout", "size"]) => {
       doc.start_new_page(
@@ -597,10 +627,19 @@ async fn main {
       }
     _ => Map([])
   }
+  // the files the script names in the Prawn checkout ("$PRAWN/…"), read
+  // now: the document reads its fonts through them by those names
+  let files : Map[String, Bytes] = Map([])
+  for path in prawn_paths(script) {
+    let file = ".repos/prawn/" + path["$PRAWN/".length():].to_owned()
+    let bytes = @fs.read_file(file).binary() catch { _ => continue }
+    files[path] = bytes
+  }
   let doc = @prawn.Document::new(
     size=page_size(setup.get("page_size")),
     layout=setup.get("page_layout").bind(symbol).unwrap_or("portrait"),
     margin=margin(setup.get("margin")),
+    assets=path => files.get(path),
   )
   let run = { doc, log: [], }
   // Prawn's warnings are observations too, where they happen
@@ -924,7 +963,7 @@ fn Run::trace_callback(
     _ => []
   }
   let log = fn(event : String) {
-    fn(f : @prawn.PlacedFragment) {
+    fn(f : @prawn.PlacedFragment) raise @prawn.PrawnError {
       self.log.push({
         "trace": id,
         "event": event.to_json(),
@@ -959,12 +998,12 @@ fn Run::trace_callback(
 fn Run::trace_draw_text(
   self : Run,
   opts : Map[String, Json],
-) -> ((String, (Double, Double), Bool) -> Unit)? raise ScriptError {
+) -> ((String, (Double, Double), Bool) -> Unit raise @prawn.PrawnError)? raise ScriptError {
   match opts.get("draw_text_callback") {
     Some(Object(map)) =>
       match map.get("trace") {
         Some(id) =>
-          Some(fn(text, at, kerning) {
+          Some(fn(text, at, kerning) raise @prawn.PrawnError {
             self.log.push({
               "trace": id,
               "event": "draw_text",
@@ -986,10 +1025,21 @@ fn Run::trace_draw_text(
 }
 
 ///|
-/// The ops a traced callback draws with; a callback cannot raise, so an
-/// error is logged instead.
-fn Run::draw_in_callback(self : Run, ops : Array[Json]) -> Unit {
+/// The ops a traced callback draws with: Prawn's errors leave the callback,
+/// as in Ruby; any other (a script error) is logged.
+fn Run::draw_in_callback(
+  self : Run,
+  ops : Array[Json],
+) -> Unit raise @prawn.PrawnError {
   self.ops(ops) catch {
+    @prawn.CannotFit => raise @prawn.CannotFit
+    @prawn.IncompatibleStringEncoding(s) =>
+      raise @prawn.IncompatibleStringEncoding(s)
+    @prawn.ArgumentError(s) => raise @prawn.ArgumentError(s)
+    @prawn.Unsupported(s) => raise @prawn.Unsupported(s)
+    @prawn.UnknownFont(s) => raise @prawn.UnknownFont(s)
+    @prawn.BadFontFamily(s) => raise @prawn.BadFontFamily(s)
+    @prawn.EmptyGraphicStateStack => raise @prawn.EmptyGraphicStateStack
     e => self.log.push({ "callback_error": e.to_string().to_json() })
   }
 }
@@ -1014,4 +1064,20 @@ fn font_style(value : Json?) -> @prawn.FontStyle? raise ScriptError {
     Some("bold_italic") => Some(BoldItalic)
     Some(other) => raise ScriptError("style \{other}")
   }
+}
+
+///|
+/// The paths in the Prawn checkout a script names (`"$PRAWN/…"`).
+fn prawn_paths(json : Json) -> Array[String] {
+  let out = []
+  fn walk(j : Json) {
+    match j {
+      String(s) if s.has_prefix("$PRAWN/") => out.push(s)
+      Array(items) => items.each(walk)
+      Object(map) => map.values().each(walk)
+      _ => ()
+    }
+  }
+  walk(json)
+  out
 }

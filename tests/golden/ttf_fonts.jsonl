@@ -1,0 +1,36 @@
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 12 >"}
+{"query":"font","value":{"class":"Prawn::Fonts::TTF"}}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 14 >"}
+{"query":["width_of","AVATAR WAVE",{"style":":bold"}],"value":115.136}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"query":["height_of","fallback 中文 measured"],"value":16.183999999999997}
+{"query":"cursor","value":622.8860000000001}
+{"raises":"none","error":null}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":["width_of","a\nb"],"value":17.444}
+{"query":["width_of","Hello"],"value":35.434}
+{"query":["width_of","Hello"],"value":40.39}
+{"raises":"Prawn::Errors::IncompatibleStringEncoding","error":"Prawn::Errors::IncompatibleStringEncoding"}
+{"raises":"Prawn::Errors::CannotFit","error":"Prawn::Errors::CannotFit"}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["text_box","€",{"at":[0.0,250.0],"width":7.0}],"value":""}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"trace":"fb","event":"render_in_front","text":"α","left":0,"baseline":529.0580000000001,"width":9.226,"height":13.98599999999999,"top":539.6840000000001,"bottom":525.6980000000001}
+{"query":["width_of","α"],"value":9.226}
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 14 >"}
+{"query":["width_of","α"],"value":9.226}
+{"query":"font.inspect","value":"Prawn::Fonts::TTF< $PRAWN/data/fonts/DejaVuSans.ttf: 14 >"}
+{"raises":"ArgumentError","error":null}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"trace":"ff","event":"render_in_front","text":"file","left":0,"baseline":495.4860000000002,"width":21.294,"height":13.98599999999999,"top":506.1120000000002,"bottom":492.1260000000002}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"trace":"ff2","event":"render_in_front","text":"a file fragment","left":0,"baseline":495.4860000000002,"width":103.46000000000001,"height":13.98599999999999,"top":506.1120000000002,"bottom":492.1260000000002}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":["text_box","box 中文",{"at":[300.0,200.0],"width":150.0,"height":40.0}],"value":""}
+{"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}
+{"trace":"dtc6","event":"draw_text","text":"callback in a box","at":[300.0,139.374],"kerning":true}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
