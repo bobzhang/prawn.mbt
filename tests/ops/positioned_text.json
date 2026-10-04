@@ -25,6 +25,12 @@
     ["indent", 50.0, { "block": [["span", 120.0, { "block": [["text", "left of the margin box, indented"]] }]] }],
     ["?cursor"],
     ["canvas", { "block": [["move_down", 700.0], ["text", "near the bottom, then over to a new page and on"], ["text", "past the end of the page so the canvas breaks onto another page and goes on"], ["?bounds"]] }],
-    ["?page_count"]
+    ["?page_count"],
+    ["move_down", 100.0],
+    ["canvas", { "block": [["draw_text", "no move", { "at": [300.0, 300.0] }]] }],
+    ["?cursor"],
+    ["!raises", "ArgumentError", ["draw_text", "no point", {}]],
+    ["!raises", "ArgumentError", ["draw_text", "aligned", { "at": [0.0, 0.0], "align": ":center" }]],
+    ["!raises", "ArgumentError", ["stroke_axis", { "step_length": 0.0 }]]
   ]
 }

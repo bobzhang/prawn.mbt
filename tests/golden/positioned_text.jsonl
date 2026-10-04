@@ -6,3 +6,7 @@
 {"query":"cursor","value":658.8959999999997}
 {"query":"bounds","value":{"left":0,"bottom":0,"width":612.0,"height":792.0,"absolute_left":0,"absolute_top":792.0}}
 {"query":"page_count","value":1}
+{"query":"cursor","value":-71.744}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"ArgumentError","error":"ArgumentError"}

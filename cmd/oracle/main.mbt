@@ -146,14 +146,22 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.move_down(number(args[0]))
       Some(Json::null())
     }
-    "draw_text" if only(opts, ["at", "size", "style", "rotate", "kerning"]) => {
+    "draw_text" if only(opts, [
+        "at", "size", "style", "rotate", "kerning", "align",
+      ]) => {
       let text = match args[0] {
         String(_) => string(args[0])
         Number(n, ..) => @prawn.ruby_number(n)
         _ => raise ScriptError("draw_text needs text")
       }
+      // Prawn's `inspect_options_for_draw_text`
       guard opts.get("at") is Some(at) else {
-        raise ScriptError("draw_text needs at")
+        raise @prawn.ArgumentError("The :at option is required for draw_text")
+      }
+      if opts.get("align") is Some(_) {
+        raise @prawn.ArgumentError(
+          "The :align option does not work with draw_text",
+        )
       }
       doc.draw_text(
         text,

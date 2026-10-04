@@ -359,7 +359,14 @@ pub fn Document::canvas(self : Document, body : () -> Unit raise) -> Unit raise 
     total_left: 0.0,
     total_right: 0.0,
   }
-  self.open_box(box, body, () => ())
+  // Prawn's `init_bounding_box` with `hold_position`: the position is put
+  // back only when `body` left it at the top of the box current then
+  let original_y = self.y()
+  self.open_box(box, body, () => {
+    if self.y() == self.bbox.top {
+      self.set_y(original_y)
+    }
+  })
 }
 
 ///|

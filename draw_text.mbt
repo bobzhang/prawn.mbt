@@ -99,6 +99,12 @@ pub fn Document::stroke_axis(
     self.undash()
     self.circle(at, 1.0)
     self.fill()
+    // Ruby's `Range#step` refuses a step that goes nowhere, the axes drawn
+    if step_length <= 0.0 {
+      raise ArgumentError(
+        "step can't be \{if step_length == 0.0 { "0" } else { "negative" }}",
+      )
+    }
     // Ruby's `(step..width).step(step)`: every step up to the end, which
     // is labelled as Ruby prints it
     let mut point = step_length
