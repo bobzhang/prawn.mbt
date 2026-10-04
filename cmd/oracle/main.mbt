@@ -105,10 +105,33 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
   let opts = options(args)
   match name {
     // kerning is Prawn's default (`default_kerning`), and how Flow sets text
-    "text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+    "text" if only(opts, [
+        "size", "align", "leading", "kerning", "inline_format",
+      ]) &&
       !(opts.get("kerning") is Some(False)) => {
       doc.text(
         string(args[0]),
+        size?=opts.get("size").map(number),
+        align=alignment(opts.get("align")),
+        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        inline_format=opts.get("inline_format") is Some(True),
+      )
+      Some(Json::null())
+    }
+    "formatted_text" if only(opts, ["size", "align", "leading", "kerning"]) &&
+      !(opts.get("kerning") is Some(False)) => {
+      guard args[0] is Array(items) else {
+        raise ScriptError("formatted_text needs fragments")
+      }
+      let fragments = []
+      for item in items {
+        match text_fragment(item) {
+          Some(f) => fragments.push(f)
+          None => return None
+        }
+      }
+      doc.formatted_text(
+        fragments,
         size?=opts.get("size").map(number),
         align=alignment(opts.get("align")),
         leading=opts.get("leading").map(number).unwrap_or(0.0),
@@ -617,4 +640,37 @@ fn Run::graphics(
     }
   }
   Some(Json::null())
+}
+
+///|
+/// A fragment hash of `formatted_text`; None when it has a key this module
+/// cannot set yet (callbacks, character spacing, local links).
+fn text_fragment(j : Json) -> @prawn.TextFragment? raise ScriptError {
+  guard j is Object(map) else { raise ScriptError("not a fragment") }
+  if !only(map, ["text", "styles", "size", "color", "link", "anchor", "font"]) {
+    return None
+  }
+  let styles = match map.get("styles") {
+    Some(Array(xs)) => xs.filter_map(symbol)
+    _ => []
+  }
+  let color = match map.get("color") {
+    Some(String(hex)) => Some(hex)
+    Some(_) => return None
+    None => None
+  }
+  Some({
+    ..@prawn.TextFragment::new(string(map.get("text").unwrap_or("".to_json()))),
+    bold: styles.contains("bold"),
+    italic: styles.contains("italic"),
+    underline: styles.contains("underline"),
+    strikethrough: styles.contains("strikethrough"),
+    subscript: styles.contains("subscript"),
+    superscript: styles.contains("superscript"),
+    font: map.get("font").map(string),
+    size: map.get("size").map(number),
+    color,
+    link: map.get("link").map(string),
+    anchor: map.get("anchor").map(string),
+  })
 }

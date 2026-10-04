@@ -159,6 +159,10 @@ pub fn Document::new(
     }
     doc.geometry.insert(to, geometry)
   }
+  // underlines and strikethroughs as Prawn draws them (`formatted.mbt`)
+  flow.decorate = Some((x, w, baseline, style, face) => {
+    doc.decorations(x, w, baseline, style, face)
+  })
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
@@ -210,32 +214,16 @@ pub fn Document::text(
   size? : Double,
   align? : Alignment = Left,
   leading? : Double = 0.0,
+  inline_format? : Bool = false,
 ) -> Unit raise PrawnError {
-  // nothing to set: Prawn moves by the leading alone (an empty box has no
-  // line gap)
-  if string.is_empty() {
-    self.move_down(leading)
-    return
+  // set as one plain fragment, or the fragments of its markup
+  // (`formatted.mbt`)
+  let fragments = if inline_format {
+    parse_inline_format(string)
+  } else {
+    [TextFragment::new(string)]
   }
-  let style = self.style(size?)
-  self.check(string, style, Some(self.flow.width()))
-  self.pending_gap = self.flow.font(style).line_gap_pt(style.size) + leading
-  defer {
-    self.pending_gap = 0.0
-  }
-  self.flow.typeset(
-    [{ text: string, style, anchor: None, }],
-    // after the text box, the line gap and leading (`final_gap`, Prawn's
-    // default)
-    {
-      leading,
-      padding_top: 0.0,
-      padding_bottom: self.flow.font(style).line_gap_pt(style.size) + leading,
-    },
-    style,
-    align~,
-  )
-  self.track()
+  self.formatted_text(fragments, size?, align~, leading~)
 }
 
 ///|

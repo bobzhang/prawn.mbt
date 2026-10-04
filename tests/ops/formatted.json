@@ -1,0 +1,39 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "Bold ", "styles": [":bold"] },
+      { "text": "italic ", "styles": [":italic"] },
+      { "text": "both ", "styles": [":bold", ":italic"] },
+      { "text": "red ", "color": "FF0000" },
+      { "text": "big ", "size": 20 },
+      { "text": "Times ", "font": "Times-Roman" },
+      { "text": "Courier bold ", "font": "Courier", "styles": [":bold"] },
+      { "text": "x" }, { "text": "2", "styles": [":superscript"] },
+      { "text": " H" }, { "text": "2", "styles": [":subscript"] }, { "text": "O " },
+      { "text": "a link", "link": "https://example.com" },
+      { "text": " and an anchor", "anchor": "somewhere" }
+    ]],
+    ["?cursor"],
+    ["stroke_color", "0000FF"],
+    ["line_width", 0.5],
+    ["formatted_text", [
+      { "text": "underlined ", "styles": [":underline"] },
+      { "text": "struck ", "styles": [":strikethrough"] },
+      { "text": "raised and underlined", "styles": [":superscript", ":underline"] }
+    ], { "size": 14 }],
+    ["stroke_color", "000000"],
+    ["line_width", 1],
+    ["formatted_text", [
+      { "text": "Justified formatted text that wraps across fragments, " },
+      { "text": "with a bold stretch in the middle of it ", "styles": [":bold"] },
+      { "text": "and a plain end that goes on long enough for another line or two." }
+    ], { "align": ":justify", "leading": 3 }],
+    ["?cursor"],
+    ["text", "Inline <b>bold</b>, <i>italic</i>, <strong><em>both</em></strong>, <u>under</u>, <strikethrough>struck</strikethrough>, x<sup>2</sup> and H<sub>2</sub>O.", { "inline_format": true }],
+    ["text", "<font name='Courier' size='16'>Courier 16</font> then <color rgb='#00AA00'>green</color> and <color rgb=\"0000FF\">blue</color>.", { "inline_format": true }],
+    ["text", "Links: <link href='https://example.com'>href</link>, <a href=\"https://example.org\">a</a>, <link anchor='dest'>anchor</link>.", { "inline_format": true }],
+    ["text", "Breaks<br>one<br/>two<br />three, &lt;escaped&gt; &amp; a < b with a stray <bold> tag.", { "inline_format": true }],
+    ["text", "<font size='20'>big <font name='Times-Roman'>times</font> after</font> end", { "inline_format": true }],
+    ["?cursor"]
+  ]
+}
