@@ -836,10 +836,9 @@ fn Document::capture(
   self : Document,
   body : () -> Unit,
 ) -> Array[@pagelayout.PageItem] {
-  // the page followed through insertions a callback may make before it
-  let page : Ref[Int] = { val: self.flow.page, }
-  self.open_pages.push(page)
-  let mark = self.flow.model.pages[page.val].items.length()
+  // the page it starts on (its record holds it through insertions)
+  let page = self.page()
+  let mark = page.items.length()
   // the callback runs at the document's position while a text is set (not
   // where Flow is setting lines), and may move it; Flow then carries on
   // from its own
@@ -853,8 +852,7 @@ fn Document::capture(
     self.text_y = Some(self.flow.y)
   }
   self.flow.y = line_y
-  self.open_pages.pop() |> ignore
-  let items = self.flow.model.pages[page.val].items
+  let items = page.items
   if mark > items.length() {
     return []
   }
