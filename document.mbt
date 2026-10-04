@@ -76,8 +76,9 @@ pub struct Document {
   priv scopes : Array[FragmentScope]
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
   /// what Prawn's warnings (`Kernel#warn`) go to (`on_warning`), and
-  /// whether the one about built-in fonts and text beyond ASCII was given
-  /// (Prawn gives it once)
+  /// whether the one about built-in fonts and text beyond ASCII was given:
+  /// once per document here; Prawn's flag (`Prawn::Fonts::AFM
+  /// .hide_m17n_warning`) lasts the process, which no library state should
   priv mut warn : (String) -> Unit
   priv mut m17n_warned : Bool
 }

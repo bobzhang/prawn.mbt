@@ -214,3 +214,4 @@ let m17n_warning : String =
   #|
   #|To disable this warning, add the following line to your code:
   #|Prawn::Fonts::AFM.hide_m17n_warning = true
+  #|

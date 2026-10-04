@@ -416,7 +416,15 @@ async fn main {
   )
   let run = { doc, log: [], }
   // Prawn's warnings are observations too, where they happen
-  doc.on_warning(message => run.log.push({ "warning": message.to_json() }))
+  doc.on_warning(message => {
+    // without its final line break, as the Ruby driver logs it
+    let message = if message.has_suffix("\n") {
+      message[:message.length() - 1].to_string()
+    } else {
+      message
+    }
+    run.log.push({ "warning": message.to_json() })
+  })
   guard script is Object(map) && map.get("ops") is Some(Array(ops)) else {
     fail("no ops")
   }
