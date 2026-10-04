@@ -113,7 +113,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         string(args[0]),
         size?=opts.get("size").map(number),
         align=alignment(opts.get("align")),
-        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        leading?=opts.get("leading").map(number),
         inline_format=opts.get("inline_format") is Some(True),
         draw_text_callback?=self.trace_draw_text(opts),
       )
@@ -137,7 +137,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
         fragments,
         size?=opts.get("size").map(number),
         align=alignment(opts.get("align")),
-        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        leading?=opts.get("leading").map(number),
         draw_text_callback?=self.trace_draw_text(opts),
       )
       Some(Json::null())
@@ -145,6 +145,80 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     "move_down" => {
       doc.move_down(number(args[0]))
       Some(Json::null())
+    }
+    "move_up" => {
+      doc.move_up(number(args[0]))
+      Some(Json::null())
+    }
+    "move_cursor_to" => {
+      doc.move_cursor_to(number(args[0]))
+      Some(Json::null())
+    }
+    "pad" | "pad_top" | "pad_bottom" if opts.is_empty() &&
+      block(args) is Some(ops) => {
+      let amount = number(args[0])
+      let body = () => self.ops(ops)
+      match name {
+        "pad" => doc.pad(amount, body)
+        "pad_top" => doc.pad_top(amount, body)
+        _ => doc.pad_bottom(amount, body)
+      }
+      Some(Json::null())
+    }
+    "default_leading" | "default_leading=" if args.length() == 1 => {
+      doc.set_default_leading(number(args[0]))
+      Some(Json::null())
+    }
+    "default_leading" if args.is_empty() =>
+      Some(doc.default_leading().to_json())
+    // the bounds' readers (Prawn's BoundingBox): relative to the bounds, or
+    // on the page
+    "bounds.left"
+    | "bounds.right"
+    | "bounds.top"
+    | "bounds.bottom"
+    | "bounds.width"
+    | "bounds.height"
+    | "bounds.absolute_left"
+    | "bounds.absolute_right"
+    | "bounds.absolute_top"
+    | "bounds.absolute_bottom"
+    | "bounds.top_left"
+    | "bounds.top_right"
+    | "bounds.bottom_left"
+    | "bounds.bottom_right"
+    | "bounds.absolute_top_left"
+    | "bounds.absolute_top_right"
+    | "bounds.absolute_bottom_left"
+    | "bounds.absolute_bottom_right" if args.is_empty() => {
+      let b = doc.bounds()
+      let left = b.left
+      let right = b.left + b.width
+      let absolute_right = b.absolute_left + b.width
+      let absolute_bottom = b.absolute_top - b.height
+      let pair = fn(x : Double, y : Double) { [x, y].to_json() }
+      Some(
+        match name["bounds.".length():].to_owned() {
+          "left" => left.to_json()
+          "right" => right.to_json()
+          "top" => b.height.to_json()
+          "bottom" => 0.0.to_json()
+          "width" => b.width.to_json()
+          "height" => b.height.to_json()
+          "absolute_left" => b.absolute_left.to_json()
+          "absolute_right" => absolute_right.to_json()
+          "absolute_top" => b.absolute_top.to_json()
+          "absolute_bottom" => absolute_bottom.to_json()
+          "top_left" => pair(left, b.height)
+          "top_right" => pair(right, b.height)
+          "bottom_left" => pair(left, 0.0)
+          "bottom_right" => pair(right, 0.0)
+          "absolute_top_left" => pair(b.absolute_left, b.absolute_top)
+          "absolute_top_right" => pair(absolute_right, b.absolute_top)
+          "absolute_bottom_left" => pair(b.absolute_left, absolute_bottom)
+          _ => pair(absolute_right, absolute_bottom)
+        },
+      )
     }
     "font_size" if args.length() == 1 => {
       doc.set_font_size(number(args[0]))
@@ -177,7 +251,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           string(args[0]),
           size?=opts.get("size").map(number),
           width?=opts.get("width").map(number),
-          leading=opts.get("leading").map(number).unwrap_or(0.0),
+          leading?=opts.get("leading").map(number),
         )
         .to_json(),
       )
@@ -268,7 +342,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           Some(other) => raise ScriptError("overflow \{other}")
         },
         min_font_size=opts.get("min_font_size").map(number).unwrap_or(5.0),
-        leading=opts.get("leading").map(number).unwrap_or(0.0),
+        leading?=opts.get("leading").map(number),
         rotate=opts.get("rotate").map(number).unwrap_or(0.0),
         rotate_around=opts
           .get("rotate_around")
@@ -579,8 +653,9 @@ fn Run::graphics(
         doc.set_stroke_color(color)
       }
     }
-    "line_width" if args is [Number(_)] => doc.set_line_width(number(args[0]))
-    "cap_style" =>
+    "line_width" | "line_width=" if args is [Number(_)] =>
+      doc.set_line_width(number(args[0]))
+    "cap_style" | "cap_style=" =>
       doc.set_cap_style(
         match args.get(0).bind(symbol) {
           Some("butt") => ButtCap
@@ -589,7 +664,7 @@ fn Run::graphics(
           _ => return None
         },
       )
-    "join_style" =>
+    "join_style" | "join_style=" =>
       doc.set_join_style(
         match args.get(0).bind(symbol) {
           Some("miter") => MiterJoin

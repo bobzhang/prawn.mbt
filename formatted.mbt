@@ -476,9 +476,11 @@ pub fn Document::formatted_text(
   fragments : Array[TextFragment],
   size? : Double,
   align? : Alignment = Left,
-  leading? : Double = 0.0,
+  leading? : Double,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the document's default leading unless given (Prawn's `default_leading`)
+  let leading = leading.unwrap_or(self.default_leading)
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback

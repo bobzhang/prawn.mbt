@@ -1,0 +1,22 @@
+{"query":"cursor","value":690.0}
+{"query":"cursor","value":600.0}
+{"query":"cursor","value":526.3839999999998}
+{"query":"default_leading","value":6.0}
+{"query":["height_of","default leading in height_of, long enough to wrap onto a second line within the margins of the page."],"value":19.872}
+{"query":["text_box","a text box with the default leading, wrapping over several lines of its narrow box",{"at":[300.0,400.0],"width":100.0,"height":100.0}],"value":""}
+{"query":"cursor","value":0.0}
+{"query":"bounds.top","value":13.872000000000014}
+{"query":"bounds.bottom","value":0}
+{"query":"bounds.left","value":0}
+{"query":"bounds.right","value":200.0}
+{"query":"bounds.absolute_top_left","value":[136.0,336.0]}
+{"query":"bounds.absolute_bottom_right","value":[336.0,322.128]}
+{"query":"bounds.left","value":0}
+{"query":"bounds.width","value":170.0}
+{"query":"bounds.absolute_left","value":156.0}
+{"query":"bounds.absolute_right","value":326.0}
+{"query":"bounds.left","value":0.0}
+{"query":"bounds.right","value":140.0}
+{"query":"bounds.width","value":140.0}
+{"query":"bounds.top_right","value":[140.0,100.0]}
+{"query":"bounds.absolute_right","value":176.0}
