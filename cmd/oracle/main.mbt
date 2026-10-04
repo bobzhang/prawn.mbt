@@ -415,6 +415,8 @@ async fn main {
     margin=margin(setup.get("margin")),
   )
   let run = { doc, log: [], }
+  // Prawn's warnings are observations too, where they happen
+  doc.on_warning(message => run.log.push({ "warning": message.to_json() }))
   guard script is Object(map) && map.get("ops") is Some(Array(ops)) else {
     fail("no ops")
   }

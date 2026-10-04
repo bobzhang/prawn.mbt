@@ -75,6 +75,11 @@ pub struct Document {
   /// callback nests (`formatted.mbt`)
   priv scopes : Array[FragmentScope]
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
+  /// what Prawn's warnings (`Kernel#warn`) go to (`on_warning`), and
+  /// whether the one about built-in fonts and text beyond ASCII was given
+  /// (Prawn gives it once)
+  priv mut warn : (String) -> Unit
+  priv mut m17n_warned : Bool
 }
 
 ///|
@@ -126,6 +131,8 @@ pub fn Document::new(
     dry_run: false,
     draw_text_callback: None,
     scopes: [],
+    warn: _ => (),
+    m17n_warned: false,
   }
   doc.make_page((w, h), (size, layout))
   doc.page_changed()
@@ -136,6 +143,16 @@ pub fn Document::new(
 /// A new page like the current one (what a page break makes).
 fn Document::new_page(self : Document) -> Unit {
   self.start_new_page()
+}
+
+///|
+/// Where Prawn's warnings go (Ruby's `Kernel#warn`): `handler` gets each
+/// message. By default they go nowhere.
+pub fn Document::on_warning(
+  self : Document,
+  handler : (String) -> Unit,
+) -> Unit {
+  self.warn = handler
 }
 
 ///|

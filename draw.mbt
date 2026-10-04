@@ -86,6 +86,15 @@ fn Document::draw_fragment(
         draw(text, (left, baseline + rise), true)
       }
     None => {
+      // Prawn's `draw_text!`: text beyond ASCII in a built-in font is
+      // warned about, once
+      if !self.dry_run &&
+        !self.m17n_warned &&
+        face.standard &&
+        text.iter().any(c => c.to_int() > 0x7F) {
+        self.m17n_warned = true
+        (self.warn)(m17n_warning)
+      }
       let (bold, italic) = style.face_style()
       let font = self.model.add_font({ family: style.family, bold, italic, })
       // in the fill colour current now: the fragment's own, or what a
@@ -196,3 +205,12 @@ fn script_rise(style : Style, face : Face) -> Double {
     _ => 0.0
   }
 }
+
+///|
+/// Prawn's warning about text beyond ASCII in a built-in font.
+let m17n_warning : String =
+  #|PDF's built-in fonts have very limited support for internationalized text.
+  #|If you need full UTF-8 support, consider using an external font instead.
+  #|
+  #|To disable this warning, add the following line to your code:
+  #|Prawn::Fonts::AFM.hide_m17n_warning = true

@@ -1,0 +1,12 @@
+{
+  "ops": [
+    ["?height_of", "a — dry run"],
+    ["?width_of", "— measured"],
+    ["text", "ascii only"],
+    ["text", "callback — draws", { "draw_text_callback": { "trace": "dtc" } }],
+    ["text", "first — warned"],
+    ["?cursor"],
+    ["text", "second — not again"],
+    ["?text_box", "boxed —", { "at": [100, 400], "width": 200, "height": 50 }]
+  ]
+}
