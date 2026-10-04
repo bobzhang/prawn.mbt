@@ -38,39 +38,37 @@ fn text_of_fragments(fragments : Array[Fragment]) -> String {
 /// nothing stays on the page.
 fn Document::set_box(
   self : Document,
-  string : String,
+  fragments : Array[Fragment],
+  base : Style,
   at : (Double, Double),
   width : Double,
   height : Double,
-  size : Double,
   align : Alignment,
   leading : Double,
   dry_run? : Bool = false,
-) -> (Array[Fragment], Double) raise PrawnError {
+) -> (Array[Fragment], Double, Double) raise PrawnError {
   // a dry run calls no callbacks
   let was_dry = self.dry_run
   self.dry_run = was_dry || dry_run
   defer {
     self.dry_run = was_dry
   }
-  let style = self.style(size~)
   let flow = self.flow
-  let page = flow.page
-  let mark = flow.model.pages[page].items.length()
+  let page = self.page()
+  let mark = page.items.length()
   let ctx = flow.text()
-  let face = flow.font(style)
+  let face = flow.font(base)
   let top = flow.page_h() - at.1
   // Prawn's `Wrap#wrap`: line by line, each stripped of its leading
   // whitespace and wrapped, CannotFit when not even its first character
   // fits, set when it fits the height; the first that does not is where
   // the box ends
-  let mut remaining = ctx.apply_fallbacks([
-    { text: string, style, anchor: None, },
-  ])
+  let mut remaining = ctx.apply_fallbacks(fragments)
   let mut baseline = 0.0
   let mut placed = 0
   let mut last : Double? = None
   let mut depth = 0.0
+  let mut gap = 0.0
   while !remaining.is_empty() {
     let line_fragments = strip_leading_fragments(remaining)
     if line_fragments.is_empty() {
@@ -84,7 +82,7 @@ fn Document::set_box(
       Some(c) if c != '\n' &&
         first_face.prawn_width(c.to_int()) * (first.style.size / 1000.0) > width => {
         if dry_run {
-          flow.model.pages[page].items.truncate(mark)
+          page.items.truncate(mark)
         }
         raise CannotFit
       }
@@ -93,7 +91,7 @@ fn Document::set_box(
     let (line, rest) = split_first_line(
       line_fragments, line_fragments, ctx, width, align,
     )
-    let (a, d, h) = line_extent(line, face, size, false)
+    let (a, d, h) = line_extent(line, face, base.size, false)
     let next = if placed == 0 { a } else { baseline + h + leading }
     if next + d > height + 0.0001 {
       remaining = line_fragments
@@ -103,17 +101,19 @@ fn Document::set_box(
     flow.ink_line(line, at.0, top + baseline)
     last = Some(top + baseline)
     depth = d
+    // the box's line gap is its last line's (its largest font's)
+    gap = h - a - d
     placed += 1
     remaining = rest
   }
   if dry_run {
-    flow.model.pages[page].items.truncate(mark)
+    page.items.truncate(mark)
   }
   let printed = match last {
     Some(b) => b - top + depth
     None => 0.0
   }
-  (remaining, printed)
+  (remaining, printed, gap)
 }
 
 ///|
@@ -140,17 +140,10 @@ pub fn Document::text_box(
 ) -> String raise {
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
-  // the document's position while the box is set: callbacks may move it,
-  // and it stays where they leave it (a text box does not move it)
-  let outer_y = self.text_y
-  self.text_y = Some(self.flow.y)
+  // a text box does not move the position; callbacks may, and it stays
+  // where they leave it
   defer {
     self.draw_text_callback = saved_callback
-    match self.text_y {
-      Some(y) => self.flow.y = y
-      None => ()
-    }
-    self.text_y = outer_y
     self.track()
   }
   let bounds = self.bounds()
@@ -185,18 +178,29 @@ pub fn Document::text_box(
   let origin = self.absolute(at)
   let mut top = origin.1
   let left = origin.0
+  // the string set at `size` in the box `h` tall with its top at `y`: a
+  // dry run, or for good
+  let set_at = fn(
+    size : Double,
+    y : Double,
+    h : Double,
+    dry : Bool,
+  ) raise PrawnError {
+    let st = self.style(size~)
+    self.set_box(
+      [{ text: string, style: st, anchor: None, }],
+      st,
+      (left, y),
+      width,
+      h,
+      align,
+      leading,
+      dry_run=dry,
+    )
+  }
   if overflow is ShrinkToFit {
     while true {
-      let (rest, _) = self.set_box(
-        string,
-        (left, top),
-        width,
-        height,
-        size,
-        align,
-        leading,
-        dry_run=true,
-      )
+      let (rest, _, _) = set_at(size, top, height, true)
       if rest.is_empty() || size <= min_font_size {
         break
       }
@@ -204,16 +208,7 @@ pub fn Document::text_box(
     }
   }
   if !(valign is Top) {
-    let (_, printed) = self.set_box(
-      string,
-      (left, top),
-      width,
-      height,
-      size,
-      align,
-      leading,
-      dry_run=true,
-    )
+    let (_, printed, _) = set_at(size, top, height, true)
     let descender = self.flow.font(self.style(size~)).descender_pt(size)
     match valign {
       Center => top -= (height - printed + descender) * 0.5
@@ -223,15 +218,7 @@ pub fn Document::text_box(
     height = printed
   }
   let set = () => {
-    let (rest, _) = self.set_box(
-      string,
-      (left, top),
-      width,
-      height,
-      size,
-      align,
-      leading,
-    )
+    let (rest, _, _) = set_at(size, top, height, false)
     text_of_fragments(rest)
   }
   if rotate == 0.0 {

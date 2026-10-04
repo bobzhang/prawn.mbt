@@ -340,15 +340,7 @@ pub fn Document::float(self : Document, body : () -> Unit raise) -> Unit raise {
 /// `reflow_margins`, at the top of its parent); any other box to the next
 /// page, made if there is none.
 fn Document::move_past_bottom(self : Document) -> Unit {
-  // a text being set carries on in a fresh box on the next column or
-  // page: the document's position starts again at its top
-  defer (if self.text_y is Some(_) {
-    self.text_y = Some(self.flow.y)
-    self.text_start = self.flow.y
-  })
-  // a stretchy box keeps the depth reached before the position moves on,
-  // below the line gap Prawn's `text` moves down by first
-  self.flow.y += self.pending_gap
+  // a stretchy box keeps the depth reached before the position moves on
   self.track()
   let box = self.bbox
   match box.columns {

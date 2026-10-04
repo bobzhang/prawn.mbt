@@ -55,9 +55,6 @@ pub struct Document {
   /// page's margin box (`bounds.mbt`)
   priv mut bbox : Box
   priv mut margin : Box
-  /// while `text` sets lines: the line gap and leading Prawn moves down by
-  /// before content moves on to the next column or page
-  priv mut pending_gap : Double
   /// what Prawn knows of each fragment set that its style does not carry
   /// (`formatted.mbt`), by the style's `callback` index
   priv fragment_meta : Array[FragmentMeta]
@@ -68,14 +65,6 @@ pub struct Document {
   /// the fragments being drawn, innermost last: text set from inside a
   /// callback nests (`formatted.mbt`)
   priv scopes : Array[FragmentScope]
-  /// while a text is set: the document's position (Prawn's `y`, in Flow's
-  /// coordinates), apart from where Flow is setting lines; callbacks see
-  /// and move it, and the text moves down from it when it is set
-  priv mut text_y : Double?
-  /// where that text started (or, after a page or column break, where it
-  /// carried on): the text moves down from `text_y` by what it set from
-  /// here
-  priv mut text_start : Double
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
 }
 
@@ -128,13 +117,10 @@ pub fn Document::new(
     pages: [],
     bbox: margin,
     margin,
-    pending_gap: 0.0,
     fragment_meta: [],
     dry_run: false,
     draw_text_callback: None,
     scopes: [],
-    text_y: None,
-    text_start: 0.0,
   }
   // each new page's record (a page made by a page break included)
   flow.page_started = (from, to) => doc.page_made(from, to, (size, layout))
@@ -153,7 +139,6 @@ pub fn Document::new(
   // colour while its fragment is (`begin_fragment`), or what a callback set
   flow.ink_color = Some(_ => doc.gs().fill)
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
-  flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
   doc.page_changed()
   doc
@@ -330,16 +315,19 @@ pub fn Document::height_of(
   }
   let style = self.style(size?)
   self.check(string, style, Some(width.unwrap_or(self.flow.width())))
-  self.flow.height_of(
+  // Prawn's `height_of_formatted`: a box too tall to fill, set as a dry
+  // run, and its final gap
+  let (_, printed, gap) = self.set_box(
     [{ text: string, style, anchor: None, }],
-    {
-      leading,
-      padding_top: 0.0,
-      padding_bottom: self.flow.font(style).line_gap_pt(style.size) + leading,
-    },
     style,
-    width?,
+    (0.0, 0.0),
+    width.unwrap_or(self.flow.width()),
+    1.0e8,
+    Left,
+    leading,
+    dry_run=true,
   )
+  printed + gap + leading
 }
 
 ///|
