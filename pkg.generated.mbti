@@ -50,6 +50,8 @@ pub(all) suberror PrawnError {
   CannotFit
   IncompatibleStringEncoding(String)
   ArgumentError(String)
+  UnknownFont(String)
+  BadFontFamily(String)
   EmptyGraphicStateStack
   Unsupported(String)
 }
@@ -110,9 +112,12 @@ pub fn Document::ellipse(Self, (Double, Double), Double, r2? : Double) -> Unit
 pub fn Document::fill(Self, even_odd? : Bool) -> Unit
 pub fn Document::fill_and_stroke(Self, even_odd? : Bool) -> Unit
 pub fn Document::float(Self, () -> Unit raise) -> Unit raise
-pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, align? : Alignment, leading? : Double, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
+pub fn Document::font(Self, String, style? : FontStyle, size? : Double, body? : () -> Unit raise) -> Unit raise
+pub fn Document::font_name(Self) -> String
+pub fn Document::font_size(Self) -> Double
+pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, style? : FontStyle, align? : Alignment, leading? : Double, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
 pub fn Document::go_to_page(Self, Int) -> Unit
-pub fn Document::height_of(Self, String, size? : Double, width? : Double, leading? : Double) -> Double raise PrawnError
+pub fn Document::height_of(Self, String, size? : Double, style? : FontStyle, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
 pub fn Document::horizontal_rule(Self) -> Unit
 pub fn Document::indent(Self, Double, right? : Double, () -> Unit raise) -> Unit raise
@@ -150,14 +155,15 @@ pub fn Document::start_new_page(Self, layout? : String, size? : (Double, Double)
 pub fn Document::stroke(Self) -> Unit
 pub fn Document::stroke_axis(Self, at? : (Double, Double), width? : Double, height? : Double, step_length? : Double, negative_axes_length? : Double, color? : @pagelayout.Color) -> Unit raise
 pub fn Document::stroke_bounds(Self) -> Unit
-pub fn Document::text(Self, String, size? : Double, align? : Alignment, leading? : Double, inline_format? : Bool, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
-pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> String raise
+pub fn Document::text(Self, String, size? : Double, style? : FontStyle, align? : Alignment, leading? : Double, inline_format? : Bool, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> Unit raise PrawnError
+pub fn Document::text_box(Self, String, at? : (Double, Double), width? : Double, height? : Double, size? : Double, style? : FontStyle, align? : Alignment, valign? : VerticalAlignment, overflow? : Overflow, min_font_size? : Double, leading? : Double, rotate? : Double, rotate_around? : String, draw_text_callback? : (String, (Double, Double), Bool) -> Unit) -> String raise
 pub fn Document::transformation_matrix(Self, (Double, Double, Double, Double, Double, Double), () -> Unit raise) -> Unit raise
 pub fn Document::translate(Self, Double, Double, () -> Unit raise) -> Unit raise
 pub fn Document::transparent(Self, Double, stroke_opacity? : Double, () -> Unit raise) -> Unit raise
 pub fn Document::undash(Self) -> Unit
 pub fn Document::vertical_line(Self, Double, Double, at~ : Double) -> Unit
-pub fn Document::width_of(Self, String, size? : Double, kerning? : Bool) -> Double raise PrawnError
+pub fn Document::width_of(Self, String, size? : Double, style? : FontStyle, kerning? : Bool) -> Double raise PrawnError
+pub fn Document::with_font_size(Self, Double, () -> Unit raise) -> Unit raise
 
 pub(all) struct Face {
   metrics : @fonts.FaceMetrics
@@ -241,6 +247,13 @@ pub fn FontCatalog::has_icons(Self) -> Bool
 pub fn FontCatalog::icon_glyph(Self, String, String) -> String?
 pub fn FontCatalog::load(Array[(String, Bool, Bool, Bytes)], icon_sets? : Array[IconSet], legacy_icon_mapping? : String, fallbacks? : Array[String]) -> Self raise
 pub fn FontCatalog::svg_families(Self) -> Array[(String, Array[String])]
+
+pub(all) enum FontStyle {
+  Normal
+  Bold
+  Italic
+  BoldItalic
+}
 
 pub(all) struct Fragment {
   text : String

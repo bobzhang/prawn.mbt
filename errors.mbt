@@ -9,6 +9,13 @@ pub(all) suberror PrawnError {
   /// Ruby's `ArgumentError`: an argument Prawn rejects (a zero or negative
   /// dash, a malformed colour)
   ArgumentError(String)
+  /// a font Prawn does not know (`font` given a name that is neither a
+  /// family nor a font)
+  UnknownFont(String)
+  /// a style asked of a font set by its own name, which has no family (the
+  /// Ruby class: pdf-core's for a :style option, the arranger's for a
+  /// fragment's styles)
+  BadFontFamily(String)
   /// pdf-core's: a graphics state restored with none saved on the page (a
   /// page made inside two nested blocks that save it)
   EmptyGraphicStateStack
@@ -24,6 +31,8 @@ pub fn PrawnError::ruby_class(self : PrawnError) -> String {
     CannotFit => "Prawn::Errors::CannotFit"
     IncompatibleStringEncoding(_) => "Prawn::Errors::IncompatibleStringEncoding"
     ArgumentError(_) => "ArgumentError"
+    UnknownFont(_) => "Prawn::Errors::UnknownFont"
+    BadFontFamily(class) => class
     EmptyGraphicStateStack => "PDF::Core::Errors::EmptyGraphicStateStack"
     Unsupported(_) => "Unsupported"
   }

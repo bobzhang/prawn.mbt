@@ -375,6 +375,9 @@ fn fragment_of(
 /// the destination it links to besides a URI.
 priv struct FragmentMeta {
   color_set : Bool
+  /// whether the font the fragment is set in has a family (None: it keeps
+  /// the current font, setting only the size)
+  family_known : Bool?
   anchor : String?
   callbacks : Array[FragmentCallback]
 }
@@ -411,6 +414,11 @@ fn Document::fragment(
   }
   let base = self.style(size?)
   // a face named directly is that face, whatever the styles say
+  // styles need a family to take them from (a font of its own too: Prawn's
+  // arranger raises as it sets the fragment, before anything of the text is drawn here)
+  if (f.font is Some(_) || f.bold || f.italic) && !self.font_family_known {
+    raise BadFontFamily("Prawn::Text::Formatted::Arranger::BadFontFamily")
+  }
   let (family, bold, italic, font_set) = match f.font {
     Some(name) =>
       match standard_face(name) {
@@ -425,6 +433,11 @@ fn Document::fragment(
   let meta = self.fragment_meta.length()
   self.fragment_meta.push({
     color_set: f.color is Some(_),
+    family_known: match f.font {
+      Some(name) => Some(standard_face(name) is None)
+      None if f.bold || f.italic => Some(true)
+      None => None
+    },
     anchor: if f.link is Some(_) {
       f.anchor
     } else {
@@ -478,10 +491,27 @@ pub fn Document::formatted_text(
   self : Document,
   fragments : Array[TextFragment],
   size? : Double,
+  style? : FontStyle,
   align? : Alignment = Left,
   leading? : Double,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the current font in `style` while this is set (Prawn's `:style`, which
+  // its boxes apply and undo)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
+    None => ()
+  }
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
@@ -693,6 +723,7 @@ priv struct FragmentScope {
   family : String
   size : Double
   face_style : (Bool, Bool)
+  family_known : Bool
   fill : @pagelayout.Color
   stroke : @pagelayout.Color
   color_set : Bool
@@ -710,6 +741,7 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
     family: self.family,
     size: self.size,
     face_style: self.face_style,
+    family_known: self.font_family_known,
     fill: gs.fill,
     stroke: gs.stroke,
     color_set,
@@ -717,6 +749,10 @@ fn Document::begin_fragment(self : Document, style : Style) -> Unit {
   self.family = style.family
   self.size = style.size
   self.face_style = style.face_style()
+  match self.fragment_meta.get(style.callback) {
+    Some({ family_known: Some(known), .. }) => self.font_family_known = known
+    _ => ()
+  }
   if color_set {
     gs.fill = style.color
     gs.stroke = style.color
@@ -732,6 +768,7 @@ fn Document::end_fragment(self : Document) -> Unit {
   self.family = scope.family
   self.size = scope.size
   self.face_style = scope.face_style
+  self.font_family_known = scope.family_known
   if scope.color_set {
     let gs = self.gs()
     gs.fill = scope.fill

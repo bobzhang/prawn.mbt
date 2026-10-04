@@ -61,6 +61,9 @@ pub struct Document {
   /// the current font's style, bold and italic (a fragment's while it is
   /// drawn)
   priv mut face_style : (Bool, Bool)
+  /// whether the current font is a family's (Prawn's `font.family`), not a
+  /// font set by its own name
+  priv mut font_family_known : Bool
   /// each page's record (`page.mbt`), as the model's pages are ordered
   priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
@@ -130,6 +133,7 @@ pub fn Document::new(
     text_context: { catalog, hooks: Hooks::new(), },
     family: "Helvetica",
     face_style: (false, false),
+    font_family_known: true,
     size: 12.0,
     pages: [],
     bbox: margin,
@@ -165,7 +169,7 @@ pub fn Document::on_warning(
 
 ///|
 /// The face `style` is set in.
-fn Document::font(self : Document, style : Style) -> Face {
+fn Document::face_of(self : Document, style : Style) -> Face {
   let (bold, italic) = style.face_style()
   self.text_context.face(style.family, bold, italic)
 }
@@ -206,11 +210,28 @@ pub fn Document::text(
   self : Document,
   string : String,
   size? : Double,
+  style? : FontStyle,
   align? : Alignment = Left,
   leading? : Double,
   inline_format? : Bool = false,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit,
 ) -> Unit raise PrawnError {
+  // the current font in `style` while this is set (Prawn's `:style`, which
+  // its boxes apply and undo)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
+    None => ()
+  }
   // set as one plain fragment, or the fragments of its markup
   // (`formatted.mbt`)
   let fragments = if inline_format {
@@ -312,11 +333,27 @@ pub fn Document::width_of(
   self : Document,
   string : String,
   size? : Double,
+  style? : FontStyle,
   kerning? : Bool = false,
 ) -> Double raise PrawnError {
+  // the current font in `style` while this is measured (Prawn's `:style`)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => {
+      // Prawn looks up a family of no name
+      if !self.font_family_known {
+        raise UnknownFont(" is not a known font.")
+      }
+      self.face_style = style.flags()
+    }
+    None => ()
+  }
   let style = self.style(size?)
   self.check(string, style, None)
-  let face = self.font(style)
+  let face = self.face_of(style)
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
   for i, cp in chars {
@@ -337,9 +374,26 @@ pub fn Document::height_of(
   self : Document,
   string : String,
   size? : Double,
+  style? : FontStyle,
   width? : Double,
   leading? : Double,
 ) -> Double raise PrawnError {
+  // the current font in `style` while this is set (Prawn's `:style`, which
+  // its boxes apply and undo)
+  let saved_style = self.face_style
+  defer {
+    self.face_style = saved_style
+  }
+  match style {
+    Some(style) => {
+      // a font set by its own name has no family to take a style from
+      if !self.font_family_known {
+        raise BadFontFamily("PDF::Core::Text::BadFontFamily")
+      }
+      self.face_style = style.flags()
+    }
+    None => ()
+  }
   // the document's default leading unless given (Prawn's `default_leading`)
   let leading = leading.unwrap_or(self.default_leading)
   // an empty box: its final gap is the leading alone
@@ -374,7 +428,7 @@ fn Document::check(
   style : Style,
   width : Double?,
 ) -> Unit raise PrawnError {
-  let face = self.font(style)
+  let face = self.face_of(style)
   // the whole string is encoded before anything is wrapped
   if face.standard {
     for c in string {

@@ -1,0 +1,23 @@
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Helvetica: 12 >"}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Times-Bold: 12 >"}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Courier: 9 >"}
+{"query":"font_size","value":9}
+{"query":"font.inspect","value":"Prawn::Fonts::AFM< Helvetica-Oblique: 12 >"}
+{"trace":"f","event":"render_in_front","text":"a callback sets a face by name","left":0,"baseline":660.3450000000001,"width":163.236,"height":11.100000000000023,"top":668.9610000000001,"bottom":657.8610000000001}
+{"query":["font_size",16],"value":null}
+{"query":["font_size",8],"value":16}
+{"query":"font_size","value":16}
+{"query":["font_size=",12],"value":null}
+{"query":["text_box","a bold italic text box",{"at":[300.0,300.0],"width":120.0,"height":60.0,"style":":bold_italic"}],"value":""}
+{"query":["width_of","AVATAR",{"style":":bold"}],"value":49.992000000000004}
+{"query":["height_of","a bold height of text long enough to wrap onto a second line in the bounds of the page",{"style":":bold","size":20.0}],"value":47.599999999999994}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"query":"font","value":{"class":"Prawn::Fonts::AFM"}}
+{"query":["font","Courier"],"value":{"class":"Prawn::Fonts::AFM"}}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"raises":"Prawn::Errors::UnknownFont","error":"Prawn::Errors::UnknownFont"}
+{"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}
+{"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}
+{"query":"cursor","value":557.2050000000002}
