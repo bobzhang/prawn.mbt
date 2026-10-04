@@ -452,22 +452,6 @@ fn split_first_line(
   width : Double,
   align : Alignment,
 ) -> (Line, Array[Fragment]) {
-  let (line, remaining, _) = split_first_line_from(
-    first, rest, ctx, width, align,
-  )
-  (line, remaining)
-}
-
-///|
-/// `split_first_line`, and the last of `rest` what follows draws on (-1
-/// when nothing follows).
-fn split_first_line_from(
-  first : Array[Fragment],
-  rest : Array[Fragment],
-  ctx : TextContext,
-  width : Double,
-  align : Alignment,
-) -> (Line, Array[Fragment], Int) {
   let (items, faces, ranges) = break_lines(first, ctx, width, width)
   let (from, to, hard) = ranges[0]
   let next = if hard { to + 1 } else { to }
@@ -494,7 +478,7 @@ fn split_first_line_from(
   let line = place_line(
     ctx, first, faces, items, from, to, width, align, justify, hard,
   )
-  (line, remaining, previous)
+  (line, remaining)
 }
 
 ///|
@@ -878,4 +862,34 @@ fn place_line(
     images,
     marks,
   }
+}
+
+///|
+/// The first line of `fragments` set `width` wide, and where the text
+/// after it starts (a fragment and an offset in its text), if any does.
+fn first_line_break(
+  fragments : Array[Fragment],
+  ctx : TextContext,
+  width : Double,
+  align : Alignment,
+) -> (Line, (Int, Int)?) {
+  let (items, faces, ranges) = break_lines(fragments, ctx, width, width)
+  let (from, to, hard) = ranges[0]
+  let next = if hard { to + 1 } else { to }
+  let mut after = None
+  for k in next..<items.length() {
+    let item = items[k]
+    if item.anchor is Some(_) {
+      after = Some((item.fragment, 0))
+      break
+    } else if item.offset >= 0 {
+      after = Some((item.fragment, item.offset))
+      break
+    }
+  }
+  let justify = align == Justify && !hard && after is Some(_)
+  let line = place_line(
+    ctx, fragments, faces, items, from, to, width, align, justify, hard,
+  )
+  (line, after)
 }

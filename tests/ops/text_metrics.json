@@ -1,6 +1,7 @@
 {
   "document": { "page_size": [200, 100], "margin": 10 },
   "ops": [
+    ["text", "a"],
     ["text", "X", { "size": 100 }],
     ["?cursor"],
     ["?page_count"],
@@ -20,6 +21,14 @@
     ["text", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.", { "size": 30 }],
     ["?cursor"],
     ["?page_count"],
-    ["?height_of", "supercalifragilisticexpialidocious-and-more-words-joined-by-hyphens and spaces   with   runs\nof\n\nnewlines", { "width": 60 }]
+    ["?height_of", "supercalifragilisticexpialidocious-and-more-words-joined-by-hyphens and spaces   with   runs\nof\n\nnewlines", { "width": 60 }],
+    ["start_new_page", { "size": [200, 100] }],
+    ["text", "b"],
+    ["formatted_text", [{ "text": " ", "size": 100 }, { "text": "x", "size": 12 }]],
+    ["?cursor"],
+    ["?page_count"],
+    ["start_new_page", { "size": "LETTER" }],
+    ["text", "ThisIsOneVeryLongUnbrokenWordThatMustWrapByCharacterAcrossSeveralLinesOfTheBoxBecauseItHasNoSpacesAnywhereInItAtAllAndKeepsOnGoingForAWhileLonger", { "size": 40 }],
+    ["?cursor"]
   ]
 }

@@ -63,15 +63,23 @@ fn Document::set_box(
   // whitespace and wrapped, CannotFit when not even its first character
   // fits, set when it fits the height; the first that does not is where
   // the box ends
-  let mut remaining = ctx.apply_fallbacks(fragments)
+  // the text, as Prawn's arranger takes it in (an empty fragment is none)
+  let text = ctx
+    .apply_fallbacks(fragments)
+    .filter(f => !f.text.is_empty() || f.anchor is Some(_) || f.style.image >= 0)
+  // where the text not yet set starts: a fragment, and an offset in it
+  let mut at_fragment = 0
+  let mut at_offset = 0
   let mut baseline = 0.0
   let mut placed = 0
   // the last line measured (whether or not it fit): Prawn takes the box's
   // height and final gap from it
   let mut depth = 0.0
   let mut gap = 0.0
-  while !remaining.is_empty() {
-    let stripped = strip_leading_fragments(remaining)
+  let mut rejected = false
+  while at_fragment < text.length() {
+    let window = line_window(text, at_fragment, at_offset, flow, width)
+    let (stripped, origins) = strip_leading_fragments(window)
     // measured in the font it is set in (a fallback font, maybe)
     match stripped.search_by(f => !f.text.is_empty()) {
       Some(i) => {
@@ -100,23 +108,58 @@ fn Document::set_box(
         f
       }
     })
-    let (line, rest) = first_line(held, flow, ctx, width, align)
+    let (line, after) = first_line_break(held, ctx, width, align)
     let (a, d, h) = line_extent(line, face, base.size, false)
     depth = d
     // the box's line gap is its last line's (its largest font's)
     gap = h - a - d
     let next = if placed == 0 { a } else { baseline + h + leading }
     if next + d > height + 0.0001 {
-      remaining = stripped
+      rejected = true
       break
     }
     baseline = next
     flow.ink_line(line, at.0, top + baseline)
     placed += 1
-    remaining = rest
+    // the text after the line, in the text's terms
+    let (w, offset) = match after {
+      Some((i, o)) => {
+        let (w, removed) = origins[i]
+        (w, removed + (if held[i].text == "\u{200B}" { 0 } else { o }))
+      }
+      None => (window.length() - 1, window[window.length() - 1].text.length())
+    }
+    let base_offset = if w == 0 { at_offset } else { 0 }
+    let before = (at_fragment, at_offset)
+    at_fragment += w
+    at_offset = base_offset + offset
+    let length = text[at_fragment].text.length()
+    if (after is None || at_offset > 0) && at_offset >= length {
+      at_fragment += 1
+      at_offset = 0
+    }
+    // every line takes some of the text
+    guard (at_fragment, at_offset) != before else {
+      abort("a line took none of the text")
+    }
   }
   if dry_run {
     page.items.truncate(mark)
+  }
+  let remaining : Array[Fragment] = []
+  if at_fragment < text.length() {
+    let f = text[at_fragment]
+    remaining.push({ ..f, text: f.text[at_offset:].to_owned(), })
+    for i in (at_fragment + 1)..<text.length() {
+      remaining.push(text[i])
+    }
+  }
+  // a line that did not fit goes back without the whitespace it starts
+  // with, as Prawn has stripped it
+  let remaining = if rejected {
+    strip_leading_fragments(remaining).0
+  } else {
+    remaining
   }
   (remaining, baseline + depth, gap)
 }
@@ -260,97 +303,100 @@ fn strip_leading_spaces(text : String) -> String {
 
 ///|
 /// Fragments without the whitespace they start with (Prawn's line wrap
-/// strips a line's leading whitespace). A fragment it empties stays, as
-/// Prawn keeps it, unless a line break follows it.
-fn strip_leading_fragments(fragments : Array[Fragment]) -> Array[Fragment] {
+/// strips a line's leading whitespace), and where each comes from: its
+/// index in `fragments` and how much was stripped from its start. A
+/// fragment it empties stays, as Prawn keeps it, unless a line break
+/// follows it.
+fn strip_leading_fragments(
+  fragments : Array[Fragment],
+) -> (Array[Fragment], Array[(Int, Int)]) {
   let out : Array[Fragment] = []
+  let origins : Array[(Int, Int)] = []
   let mut stripping = true
   for i, f in fragments {
     if stripping {
       let text = strip_leading_spaces(f.text)
+      let removed = f.text.length() - text.length()
       if text.is_empty() && f.anchor is None {
         if i + 1 < fragments.length() && fragments[i + 1].text.has_prefix("\n") {
           continue
         }
         out.push({ ..f, text, })
+        origins.push((i, removed))
         continue
       }
       stripping = false
       out.push({ ..f, text, })
+      origins.push((i, removed))
     } else {
       out.push(f)
+      origins.push((i, 0))
     }
   }
-  out
+  (out, origins)
 }
 
 ///|
-/// The first line of `fragments` set `width` wide, and what follows it.
-/// The line is wrapped from a window of the text that surely holds it (up
-/// to a line break, or two break opportunities past twice the width), so
-/// a long text is not wrapped again in full for each of its lines.
-fn first_line(
-  fragments : Array[Fragment],
+/// A window of `text` from fragment `start` at `offset` that surely holds
+/// the first line set `width` wide: up to a line break, or the second
+/// break opportunity past twice the width, or four times the width. A
+/// long text is then not wrapped (nor copied) in full for each line.
+fn line_window(
+  text : Array[Fragment],
+  start : Int,
+  offset : Int,
   flow : Flow,
-  ctx : TextContext,
   width : Double,
-  align : Alignment,
-) -> (Line, Array[Fragment]) {
+) -> Array[Fragment] {
   let window : Array[Fragment] = []
-  // where the last fragment of the window is cut, if it is
-  let mut cut = -1
   let mut w = 0.0
   let mut breaks = 0
-  for f in fragments {
+  for i in start..<text.length() {
+    let f = text[i]
+    let from = if i == start { offset } else { 0 }
+    let s = f.text
     let face = flow.font(f.style)
     let scale = f.style.size / 1000.0
-    let text = f.text
-    for j in 0..<text.length() {
-      let u = text[j].to_int()
+    let mut cut = -1
+    for j in from..<s.length() {
+      let u = s[j].to_int()
       if u == '\n'.to_int() {
         cut = j + 1
         break
       }
-      if w > 2.0 * width {
-        if u == ' '.to_int() ||
+      // never between the halves of a surrogate pair
+      let low = u >= 0xDC00 && u <= 0xDFFF
+      if w > 4.0 * width && !low {
+        cut = j
+        break
+      }
+      if w > 2.0 * width &&
+        (
+          u == ' '.to_int() ||
           u == '\t'.to_int() ||
           u == 0x200B ||
           u == '-'.to_int() ||
-          u == 0xAD {
-          breaks += 1
-          if breaks >= 2 {
-            cut = j
-            break
-          }
+          u == 0xAD
+        ) {
+        breaks += 1
+        if breaks >= 2 {
+          cut = j
+          break
         }
-      } else {
-        w += face.prawn_width(u) * scale
       }
+      w += face.prawn_width(u) * scale
     }
-    if cut >= 0 && cut < text.length() {
-      window.push({ ..f, text: text[:cut].to_owned(), })
-      break
-    }
-    window.push(f)
+    let to = if cut >= 0 { cut } else { s.length() }
+    window.push(
+      if from == 0 && to == s.length() {
+        f
+      } else {
+        { ..f, text: s[from:to].to_owned(), }
+      },
+    )
     if cut >= 0 {
       break
     }
   }
-  let (line, rest, last) = split_first_line_from(
-    window, fragments, ctx, width, align,
-  )
-  let k = window.length() - 1
-  if window.length() < fragments.length() ||
-    window[k].text.length() < fragments[k].text.length() {
-    // the window's cut fragment goes on from the cut, unless the line left
-    // some of it already; then the fragments after the window
-    let tail = fragments[k].text[window[k].text.length():].to_owned()
-    if last != k && !tail.is_empty() {
-      rest.push({ ..fragments[k], text: tail, })
-    }
-    for i in (k + 1)..<fragments.length() {
-      rest.push(fragments[i])
-    }
-  }
-  (line, rest)
+  window
 }
