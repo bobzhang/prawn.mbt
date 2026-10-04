@@ -1,0 +1,10 @@
+{
+  "ops": [
+    ["formatted_text", [
+      { "text": "pager", "color": "FF0000", "callback": { "trace": "pg", "phase": "in_front", "draw": [["start_new_page"]] } }
+    ]],
+    ["text", "after the callback's page"],
+    ["?page_count"],
+    ["?cursor"]
+  ]
+}

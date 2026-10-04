@@ -1,0 +1,3 @@
+{"trace":"pg","event":"render_in_front","text":"pager","left":0,"baseline":711.384,"width":30.684,"height":11.100000000000023,"top":720.0,"bottom":708.9}
+{"query":"page_count","value":2}
+{"query":"cursor","value":692.2559999999999}

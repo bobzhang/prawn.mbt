@@ -547,12 +547,9 @@ fn Document::decorations(
   let base = baseline - rise
   let gs = self.gs()
   let meta = self.fragment_meta.get(style.callback)
-  // a fragment with its own colour strokes its decorations in it (Prawn's
-  // arranger sets the stroke colour too)
-  let stroke = match meta {
-    Some({ color_set: true, .. }) => style.color
-    _ => gs.stroke
-  }
+  // the stroke colour current now: a fragment's own colour while it is
+  // drawn (`begin_fragment`), or what a callback set
+  let stroke = gs.stroke
   let line = fn(y : Double) -> @pagelayout.PageItem {
     Graphic({
       x_pt: 0.0,
@@ -606,7 +603,7 @@ fn Document::decorations(
     Some(m) if !self.dry_run && !m.callbacks.is_empty() => {
       let fragment = self.placed(x, width, baseline, style, face, text)
       out.append(
-        self.in_fragment(style, () => {
+        self.capture(() => {
           for callback in m.callbacks {
             match callback.render_in_front {
               Some(f) => f(fragment)
@@ -618,6 +615,7 @@ fn Document::decorations(
     }
     _ => ()
   }
+  self.end_fragment()
   out
 }
 
@@ -768,10 +766,12 @@ fn Document::underlays(
   face : Face,
   text : String,
 ) -> Array[@pagelayout.PageItem] {
+  // the fragment's state from here to its overlays (`decorations`)
+  self.begin_fragment(style)
   match self.fragment_meta.get(style.callback) {
     Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
       let fragment = self.placed(x, width, baseline, style, face, text)
-      self.in_fragment(style, () => {
+      self.capture(() => {
         for callback in meta.callbacks {
           match callback.render_behind {
             Some(f) => f(fragment)
@@ -793,7 +793,7 @@ fn Document::draw_text_instead(
   text : String,
   x : Double,
   baseline : Double,
-  style : Style,
+  _style : Style,
 ) -> Array[@pagelayout.PageItem]? {
   match self.draw_text_callback {
     Some(draw) => {
@@ -806,47 +806,81 @@ fn Document::draw_text_instead(
         x - box.left,
         self.flow.page_h() - baseline - box.bottom_at(self.y()),
       )
-      Some(self.in_fragment(style, () => draw(text, at, true)))
+      Some(self.capture(() => draw(text, at, true)))
     }
     None => None
   }
 }
 
 ///|
-/// Runs a callback as Prawn's arranger does, in the fragment's state (its
-/// font, size, and colour as fill and stroke when it sets one), and
-/// returns what it drew on the page, taken off the page so the run can put
-/// it where Prawn would: behind or in front of the text.
-fn Document::in_fragment(
+/// Runs a callback and returns what it drew on the page it started on,
+/// taken off that page so the run can put it where Prawn would: behind or
+/// in front of the text.
+fn Document::capture(
   self : Document,
-  style : Style,
   body : () -> Unit,
 ) -> Array[@pagelayout.PageItem] {
-  let page = self.flow.page
-  let mark = self.flow.model.pages[page].items.length()
-  let (family, size) = (self.family, self.size)
+  // the page followed through insertions a callback may make before it
+  let page : Ref[Int] = { val: self.flow.page, }
+  self.open_pages.push(page)
+  let mark = self.flow.model.pages[page.val].items.length()
+  body()
+  self.open_pages.pop() |> ignore
+  let items = self.flow.model.pages[page.val].items
+  if mark > items.length() {
+    return []
+  }
+  let drawn = items[mark:].to_owned()
+  items.truncate(mark)
+  drawn
+}
+
+///|
+/// The document's state around a fragment being drawn (Prawn's arranger):
+/// what to put back when the fragment is done.
+priv struct FragmentScope {
+  family : String
+  size : Double
+  fill : @pagelayout.Color
+  stroke : @pagelayout.Color
+  color_set : Bool
+}
+
+///|
+/// A run's fragment starts being drawn: the document takes its font and
+/// size, and its own colour as fill and stroke colour, for the underlay,
+/// text, decorations and callbacks that follow.
+fn Document::begin_fragment(self : Document, style : Style) -> Unit {
   let gs = self.gs()
-  let (fill, stroke) = (gs.fill, gs.stroke)
-  self.family = style.family
-  self.size = style.size
-  // a fragment's own colour is the fill and stroke colour while it is
-  // drawn, then the colours are put back; without one, what the callback
-  // sets stays (Prawn's arranger)
   let color_set = self.fragment_meta.get(style.callback)
     is Some({ color_set: true, .. })
+  self.scope = Some({
+    family: self.family,
+    size: self.size,
+    fill: gs.fill,
+    stroke: gs.stroke,
+    color_set,
+  })
+  self.family = style.family
+  self.size = style.size
   if color_set {
     gs.fill = style.color
     gs.stroke = style.color
   }
-  body()
-  self.family = family
-  self.size = size
-  if color_set {
-    gs.fill = fill
-    gs.stroke = stroke
+}
+
+///|
+/// The fragment is drawn: font and size back, and a fragment's own colour
+/// taken off again on the page current now (a colour a callback set in a
+/// fragment without one stays, as with Prawn's arranger).
+fn Document::end_fragment(self : Document) -> Unit {
+  guard self.scope is Some(scope) else { return }
+  self.scope = None
+  self.family = scope.family
+  self.size = scope.size
+  if scope.color_set {
+    let gs = self.gs()
+    gs.fill = scope.fill
+    gs.stroke = scope.stroke
   }
-  let items = self.flow.model.pages[page].items
-  let drawn = items[mark:].to_owned()
-  items.truncate(mark)
-  drawn
 }

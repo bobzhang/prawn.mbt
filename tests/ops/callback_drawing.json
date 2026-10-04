@@ -9,6 +9,10 @@
       { "text": "red fragment", "color": "FF0000", "size": 20, "callback": { "trace": "state", "phase": "in_front", "draw": [["stroke_rectangle", [0, 640], 100, 10]] } }
     ]],
     ["text", "redrawn", { "draw_text_callback": { "trace": "redraw", "draw": [["fill_rectangle", [0, 600], 10, 10]] } }],
+    ["formatted_text", [
+      { "text": "red, recoloured behind", "color": "FF0000", "styles": [":underline"], "callback": { "trace": "chg", "phase": "behind", "draw": [["fill_color", "00AA00"], ["stroke_color", "0000FF"]] } },
+      { "text": " then plain" }
+    ]],
     ["?cursor"]
   ]
 }

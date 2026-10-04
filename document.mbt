@@ -78,6 +78,8 @@ pub struct Document {
   /// called
   priv mut dry_run : Bool
   /// during a `draw_text_callback` text: what draws its pieces instead
+  /// the fragment being drawn (`formatted.mbt`)
+  priv mut scope : FragmentScope?
   priv mut draw_text_callback : ((String, (Double, Double), Bool) -> Unit)?
   /// each page's path being built (Prawn writes it into that page's
   /// content, to be painted there)
@@ -141,6 +143,7 @@ pub fn Document::new(
     fragment_meta: [],
     dry_run: false,
     draw_text_callback: None,
+    scope: None,
   }
   // a new page starts with the graphics state of the page it was made from,
   // as it is then (a page made by a page break included)
@@ -181,13 +184,9 @@ pub fn Document::new(
   flow.draw_text = Some((text, x, baseline, style) => {
     doc.draw_text_instead(text, x, baseline, style)
   })
-  // text without its own colour is inked in the fill colour current then
-  flow.ink_color = Some(style => {
-    match doc.fragment_meta.get(style.callback) {
-      Some({ color_set: false, .. }) => doc.gs().fill
-      _ => style.color
-    }
-  })
+  // text is inked in the fill colour current when it is drawn: its own
+  // colour while its fragment is (`begin_fragment`), or what a callback set
+  flow.ink_color = Some(_ => doc.gs().fill)
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.move_past_bottom = Some(() => doc.move_past_bottom())
   flow.start_new_page(size=(w, h))
