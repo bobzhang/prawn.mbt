@@ -419,7 +419,7 @@ async fn main {
   doc.on_warning(message => {
     // without its final line break, as the Ruby driver logs it
     let message = if message.has_suffix("\n") {
-      message[:message.length() - 1].to_string()
+      message[:message.length() - 1].to_owned()
     } else {
       message
     }
