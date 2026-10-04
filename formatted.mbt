@@ -482,12 +482,14 @@ pub fn Document::formatted_text(
   // the pieces drawn by the callback instead (text, where, kerning)
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
-  // the shift of this text's callbacks, apart from an outer text's
-  let outer_shift = self.callback_shift
-  self.callback_shift = 0.0
+  // the document's position while this text is set (an outer text's
+  // is put back after)
+  let outer_y = self.text_y
+  let start_y = self.flow.y
+  self.text_y = Some(start_y)
   defer {
     self.draw_text_callback = saved_callback
-    self.callback_shift = outer_shift
+    self.text_y = outer_y
   }
   let pieces = fragments.filter(f => !f.text.is_empty())
   if pieces.is_empty() {
@@ -524,10 +526,15 @@ pub fn Document::formatted_text(
     None => 0.0
   }
   self.move_down(gap + leading)
-  // and from wherever the callbacks moved the position (Prawn moves down
-  // relative to it)
-  self.flow.y += self.callback_shift
-  self.track()
+  // Prawn moves down by what it set from the document's position, which
+  // callbacks may have moved (to another page too)
+  match self.text_y {
+    Some(y) => {
+      self.flow.y = self.flow.y + (y - start_y)
+      self.track()
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -832,14 +839,19 @@ fn Document::capture(
   let page : Ref[Int] = { val: self.flow.page, }
   self.open_pages.push(page)
   let mark = self.flow.model.pages[page.val].items.length()
-  // where Flow is, which the callback may move: Flow carries on from here,
-  // and the text applies the move once it is set
-  let (y, on_page) = (self.flow.y, self.flow.page)
-  body()
-  if self.flow.page == on_page {
-    self.callback_shift += self.flow.y - y
-    self.flow.y = y
+  // the callback runs at the document's position while a text is set (not
+  // where Flow is setting lines), and may move it; Flow then carries on
+  // from its own
+  let line_y = self.flow.y
+  match self.text_y {
+    Some(y) => self.flow.y = y
+    None => ()
   }
+  body()
+  if self.text_y is Some(_) {
+    self.text_y = Some(self.flow.y)
+  }
+  self.flow.y = line_y
   self.open_pages.pop() |> ignore
   let items = self.flow.model.pages[page.val].items
   if mark > items.length() {

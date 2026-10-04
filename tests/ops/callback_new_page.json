@@ -4,6 +4,11 @@
       { "text": "pager", "color": "FF0000", "callback": { "trace": "pg", "phase": "in_front", "draw": [["start_new_page"]] } }
     ]],
     ["text", "after the callback's page"],
+    ["formatted_text", [
+      { "text": "down ", "callback": { "trace": "down", "phase": "in_front", "draw": [["move_down", 20]] } },
+      { "text": "page", "callback": { "trace": "page", "phase": "in_front", "draw": [["start_new_page"]] } }
+    ]],
+    ["text", "after a move and a page"],
     ["?page_count"],
     ["?cursor"]
   ]

@@ -17,6 +17,11 @@
       { "text": "outer", "color": "FF0000", "font": "Courier", "size": 20, "callback": { "trace": "nest", "phase": "in_front", "draw": [["formatted_text", [{ "text": "inner", "color": "0000FF", "size": 10 }]]] } }
     ]],
     ["text", "plain after the nesting"],
+    ["formatted_text", [
+      { "text": "one ", "callback": { "trace": "t1", "phase": "in_front", "draw": [["text", "inner one"]] } },
+      { "text": "two", "callback": { "trace": "t2", "phase": "in_front", "draw": [["text", "inner two"]] } }
+    ]],
+    ["text", "after two inner texts"],
     ["?cursor"]
   ]
 }

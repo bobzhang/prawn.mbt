@@ -140,14 +140,17 @@ pub fn Document::text_box(
 ) -> String raise {
   let saved_callback = self.draw_text_callback
   self.draw_text_callback = draw_text_callback
-  // a callback moving the position moves it for good (a text box does
-  // not move it itself)
-  let outer_shift = self.callback_shift
-  self.callback_shift = 0.0
+  // the document's position while the box is set: callbacks may move it,
+  // and it stays where they leave it (a text box does not move it)
+  let outer_y = self.text_y
+  self.text_y = Some(self.flow.y)
   defer {
     self.draw_text_callback = saved_callback
-    self.flow.y += self.callback_shift
-    self.callback_shift = outer_shift
+    match self.text_y {
+      Some(y) => self.flow.y = y
+      None => ()
+    }
+    self.text_y = outer_y
     self.track()
   }
   let bounds = self.bounds()
