@@ -61,6 +61,8 @@ fn Document::add_segment(
   self : Document,
   segment : @pagelayout.PathSegment,
 ) -> Unit {
+  // content too (pdf-core's `add_content` makes a graphics state)
+  self.gs() |> ignore
   let path = self.path()
   if segment is Close && path.is_empty() {
     return
@@ -399,6 +401,9 @@ fn Document::paint(
   stroke? : Bool = false,
   even_odd? : Bool = false,
 ) -> Unit {
+  // the paint operator is content: pdf-core makes a graphics state for it
+  // when the stack has none (`add_content`), even for an empty path
+  self.gs() |> ignore
   // in the coordinates of the transformation it is painted under (the
   // group around it applies that)
   let back = inverse(self.page().ctm)

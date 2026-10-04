@@ -11,6 +11,10 @@
     ["translate", 10.0, 10.0, { "block": [["start_new_page"]] }],
     ["stroke_circle", [100.0, 600.0], 20.0],
     ["?page_count"],
+    ["!raises", "none", ["save_graphics_state", { "block": [["save_graphics_state", { "block": [["start_new_page"]] }], ["fill_and_stroke"]] }]],
+    ["!raises", "none", ["save_graphics_state", { "block": [["save_graphics_state", { "block": [["start_new_page"]] }], ["stroke_line", [10.0, 10.0], [100.0, 100.0]]] }]],
+    ["!raises", "PDF::Core::Errors::EmptyGraphicStateStack", ["save_graphics_state", { "block": [["save_graphics_state", { "block": [["start_new_page"]] }], ["save_graphics_state", { "block": [] }]] }]],
+    ["?page_count"],
     ["!raises", "PDF::Core::Errors::EmptyGraphicStateStack", ["rotate", -90.0, { "origin": [360.0, 570.0], "block": [["start_new_page"]] }]],
     ["?page_count"]
   ]

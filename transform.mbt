@@ -63,7 +63,14 @@ fn Document::group(
   let start = page.items.length()
   // q: a copy of the graphics state goes on the page's stack; Q pops the
   // stack of the page current then (pdf-core's GraphicStateStack)
-  page.stack.push(self.gs().copy())
+  page.stack.push(
+    match page.stack.last() {
+      Some(state) => state.copy()
+      // none to copy (a stack restored past its bottom): pdf-core pushes
+      // the defaults, one state
+      None => GraphicState::new()
+    },
+  )
   let saved_ctm = page.ctm
   match setup {
     [Transform(m)] => page.ctm = saved_ctm.after(m)
