@@ -91,28 +91,6 @@ pub(all) struct Flow {
   /// before it becomes current: what carries over from page to page
   /// (Prawn's graphics state) is copied then
   mut page_started : (Int, Int) -> Unit
-  /// what to do when content runs out of room, instead of the next column
-  /// or page below (a document that keeps bounds of its own sets it)
-  mut move_past_bottom : (() -> Unit)?
-  /// draws what goes over each run (x, width, baseline, style, face) in
-  /// place of the underline and strikethrough below: a document with
-  /// Prawn's own overlays (decorations, links) sets it
-  mut decorate : ((Double, Double, Double, Style, Face, String) -> Array[
-    @pagelayout.PageItem,
-  ])?
-  /// called before each run's text is inked (x, width, baseline, style,
-  /// face, text): what goes behind it
-  mut underlay : ((Double, Double, Double, Style, Face, String) -> Array[
-    @pagelayout.PageItem,
-  ])?
-  /// draws a run's text instead (text, x, baseline with any rise, style):
-  /// what it drew, or None to ink the text
-  mut draw_text : ((String, Double, Double, Style) -> Array[
-    @pagelayout.PageItem,
-  ]?)?
-  /// the colour a run is inked in, decided when it is inked (a document
-  /// whose fill colour can change while a line is drawn sets it)
-  mut ink_color : ((Style) -> @pagelayout.Color)?
 }
 
 ///|
@@ -162,11 +140,6 @@ pub fn Flow::new(
     page_width_now: setup.width,
     page_height_now: setup.height,
     page_started: (_, _) => (),
-    move_past_bottom: None,
-    decorate: None,
-    underlay: None,
-    draw_text: None,
-    ink_color: None,
   }
 }
 
@@ -251,13 +224,6 @@ fn Flow::fit_page_size(self : Flow) -> Unit {
 /// (a block's background revisits pages its content spilled onto); in a
 /// column box, to the next column first (Prawn's `move_past_bottom`).
 pub fn Flow::advance_page(self : Flow) -> Unit {
-  match self.move_past_bottom {
-    Some(move_on) => {
-      move_on()
-      return
-    }
-    None => ()
-  }
   match self.columns {
     Some(columns) if columns.current < columns.count - 1 => {
       columns.current += 1
@@ -671,42 +637,21 @@ pub fn Flow::line_items(
         )
       None => ()
     }
-    // what the document puts behind the text
-    match self.underlay {
-      Some(underlay) =>
-        items.append(
-          underlay(x, run.width, baseline, style, run.face, run.text),
-        )
-      None => ()
-    }
     let (bold, italic) = style.face_style()
     let font = self.model.add_font({ family: style.family, bold, italic, })
-    let drawn = match self.draw_text {
-      Some(draw) => draw(run.text, x, baseline - rise, style)
-      None => None
-    }
-    match drawn {
-      Some(instead) => items.append(instead)
-      None => ()
-    }
-    if drawn is None {
-      items.push(
-        Text({
-          font,
-          size_pt: style.size,
-          x_pt: x,
-          baseline_pt: baseline - rise,
-          text: run.text,
-          advances_pt: run.advances,
-          color: match self.ink_color {
-            Some(color_of) => color_of(style)
-            None => style.color
-          },
-        }),
-      )
-    }
+    items.push(
+      Text({
+        font,
+        size_pt: style.size,
+        x_pt: x,
+        baseline_pt: baseline - rise,
+        text: run.text,
+        advances_pt: run.advances,
+        color: style.color,
+      }),
+    )
     let thickness = style.size / 18.0
-    if style.underline && self.decorate is None {
+    if style.underline {
       items.push(
         hrule(
           x,
@@ -717,7 +662,7 @@ pub fn Flow::line_items(
         ),
       )
     }
-    if style.strike && self.decorate is None {
+    if style.strike {
       items.push(
         hrule(
           x,
@@ -740,15 +685,6 @@ pub fn Flow::line_items(
           }),
         )
       None => ()
-    }
-    // the document's own overlays, after the link (Prawn's order: styles,
-    // link, anchor)
-    match self.decorate {
-      Some(decorate) =>
-        items.append(
-          decorate(x, run.width, baseline, style, run.face, run.text),
-        )
-      _ => ()
     }
   }
   items

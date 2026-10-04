@@ -119,7 +119,7 @@ fn Document::set_box(
       break
     }
     baseline = next
-    flow.ink_line(line, at.0, top + baseline)
+    self.ink_line(line, at.0, top + baseline)
     placed += 1
     // the text after the line, in the text's terms
     let (w, offset) = match after {

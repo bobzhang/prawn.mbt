@@ -75,6 +75,10 @@ pub(all) struct Line {
   /// the line marks of highlighted source lines (`Style::line_mark`): x,
   /// their fragment's style and face
   marks : Array[(Double, Style, Face)]
+  /// every fragment the line holds, in order (Prawn draws each, one with
+  /// nothing to show on the line too): its index, the x it starts at, its
+  /// style and face
+  held : Array[(Int, Double, Style, Face)]
 }
 
 ///|
@@ -831,12 +835,18 @@ fn place_line(
   // zero wide where the fragment sits, as Prawn annotates every fragment
   // of the line
   let empty_links : Array[(Double, Style, Face)] = []
+  let held : Array[(Int, Double, Style, Face)] = []
   let mut seen = -1
   let mut position = offset
   for k in from..<to {
     let item = items[k]
     let f = item.fragment
     let style = fragments[f].style
+    if f != seen {
+      held.push(
+        (f, if k < visible_end { position } else { x }, style, faces[f]),
+      )
+    }
     if f != seen &&
       style.link is Some(_) &&
       style.image < 0 &&
@@ -861,6 +871,7 @@ fn place_line(
     empty_links,
     images,
     marks,
+    held,
   }
 }
 

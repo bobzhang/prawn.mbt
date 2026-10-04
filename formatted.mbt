@@ -612,6 +612,14 @@ fn Document::decorations(
   if style.strike {
     out.push(line(base - a * 0.3))
   }
+  // the fragment's link, as wide as it is (none wide when it shows nothing)
+  match style.link {
+    Some(target) =>
+      out.push(
+        Link({ x_pt: x, y_pt: base - a, w_pt: width, h_pt: a + d, target, }),
+      )
+    None => ()
+  }
   // a link and an anchor both: the destination's annotation after the
   // URI's, as Prawn draws them
   match meta {
@@ -644,7 +652,6 @@ fn Document::decorations(
     }
     _ => ()
   }
-  self.end_fragment()
   out
 }
 
@@ -795,8 +802,6 @@ fn Document::underlays(
   face : Face,
   text : String,
 ) -> Array[@pagelayout.PageItem] {
-  // the fragment's state from here to its overlays (`decorations`)
-  self.begin_fragment(style)
   match self.fragment_meta.get(style.callback) {
     Some(meta) if !self.dry_run && !meta.callbacks.is_empty() => {
       let fragment = self.placed(x, width, baseline, style, face, text)
@@ -810,34 +815,6 @@ fn Document::underlays(
       })
     }
     _ => []
-  }
-}
-
-///|
-/// A run drawn by the `draw_text_callback` of the text being set, when it
-/// has one: the text and where it goes (`at`, in the coordinates of the
-/// bounds) with Prawn's default kerning.
-fn Document::draw_text_instead(
-  self : Document,
-  text : String,
-  x : Double,
-  baseline : Double,
-  _style : Style,
-) -> Array[@pagelayout.PageItem]? {
-  match self.draw_text_callback {
-    Some(draw) => {
-      // a dry run draws nothing either way
-      if self.dry_run {
-        return Some([])
-      }
-      let box = self.current_box()
-      let at = (
-        x - box.left,
-        self.flow.page_h() - baseline - box.bottom_at(self.y()),
-      )
-      Some(self.capture(() => draw(text, at, true)))
-    }
-    None => None
   }
 }
 

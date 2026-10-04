@@ -124,20 +124,6 @@ pub fn Document::new(
   }
   // each new page's record (a page made by a page break included)
   flow.page_started = (from, to) => doc.page_made(from, to, (size, layout))
-  // underlines and strikethroughs as Prawn draws them (`formatted.mbt`)
-  flow.decorate = Some((x, w, baseline, style, face, text) => {
-    doc.decorations(x, w, baseline, style, face, text)
-  })
-  // fragment callbacks and draw_text_callback (`formatted.mbt`)
-  flow.underlay = Some((x, w, baseline, style, face, text) => {
-    doc.underlays(x, w, baseline, style, face, text)
-  })
-  flow.draw_text = Some((text, x, baseline, style) => {
-    doc.draw_text_instead(text, x, baseline, style)
-  })
-  // text is inked in the fill colour current when it is drawn: its own
-  // colour while its fragment is (`begin_fragment`), or what a callback set
-  flow.ink_color = Some(_ => doc.gs().fill)
   // out of room: Prawn's rules for the bounds (`bounds.mbt`)
   flow.start_new_page(size=(w, h))
   doc.page_changed()
