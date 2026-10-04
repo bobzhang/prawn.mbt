@@ -428,7 +428,12 @@ fn break_lines(
         }
         break
       }
-      w += item.fit
+      // a soft hyphen must fit with its word, but takes no room once it has
+      // (Prawn's LineWrap takes its width back): only one ending the line
+      // prints
+      if item.unit != 0xAD {
+        w += item.fit
+      }
       if item.anchor is None && item.unit != 0x200B {
         visible = true
         content = true
@@ -674,11 +679,45 @@ fn place_line(
         ) {
     visible_end -= 1
   }
+  // a soft hyphen prints only where a line that wraps (or ends the text)
+  // breaks after it: Prawn removes every other (`process_soft_hyphens`);
+  // like a zero-width space, what is hidden takes no room
+  let printed_hyphen = if wraps &&
+    visible_end > from &&
+    items[visible_end - 1].unit == 0xAD {
+    visible_end - 1
+  } else {
+    -1
+  }
+  let hidden = fn(i : Int) {
+    items[i].unit == 0x200B || (items[i].unit == 0xAD && i != printed_hyphen)
+  }
+  // what an item takes as drawn: a character before a soft hyphen Prawn
+  // removes kerns with the one after it instead
+  let drawn = fn(i : Int) -> Double {
+    let item = items[i]
+    if i + 2 < items.length() &&
+      items[i + 1].unit == 0xAD &&
+      hidden(i + 1) &&
+      items[i + 2].fragment == item.fragment &&
+      items[i + 2].anchor is None {
+      let style = fragments[item.fragment].style
+      item.draw -
+      item.kern +
+      faces[item.fragment].kerning(item.unit, items[i + 2].unit) *
+      (style.size / 1000.0)
+    } else {
+      item.draw
+    }
+  }
   let mut draw_width = 0.0
   let mut fit_width = 0.0
   let mut spaces = 0
   for i in from..<visible_end {
-    draw_width += items[i].draw
+    if hidden(i) {
+      continue
+    }
+    draw_width += drawn(i)
     fit_width += items[i].fit
     if is_break_space(items[i].unit) {
       spaces += 1
@@ -773,9 +812,9 @@ fn place_line(
           items[i].anchor is None &&
           items[i].unit != pad_unit {
       let item = items[i]
-      if item.unit != 0x200B {
+      if !hidden(i) {
         sb.write_char(item.unit.unsafe_to_char())
-        let advance = item.draw +
+        let advance = drawn(i) +
           (if is_break_space(item.unit) { extra } else { 0.0 })
         advances.push(advance)
         x += advance
@@ -862,8 +901,8 @@ fn place_line(
       )
     }
     seen = f
-    if k < visible_end && item.anchor is None && item.unit != 0x200B {
-      position += item.draw +
+    if k < visible_end && item.anchor is None && !hidden(k) {
+      position += drawn(k) +
         (if is_break_space(item.unit) { extra } else { 0.0 })
     }
   }
