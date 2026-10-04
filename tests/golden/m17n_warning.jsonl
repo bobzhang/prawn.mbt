@@ -1,0 +1,6 @@
+{"query":["height_of","a — dry run"],"value":13.872}
+{"query":["width_of","— measured"],"value":68.688}
+{"trace":"dtc","event":"draw_text","text":"callback — draws","at":[0,697.512],"kerning":true}
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":"cursor","value":678.3839999999998}
+{"query":["text_box","boxed —",{"at":[100,400],"width":200,"height":50}],"value":""}

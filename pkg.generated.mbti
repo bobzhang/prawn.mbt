@@ -115,6 +115,7 @@ pub fn Document::line_to(Self, Double, Double) -> Unit
 pub fn Document::move_down(Self, Double) -> Unit
 pub fn Document::move_to(Self, Double, Double) -> Unit
 pub fn Document::new(size? : (Double, Double), layout? : String, margin? : Array[Double]) -> Self raise
+pub fn Document::on_warning(Self, (String) -> Unit) -> Unit
 pub fn Document::page_count(Self) -> Int
 pub fn Document::page_number(Self) -> Int
 pub fn Document::polygon(Self, Array[(Double, Double)]) -> Unit
