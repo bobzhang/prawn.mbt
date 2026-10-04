@@ -13,3 +13,5 @@
 {"query":"cursor","value":66.128}
 {"query":"page_count","value":6}
 {"query":"cursor","value":494.55999999999995}
+{"query":["text_box","                                                  x",{"at":[0,700],"width":20,"height":12}],"value":""}
+{"query":["height_of","                                                  x",{"width":20}],"value":13.872}

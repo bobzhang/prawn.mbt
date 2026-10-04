@@ -102,7 +102,7 @@ fn Document::set_box(
     // a fragment emptied counts towards the line's height (Prawn keeps
     // it): a zero-width space holds its place
     let held = stripped.map(f => {
-      if f.text.is_empty() && f.anchor is None {
+      if f.text.is_empty() && f.anchor is None && f.style.image < 0 {
         { ..f, text: "\u{200B}", }
       } else {
         f
@@ -317,7 +317,7 @@ fn strip_leading_fragments(
     if stripping {
       let text = strip_leading_spaces(f.text)
       let removed = f.text.length() - text.length()
-      if text.is_empty() && f.anchor is None {
+      if text.is_empty() && f.anchor is None && f.style.image < 0 {
         if i + 1 < fragments.length() && fragments[i + 1].text.has_prefix("\n") {
           continue
         }
@@ -351,6 +351,8 @@ fn line_window(
   let window : Array[Fragment] = []
   let mut w = 0.0
   let mut breaks = 0
+  // the whitespace the line starts with is stripped: it takes no room
+  let mut leading = true
   for i in start..<text.length() {
     let f = text[i]
     let from = if i == start { offset } else { 0 }
@@ -363,6 +365,12 @@ fn line_window(
       if u == '\n'.to_int() {
         cut = j + 1
         break
+      }
+      if leading {
+        if u == ' '.to_int() || u == '\t'.to_int() || u == 0x200B {
+          continue
+        }
+        leading = false
       }
       // never between the halves of a surrogate pair
       let low = u >= 0xDC00 && u <= 0xDFFF

@@ -29,6 +29,8 @@
     ["?page_count"],
     ["start_new_page", { "size": "LETTER" }],
     ["text", "ThisIsOneVeryLongUnbrokenWordThatMustWrapByCharacterAcrossSeveralLinesOfTheBoxBecauseItHasNoSpacesAnywhereInItAtAllAndKeepsOnGoingForAWhileLonger", { "size": 40 }],
-    ["?cursor"]
+    ["?cursor"],
+    ["?text_box", "                                                  x", { "at": [0, 700], "width": 20, "height": 12 }],
+    ["?height_of", "                                                  x", { "width": 20 }]
   ]
 }
