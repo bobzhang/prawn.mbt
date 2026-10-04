@@ -1,0 +1,9 @@
+{"query":"page_count","value":3}
+{"raises":"none","error":null}
+{"raises":"none","error":null}
+{"raises":"PDF::Core::Errors::EmptyGraphicStateStack","error":"PDF::Core::Errors::EmptyGraphicStateStack"}
+{"raises":"ArgumentError","error":"ArgumentError"}
+{"raises":"none","error":null}
+{"query":"page_count","value":7}
+{"raises":"PDF::Core::Errors::EmptyGraphicStateStack","error":"PDF::Core::Errors::EmptyGraphicStateStack"}
+{"query":"page_count","value":8}

@@ -63,14 +63,21 @@ fn Document::group(
   let start = page.items.length()
   // q: a copy of the graphics state goes on the page's stack; Q pops the
   // stack of the page current then (pdf-core's GraphicStateStack)
-  page.stack.push(self.gs().copy())
+  page.stack.push(
+    match page.stack.last() {
+      Some(state) => state.copy()
+      // none to copy (a stack restored past its bottom): pdf-core pushes
+      // the defaults, one state
+      None => GraphicState::new()
+    },
+  )
   let saved_ctm = page.ctm
   match setup {
     [Transform(m)] => page.ctm = saved_ctm.after(m)
     _ => ()
   }
-  defer {
-    self.page().stack.pop() |> ignore
+  // the block's items wrapped in Save and Restore, whatever happens
+  let finish = fn() {
     page.ctm = saved_ctm
     let items = page.items
     let ops : Array[@pagelayout.GraphicOp] = [Save, ..setup]
@@ -86,7 +93,19 @@ fn Document::group(
     items.push(Graphic({ x_pt: 0.0, y_pt: 0.0, ops, }))
     items.append(kept)
   }
+  // an error in the block leaves the state it saved on the stack, as
+  // Prawn restores only after the block returns
+  errdefer finish()
   body()
+  // Q: the stack of the page current now; one with nothing left to
+  // restore (a new page holds one state, so two blocks around a page break
+  // empty it) is pdf-core's EmptyGraphicStateStack
+  let stack = self.page().stack
+  if stack.is_empty() {
+    raise EmptyGraphicStateStack
+  }
+  stack.pop() |> ignore
+  finish()
 }
 
 ///|

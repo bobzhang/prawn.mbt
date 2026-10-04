@@ -48,6 +48,7 @@ pub(all) suberror PrawnError {
   CannotFit
   IncompatibleStringEncoding(String)
   ArgumentError(String)
+  EmptyGraphicStateStack
   Unsupported(String)
 }
 pub fn PrawnError::ruby_class(Self) -> String
