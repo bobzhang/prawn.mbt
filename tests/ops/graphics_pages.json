@@ -1,0 +1,17 @@
+{
+  "ops": [
+    ["fill_color", "CCCC00"],
+    ["fill_and_stroke_curve", [320.0, 380.0], [30.0, 300.0], { "bounds": [[160.0, 420.0], [40.0, 330.0]] }],
+    ["move_to", [100.0, 100.0]],
+    ["line_to", [200.0, 150.0]],
+    ["line_to", [150.0, 200.0]],
+    ["fill_and_stroke"],
+    ["fill_and_stroke_rectangle", [300.0, 200.0], 50.0, 50.0],
+    ["save_graphics_state", { "block": [["start_new_page"], ["stroke_rectangle", [10.0, 700.0], 50.0, 50.0]] }],
+    ["translate", 10.0, 10.0, { "block": [["start_new_page"]] }],
+    ["stroke_circle", [100.0, 600.0], 20.0],
+    ["?page_count"],
+    ["!raises", "PDF::Core::Errors::EmptyGraphicStateStack", ["rotate", -90.0, { "origin": [360.0, 570.0], "block": [["start_new_page"]] }]],
+    ["?page_count"]
+  ]
+}

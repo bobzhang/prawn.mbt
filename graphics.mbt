@@ -470,11 +470,15 @@ pub fn Document::fill(self : Document, even_odd? : Bool = false) -> Unit {
 }
 
 ///|
-/// Prawn's `fill_and_stroke`.
+/// Prawn's `fill_and_stroke`: PDF's `b`, which closes the current
+/// subpath before it fills and strokes.
 pub fn Document::fill_and_stroke(
   self : Document,
   even_odd? : Bool = false,
 ) -> Unit {
+  if !(self.path().last() is Some(Close)) {
+    self.add_segment(Close)
+  }
   self.paint(fill=true, stroke=true, even_odd~)
 }
 

@@ -349,6 +349,10 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
         raised(@prawn.ArgumentError(s))
         return
       }
+      @prawn.EmptyGraphicStateStack => {
+        raised(@prawn.EmptyGraphicStateStack)
+        return
+      }
       e => raise e
     }
     self.log.push({ "raises": expected, "error": Json::null() })
