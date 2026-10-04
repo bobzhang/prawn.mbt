@@ -104,12 +104,12 @@ pub(all) struct Bounds {
 ///|
 /// The document's position (Prawn's `y`): up from the page bottom.
 fn Document::y(self : Document) -> Double {
-  self.flow.page_h() - self.flow.y
+  self.position
 }
 
 ///|
 fn Document::set_y(self : Document, y : Double) -> Unit {
-  self.flow.y = self.flow.page_h() - y
+  self.position = y
   self.track()
 }
 
@@ -134,14 +134,14 @@ fn Document::current_box(self : Document) -> Box {
 /// page's size less its margins, with the indentation the last margin box
 /// had; it becomes the current box unless a box with a parent is.
 fn Document::generate_margin_box(self : Document) -> Unit {
-  let flow = self.flow
-  let page_h = flow.page_h()
-  let page_w = flow.model.pages[flow.page].width_pt
+  let page_h = self.page_h()
+  let page_w = self.model.pages[self.page_index].width_pt
+  let (top, right, bottom, left) = self.margins
   let margin : Box = {
-    left: flow.margin_left,
-    top: page_h - flow.setup.margin_top,
-    width: page_w - flow.margin_left - flow.margin_right,
-    height: Some(page_h - flow.setup.margin_top - flow.setup.margin_bottom),
+    left,
+    top: page_h - top,
+    width: page_w - left - right,
+    height: Some(page_h - top - bottom),
     stretched: 0.0,
     parent: None,
     columns: None,
@@ -156,8 +156,7 @@ fn Document::generate_margin_box(self : Document) -> Unit {
 }
 
 ///|
-/// After a change of page: the page's margin box, the current box set in
-/// Flow, and the position at its top (`size_changed`: a new page of
+/// After a change of page: the page's margin box, and the position at its top (`size_changed`: a new page of
 /// another size or layout makes the margin box current, as Prawn does).
 fn Document::page_changed(
   self : Document,
@@ -167,7 +166,6 @@ fn Document::page_changed(
   if size_changed {
     self.bbox = self.margin
   }
-  self.frame(self.bbox)
   self.set_y(self.bbox.top)
 }
 
@@ -188,24 +186,6 @@ pub fn Document::bounds(self : Document) -> Bounds {
 }
 
 ///|
-/// Sets Flow's frame to `box`: its side (a column box's current column),
-/// its top, and the bottom text runs to (a box's own, or for a stretchy
-/// box the margin box's).
-fn Document::frame(self : Document, box : Box) -> Unit {
-  let flow = self.flow
-  let page_h = flow.page_h()
-  let (side, width) = box.side()
-  flow.left = side
-  flow.right = side + width
-  flow.top = page_h - box.top
-  let bottom = match box.height {
-    Some(h) => box.top - h
-    None => self.margin.bottom_at(self.y())
-  }
-  flow.bottom = page_h - bottom
-}
-
-///|
 /// Opens `box` in the current box: `body`, then the box saved before is
 /// current again (Prawn's `init_bounding_box`, `init_column_box`).
 fn Document::open_box(
@@ -216,11 +196,9 @@ fn Document::open_box(
 ) -> Unit raise {
   let parent = self.bbox
   self.bbox = box
-  self.frame(box)
   self.set_y(box.top)
   defer {
     self.bbox = parent
-    self.frame(parent)
   }
   body()
   after()
@@ -310,11 +288,7 @@ pub fn Document::indent(
   body : () -> Unit raise,
 ) -> Unit raise {
   self.bbox.pad(left, right)
-  self.frame(self.bbox)
-  defer {
-    self.bbox.pad(-left, -right)
-    self.frame(self.bbox)
-  }
+  defer self.bbox.pad(-left, -right)
   body()
 }
 
@@ -322,11 +296,11 @@ pub fn Document::indent(
 /// Prawn's `float`: `body`, then back to the page and position it started
 /// at.
 pub fn Document::float(self : Document, body : () -> Unit raise) -> Unit raise {
-  let page = self.flow.page
+  let page = self.page_index
   let y = self.y()
   defer {
-    if self.flow.page != page {
-      self.flow.go_to_page(page)
+    if self.page_index != page {
+      self.page_index = page
       self.page_changed()
     }
     self.set_y(y)
@@ -347,7 +321,6 @@ fn Document::move_past_bottom(self : Document) -> Unit {
     Some(c) => {
       c.current = (c.current + 1) % c.count
       if c.current != 0 {
-        self.frame(box)
         self.set_y(box.top)
         return
       }
@@ -360,8 +333,8 @@ fn Document::move_past_bottom(self : Document) -> Unit {
       self.new_page()
     }
     None =>
-      if self.flow.page + 1 < self.flow.model.pages.length() {
-        self.flow.go_to_page(self.flow.page + 1)
+      if self.page_index + 1 < self.model.pages.length() {
+        self.page_index += 1
         self.page_changed()
       } else {
         self.new_page()

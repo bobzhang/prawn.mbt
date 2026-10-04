@@ -16,9 +16,6 @@ fn Document::ink_line(
   left : Double,
   baseline : Double,
 ) -> Unit {
-  if !line.runs.is_empty() {
-    self.flow.mark_inked()
-  }
   for held in line.held {
     let (fragment, x, style, face) = held
     let runs = line.runs.filter(r => r.fragment == fragment)
@@ -62,11 +59,11 @@ fn Document::draw_fragment(
 ) -> Unit {
   // the fragment's font and colour, to its end
   self.begin_fragment(style)
-  // where it is on the page current at each step (Flow's page
+  // where it is on the page current at each step (pagelayout's page
   // coordinates): a callback may start another
   let on_page = fn() {
     let box = self.current_box()
-    (box.left + left, self.flow.page_h() - baseline - box.bottom_at(self.y()))
+    (box.left + left, self.page_h() - baseline - box.bottom_at(self.y()))
   }
   // its callbacks (none in a dry run), which see it placed as it starts
   let callbacks = match self.fragment_meta.get(style.callback) {
@@ -90,11 +87,7 @@ fn Document::draw_fragment(
       }
     None => {
       let (bold, italic) = style.face_style()
-      let font = self.flow.model.add_font({
-        family: style.family,
-        bold,
-        italic,
-      })
+      let font = self.model.add_font({ family: style.family, bold, italic, })
       // in the fill colour current now: the fragment's own, or what a
       // callback set
       let color = self.gs().fill

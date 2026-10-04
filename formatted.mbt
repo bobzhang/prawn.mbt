@@ -366,7 +366,7 @@ fn fragment_of(
 }
 
 ///|
-/// A fragment as Flow sets it: its font, size (a sub- or superscript at
+/// A fragment as it is set: its font, size (a sub- or superscript at
 /// 0.583 of it, as Prawn's arranger sets them), colour, styles and link.
 
 ///|
@@ -497,7 +497,7 @@ pub fn Document::formatted_text(
     self.check(piece.text, piece.style, None)
   }
   for piece in set {
-    self.check(piece.text, piece.style, Some(self.flow.width()))
+    self.check(piece.text, piece.style, Some(self.bbox.side().1))
   }
   let base = self.style(size?)
   // Prawn's `formatted_text`: text boxes, each as tall as the room left,

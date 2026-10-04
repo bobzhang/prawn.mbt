@@ -1,6 +1,7 @@
 ///|
 // Prawn's Document (PLAN.md §4, milestone 1): pages, margins, the cursor
-// and text, on top of `Flow`. Coordinates in this API are Prawn's: points,
+// and text, on pagelayout's page model; lines are broken as `typeset.mbt`
+// breaks them. Coordinates in this API are Prawn's: points,
 // y up, the cursor measured from the bottom of the bounds.
 
 ///|
@@ -44,12 +45,20 @@ pub fn margins_of(values : Array[Double]) -> (Double, Double, Double, Double) {
 ///|
 /// A Prawn document.
 pub struct Document {
-  flow : Flow
+  /// the pages (pagelayout's page model) and the current one
+  priv model : @pagelayout.PageModel
+  priv mut page_index : Int
+  /// Prawn's `y`: the position, up from the bottom of the current page
+  priv mut position : Double
+  /// the margins pages are made with: top, right, bottom, left
+  priv margins : (Double, Double, Double, Double)
   catalog : FontCatalog
+  /// what text is set with: the fonts
+  priv text_context : TextContext
   /// the current font (`font`) and size (`font_size`)
   mut family : String
   mut size : Double
-  /// each page's record (`page.mbt`), as Flow's pages are ordered
+  /// each page's record (`page.mbt`), as the model's pages are ordered
   priv pages : Array[PageState]
   /// the current bounding box (Prawn's `@bounding_box`) and the current
   /// page's margin box (`bounds.mbt`)
@@ -89,14 +98,6 @@ pub fn Document::new(
   let (w, h) = oriented(size, layout)
   let (top, right, bottom, left) = margins_of(margin)
   let catalog = FontCatalog::load([])
-  let flow = Flow::new(catalog, {
-    width: w,
-    height: h,
-    margin_top: top,
-    margin_right: right,
-    margin_bottom: bottom,
-    margin_left: left,
-  })
   // the margin box until the first page has its own
   let margin : Box = {
     left,
@@ -110,8 +111,12 @@ pub fn Document::new(
     total_right: 0.0,
   }
   let doc = {
-    flow,
+    model: @pagelayout.PageModel::new(),
+    page_index: -1,
+    position: 0.0,
+    margins: (top, right, bottom, left),
     catalog,
+    text_context: { catalog, hooks: Hooks::new(), },
     family: "Helvetica",
     size: 12.0,
     pages: [],
@@ -122,10 +127,7 @@ pub fn Document::new(
     draw_text_callback: None,
     scopes: [],
   }
-  // each new page's record (a page made by a page break included)
-  flow.page_started = (from, to) => doc.page_made(from, to, (size, layout))
-  // out of room: Prawn's rules for the bounds (`bounds.mbt`)
-  flow.start_new_page(size=(w, h))
+  doc.make_page((w, h), (size, layout))
   doc.page_changed()
   doc
 }
@@ -134,6 +136,13 @@ pub fn Document::new(
 /// A new page like the current one (what a page break makes).
 fn Document::new_page(self : Document) -> Unit {
   self.start_new_page()
+}
+
+///|
+/// The face `style` is set in.
+fn Document::font(self : Document, style : Style) -> Face {
+  let (bold, italic) = style.face_style()
+  self.text_context.face(style.family, bold, italic)
 }
 
 ///|
@@ -190,8 +199,7 @@ pub fn Document::text(
 ///|
 /// Prawn's `move_down`.
 pub fn Document::move_down(self : Document, amount : Double) -> Unit {
-  self.flow.move_down(amount)
-  self.track()
+  self.set_y(self.y() - amount)
 }
 
 ///|
@@ -206,13 +214,13 @@ pub fn Document::cursor(self : Document) -> Double {
 ///|
 /// Prawn's `page_number` (from 1).
 pub fn Document::page_number(self : Document) -> Int {
-  self.flow.page + 1
+  self.page_index + 1
 }
 
 ///|
 /// Prawn's `page_count`.
 pub fn Document::page_count(self : Document) -> Int {
-  self.flow.model.pages.length()
+  self.model.pages.length()
 }
 
 ///|
@@ -224,8 +232,7 @@ pub fn Document::start_new_page(
 ) -> Unit {
   let before = self.page().geometry
   let after = (size.unwrap_or(before.0), layout.unwrap_or(before.1))
-  self.flow.start_new_page(size=oriented(after.0, after.1))
-  self.page().geometry = after
+  self.make_page(oriented(after.0, after.1), after)
   // a page of another size or layout: content goes in its margin box
   self.page_changed(size_changed=after != before)
 }
@@ -247,7 +254,7 @@ pub fn Document::set_font_size(self : Document, size : Double) -> Unit {
 /// The PDF.
 pub fn Document::render(self : Document) -> Bytes raise {
   @pdf.render_pdf(
-    self.flow.model,
+    self.model,
     options=@pdf.RenderOptions::new(
       fonts=self.catalog.registry,
       truncate_widths=true,
@@ -271,7 +278,7 @@ pub fn Document::width_of(
 ) -> Double raise PrawnError {
   let style = self.style(size?)
   self.check(string, style, None)
-  let face = self.flow.font(style)
+  let face = self.font(style)
   let chars = string.iter().map(c => c.to_int()).to_array()
   let mut width = 0.0
   for i, cp in chars {
@@ -300,14 +307,14 @@ pub fn Document::height_of(
     return leading
   }
   let style = self.style(size?)
-  self.check(string, style, Some(width.unwrap_or(self.flow.width())))
+  self.check(string, style, Some(width.unwrap_or(self.bbox.side().1)))
   // Prawn's `height_of_formatted`: a box too tall to fill, set as a dry
   // run, and its final gap
   let (_, printed, gap) = self.set_box(
     [{ text: string, style, anchor: None, }],
     style,
     (0.0, 0.0),
-    width.unwrap_or(self.flow.width()),
+    width.unwrap_or(self.bbox.side().1),
     1.0e8,
     Left,
     leading,
@@ -327,7 +334,7 @@ fn Document::check(
   style : Style,
   width : Double?,
 ) -> Unit raise PrawnError {
-  let face = self.flow.font(style)
+  let face = self.font(style)
   // the whole string is encoded before anything is wrapped
   if face.standard {
     for c in string {
@@ -350,6 +357,6 @@ fn Document::check(
 /// Prawn's `go_to_page` (from 1): back to an existing page, at the top of
 /// its margin box.
 pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
-  self.flow.go_to_page(number - 1)
+  self.page_index = number - 1
   self.page_changed()
 }

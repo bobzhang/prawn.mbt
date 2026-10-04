@@ -22,23 +22,50 @@ priv struct PageState {
   /// the size as given and the layout (Prawn keeps them apart: a
   /// landscape page reverses the size, whatever its shape); a new page
   /// takes the current page's
-  mut geometry : ((Double, Double), String)
+  geometry : ((Double, Double), String)
 }
 
 ///|
 /// The current page's record.
 fn Document::page(self : Document) -> PageState {
-  self.pages[self.flow.page]
+  self.pages[self.page_index]
+}
+
+///|
+/// The current page's height (the PDF's y axis is measured up from its
+/// bottom).
+fn Document::page_h(self : Document) -> Double {
+  self.model.pages[self.page_index].height_pt
+}
+
+///|
+/// Make a page `size` (points, as laid out) right after the current one,
+/// where Prawn's `start_new_page` inserts it, and make it current;
+/// `geometry` is its size as given and its layout.
+fn Document::make_page(
+  self : Document,
+  size : (Double, Double),
+  geometry : ((Double, Double), String),
+) -> Unit {
+  let from = self.page_index
+  let to = from + 1
+  self.model.pages.insert(to, {
+    width_pt: size.0,
+    height_pt: size.1,
+    items: [],
+  })
+  self.page_made(from, to, geometry)
+  self.page_index = to
 }
 
 ///|
 /// A page was made, at `to`, from the page at `from` (none for the
-/// first): its record starts with that page's graphics state and geometry.
+/// first): its record starts with that page's graphics state.
 fn Document::page_made(
   self : Document,
   from : Int,
   to : Int,
-  first_geometry : ((Double, Double), String),
+  geometry : ((Double, Double), String),
 ) -> Unit {
   let source = if from >= 0 && from < self.pages.length() {
     Some(self.pages[from])
@@ -50,13 +77,10 @@ fn Document::page_made(
     None => GraphicState::new()
   }
   self.pages.insert(to, {
-    items: self.flow.model.pages[to].items,
+    items: self.model.pages[to].items,
     stack: [state],
     ctm: @pagelayout.identity,
     path: [],
-    geometry: match source {
-      Some(p) => p.geometry
-      None => first_geometry
-    },
+    geometry,
   })
 }
