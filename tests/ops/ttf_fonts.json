@@ -78,5 +78,18 @@
     ["fallback_fonts", []],
     ["font", "Helvetica"],
     ["!raises", "PDF::Core::Text::BadFontFamily", ["formatted_text", [{ "text": "file", "font": "$PRAWN/data/fonts/DejaVuSans.ttf", "callback": { "trace": "ff", "phase": "in_front", "draw": [["draw_text", "x", { "at": [0.0, 50.0], "style": ":bold" }]] } }]]]
+,
+    ["!raises", "PDF::Core::Text::BadFontFamily", ["formatted_text", [{ "text": "a file fragment", "font": "$PRAWN/data/fonts/DejaVuSans.ttf", "callback": { "trace": "ff2", "phase": "in_front", "draw": [["draw_text", "x", { "at": [0.0, 40.0], "style": ":bold" }]] } }]]],
+    ["text", "bold after the callback raised", { "style": ":bold" }],
+    ["font_families.update", { "=DV5": { "normal": "$PRAWN/data/fonts/DejaVuSans.ttf" } }],
+    ["font", "DV5"],
+    ["font_families.update", { "=DV5": { "normal": "$PRAWN/data/fonts/nope.ttf" } }],
+    ["text", "the selected font goes on"],
+    ["font", "Helvetica"],
+    ["fallback_fonts", ["$PRAWN/data/fonts/gkai00mp.ttf"]],
+    ["?text_box", "box 中文", { "at": [300.0, 200.0], "width": 150.0, "height": 40.0 }],
+    ["font", "$PRAWN/data/fonts/DejaVuSans.ttf"],
+    ["!raises", "Prawn::Text::Formatted::Arranger::BadFontFamily", ["text", "中文"]],
+    ["fallback_fonts", []]
   ]
 }

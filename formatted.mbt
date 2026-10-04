@@ -441,12 +441,13 @@ fn Document::fragment(
     None if !f.bold && !f.italic => (self.family, self.face_style, false)
     None => (self.family, (f.bold, f.italic), false)
   }
-  // read when a TrueType family's face or a file, and the catalog's face
-  // of it: the current font's as it was set, when the fragment keeps it
-  self.ensure_font(name, flags)
+  // the catalog's face of it: the current font's as it was set, when the
+  // fragment keeps it; else read as needed (a TrueType family's face or a
+  // file)
   let (family, bold, italic) = if f.font is None && !f.bold && !f.italic {
     self.font_key
   } else {
+    self.ensure_font(name, flags)
     self.catalog_key(name, flags)
   }
   let meta = self.fragment_meta.length()

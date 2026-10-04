@@ -28,3 +28,7 @@
 {"raises":"ArgumentError","error":"ArgumentError"}
 {"trace":"ff","event":"render_in_front","text":"file","left":0,"baseline":495.4860000000002,"width":21.294,"height":13.98599999999999,"top":506.1120000000002,"bottom":492.1260000000002}
 {"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"trace":"ff2","event":"render_in_front","text":"a file fragment","left":0,"baseline":495.4860000000002,"width":103.46000000000001,"height":13.98599999999999,"top":506.1120000000002,"bottom":492.1260000000002}
+{"raises":"PDF::Core::Text::BadFontFamily","error":"PDF::Core::Text::BadFontFamily"}
+{"query":["text_box","box 中文",{"at":[300.0,200.0],"width":150.0,"height":40.0}],"value":""}
+{"raises":"Prawn::Text::Formatted::Arranger::BadFontFamily","error":"Prawn::Text::Formatted::Arranger::BadFontFamily"}

@@ -59,6 +59,8 @@ fn Document::draw_fragment(
 ) -> Unit raise PrawnError {
   // the fragment's font and colour, to its end
   self.begin_fragment(style)
+  // and back to the font before, whatever happens (Prawn's `save_font`)
+  defer self.end_fragment()
   // where it is on the page current at each step (pagelayout's page
   // coordinates): a callback may start another
   let on_page = fn() {
@@ -125,7 +127,6 @@ fn Document::draw_fragment(
       None => ()
     }
   }
-  self.end_fragment()
 }
 
 ///|

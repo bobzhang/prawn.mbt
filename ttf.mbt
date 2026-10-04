@@ -248,6 +248,13 @@ fn Document::split_fallbacks(
         let style = match font {
           None => fragment.style
           Some(name) => {
+            // a piece with a font of its own needs a current font with a
+            // family (Prawn's arranger)
+            if !self.font_family_known {
+              raise BadFontFamily(
+                "Prawn::Text::Formatted::Arranger::BadFontFamily",
+              )
+            }
             let (family, face_flags, known) = self.find_font(
               name,
               style_of_flags(flags),
@@ -264,7 +271,18 @@ fn Document::split_fallbacks(
                   family_known: Some(known),
                   font: Some(name),
                 })
-              None => ()
+              // (a text box's text has none: a record of its own)
+              None =>
+                self.fragment_meta.push({
+                  color_set: false,
+                  font_name: family,
+                  font_flags: face_flags,
+                  styles: flags,
+                  font: Some(name),
+                  family_known: Some(known),
+                  anchor: None,
+                  callbacks: [],
+                })
             }
             {
               ..fragment.style,
@@ -272,11 +290,7 @@ fn Document::split_fallbacks(
               bold: key.1,
               italic: key.2,
               font_set: true,
-              callback: if meta < self.fragment_meta.length() {
-                meta
-              } else {
-                fragment.style.callback
-              },
+              callback: meta,
             }
           }
         }
