@@ -655,11 +655,11 @@ fn ruby_float(s : String) -> Double raise PrawnError {
 }
 
 ///|
-/// A run as Prawn's fragment: in the coordinates of the current bounds,
-/// the baseline at the run's rise (a sub- or superscript's).
-fn Document::placed(
-  self : Document,
-  x : Double,
+/// A fragment as Prawn's callbacks see it: `left` and `baseline` in the
+/// coordinates of the bounds, the baseline raised to a sub- or
+/// superscript's.
+fn placed_fragment(
+  left : Double,
   width : Double,
   baseline : Double,
   style : Style,
@@ -668,16 +668,10 @@ fn Document::placed(
 ) -> PlacedFragment {
   let a = face.ascender_pt(style.size)
   let d = face.descender_pt(style.size)
-  let rise = match style.script {
-    1 => 0.85 * a
-    -1 => -d
-    _ => 0.0
-  }
-  let box = self.current_box()
-  let base = self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y())
+  let base = baseline + script_rise(style, face)
   {
     text,
-    left: x - box.left,
+    left,
     baseline: base,
     width,
     height: a + d,

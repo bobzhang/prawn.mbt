@@ -8,12 +8,12 @@
 // is drawn, which a callback may change.
 
 ///|
-/// Draw `line`: its left edge at `x0`, its baseline at `baseline` (in
-/// Flow's page coordinates, y down).
+/// Draw `line`: its left edge at `left`, its baseline at `baseline`, in
+/// the coordinates of the bounds.
 fn Document::ink_line(
   self : Document,
   line : Line,
-  x0 : Double,
+  left : Double,
   baseline : Double,
 ) -> Unit {
   if !line.runs.is_empty() {
@@ -22,11 +22,10 @@ fn Document::ink_line(
   for held in line.held {
     let (fragment, x, style, face) = held
     let runs = line.runs.filter(r => r.fragment == fragment)
-    let x = x0 +
-      (match runs.get(0) {
-        Some(r) => r.x
-        None => x
-      })
+    let x = match runs.get(0) {
+      Some(r) => r.x
+      None => x
+    }
     let mut width = 0.0
     let text = StringBuilder()
     for run in runs {
@@ -35,7 +34,7 @@ fn Document::ink_line(
     }
     self.draw_fragment(
       runs,
-      x0,
+      left + x,
       x,
       width,
       baseline,
@@ -47,13 +46,13 @@ fn Document::ink_line(
 }
 
 ///|
-/// Prawn's `draw_fragment`: a fragment from its runs on the line (`x0`
-/// their line's left edge); it starts at `x`, `width` wide, its text
-/// `text`.
+/// Prawn's `draw_fragment`: a fragment from its runs on the line, starting
+/// at `left` (`x` into the line), its baseline at `baseline` (both in the
+/// coordinates of the bounds), `width` wide, its text `text`.
 fn Document::draw_fragment(
   self : Document,
   runs : Array[LineRun],
-  x0 : Double,
+  left : Double,
   x : Double,
   width : Double,
   baseline : Double,
@@ -63,22 +62,22 @@ fn Document::draw_fragment(
 ) -> Unit {
   // the fragment's font and colour, to its end
   self.begin_fragment(style)
-  // its callbacks (none in a dry run)
+  // where it is on the page current at each step (Flow's page
+  // coordinates): a callback may start another
+  let on_page = fn() {
+    let box = self.current_box()
+    (box.left + left, self.flow.page_h() - baseline - box.bottom_at(self.y()))
+  }
+  // its callbacks (none in a dry run), which see it placed as it starts
   let callbacks = match self.fragment_meta.get(style.callback) {
     Some(meta) if !self.dry_run => meta.callbacks
     _ => []
   }
-  // the fragment as they see it, placed once (Prawn sets its position as
-  // it starts drawing it)
-  let placed = if callbacks.is_empty() {
-    None
-  } else {
-    Some(self.placed(x, width, baseline, style, face, text))
-  }
+  let placed = placed_fragment(left, width, baseline, style, face, text)
   for callback in callbacks {
-    match (callback.render_behind, placed) {
-      (Some(f), Some(p)) => f(p)
-      _ => ()
+    match callback.render_behind {
+      Some(f) => f(placed)
+      None => ()
     }
   }
   let rise = script_rise(style, face)
@@ -87,15 +86,7 @@ fn Document::draw_fragment(
       // called with the fragment's text where it starts (Prawn's default
       // kerning); a dry run draws nothing
       if !self.dry_run {
-        let box = self.current_box()
-        draw(
-          text,
-          (
-            x - box.left,
-            self.flow.page_h() - (baseline - rise) - box.bottom_at(self.y()),
-          ),
-          true,
-        )
+        draw(text, (left, baseline + rise), true)
       }
     None => {
       let (bold, italic) = style.face_style()
@@ -108,13 +99,14 @@ fn Document::draw_fragment(
       // callback set
       let color = self.gs().fill
       let items = self.page().items
+      let (x_now, baseline_now) = on_page()
       for run in runs {
         items.push(
           Text({
             font,
             size_pt: style.size,
-            x_pt: x0 + run.x,
-            baseline_pt: baseline - rise,
+            x_pt: x_now + (run.x - x),
+            baseline_pt: baseline_now - rise,
             text: run.text,
             advances_pt: run.advances,
             color,
@@ -123,11 +115,12 @@ fn Document::draw_fragment(
       }
     }
   }
-  self.draw_overlays(x, width, baseline - rise, style, face)
+  let (x_now, baseline_now) = on_page()
+  self.draw_overlays(x_now, width, baseline_now - rise, style, face)
   for callback in callbacks {
-    match (callback.render_in_front, placed) {
-      (Some(f), Some(p)) => f(p)
-      _ => ()
+    match callback.render_in_front {
+      Some(f) => f(placed)
+      None => ()
     }
   }
   self.end_fragment()

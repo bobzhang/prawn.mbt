@@ -7,6 +7,12 @@
     ["text", "after"],
     ["?page_count"],
     ["?page_number"],
+    ["?cursor"],
+    ["formatted_text", [
+      { "text": "c", "styles": [":underline"], "link": "https://example.com", "callback": { "trace": "taller", "phase": "behind", "draw": [["start_new_page", { "size": [612, 1008] }]] } },
+      { "text": "d", "styles": [":strikethrough"] }
+    ]],
+    ["?page_count"],
     ["?cursor"]
   ]
 }
