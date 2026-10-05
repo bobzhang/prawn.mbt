@@ -1,0 +1,12 @@
+{
+  "ops": [
+    ["font_size", 20],
+    ["text", "AŸ Ÿo ÿo Aÿ", { "kerning": true }],
+    ["?width_of", "Ÿ"],
+    ["?width_of", "ÿ"],
+    ["?width_of", "AŸ", { "kerning": true }],
+    ["?width_of", "AŸ", { "kerning": false }],
+    ["?width_of", "Ÿo", { "kerning": true }],
+    ["?width_of", "ÿo", { "kerning": true }]
+  ]
+}

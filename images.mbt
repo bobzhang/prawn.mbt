@@ -92,6 +92,8 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     raise UnsupportedImageType("image file is an unrecognised format")
   }
   let mut i = 2
+  // whether Adobe's marker (APP14) has come: Adobe writes CMYK inverted
+  let mut adobe = false
   while i + 9 < n {
     if data[i] != b'\xFF' {
       i += 1
@@ -102,11 +104,24 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
       i += 1
       continue
     }
+    if marker == 0xEE &&
+      be16(data, i + 2) >= 14 &&
+      data[i + 4:i + 9] == b"Adobe" {
+      adobe = true
+    }
     if marker >= 0xC0 &&
       marker <= 0xCF &&
       marker != 0xC4 &&
       marker != 0xC8 &&
       marker != 0xCC {
+      // Prawn inverts every CMYK JPEG; pdflite, Adobe's (which are the
+      // inverted ones). Another would be drawn in other colours than
+      // Prawn's.
+      if data[i + 9] == b'\x04' && !adobe {
+        raise Unsupported(
+          "the image \{file} (a CMYK JPEG without Adobe's marker)",
+        )
+      }
       // embedded as rendering will (one pdflite cannot embed refused now)
       try @pdflite.pdf_image_object_of_jpeg_data(data[:]) catch {
         _ => raise Unsupported("the image \{file} (a JPEG pdflite cannot read)")
