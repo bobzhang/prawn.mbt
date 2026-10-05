@@ -129,9 +129,12 @@ round the last bits differently) with the goldens, one line per script.
 The comparator treats gray *g* as RGB (*g*, *g*, *g*): Prawn leaves default black in DeviceGray,
 pagelayout writes RGB.
 
-Known divergences, each kept as a failing seed: `kerning_accents` (pdflite's standard-font data
-lacks the kerning pairs of unencoded glyphs, to fix upstream) and `control_characters` (Prawn sets
-a tab or carriage return inside a line as a glyph; this module drops it). Prawn writes invalid PDF
+A known divergence, kept as a failing seed: `control_characters` (Prawn sets a tab or carriage
+return inside a line as a glyph; this module drops it). Images Prawn draws wrongly are drawn
+right rather than as Prawn draws them (a palette PNG's transparency when its rows are filtered or
+its indices under 8 bits, a truecolour PNG with a suggested palette, a JPEG of components named
+R, G and B with no JFIF or Adobe marker), and a CMYK JPEG without Adobe's marker, which Prawn
+inverts, is refused. Prawn writes invalid PDF
 for a path left open across a transformation block's `q`/`Q` or `cm`, and NaN for a rounded
 corner on an edge of no length; such cases are not compared.
 

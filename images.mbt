@@ -51,6 +51,13 @@ fn be32(data : Bytes, at : Int) -> Int {
 /// checks it (UnsupportedImageType) and as far as pdflite can embed it
 /// faithfully (Unsupported otherwise, rather than drawing it wrongly or
 /// not at all).
+///
+/// Where Prawn itself draws an image wrongly, it is drawn right, not as
+/// Prawn draws it: a palette's transparency (Prawn takes the rows' filtered
+/// bytes, one a pixel, for the indices), a truecolour PNG with a suggested
+/// palette (Prawn draws it as indexed), and a JPEG of components named R, G
+/// and B without a JFIF or Adobe marker (Prawn leaves them to be taken for
+/// YCbCr).
 fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
   let n = data.length()
   let png_signature = b"\x89PNG\r\n\x1a\n"
@@ -73,14 +80,6 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     if ![0, 2, 3, 4, 6].contains(colour_type) {
       raise UnsupportedImageType("PNG uses an unsupported number of colors")
     }
-    // what pdflite cannot embed yet: 16 bits a component (read, not drawn),
-    // a transparent colour key (dropped), palette transparency (refused)
-    if data[24] == b'\x10' {
-      raise Unsupported("the image \{file} (a 16-bit PNG)")
-    }
-    if (colour_type == 0 || colour_type == 2) && png_has_chunk(data, "tRNS") {
-      raise Unsupported("the image \{file} (a PNG with a colour key)")
-    }
     // embedded as rendering will, its data inflated (a corrupt one
     // refused now, before the position moves)
     try
@@ -100,6 +99,8 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     raise UnsupportedImageType("image file is an unrecognised format")
   }
   let mut i = 2
+  // whether Adobe's marker (APP14) has come: Adobe writes CMYK inverted
+  let mut adobe = false
   while i + 9 < n {
     if data[i] != b'\xFF' {
       i += 1
@@ -110,15 +111,25 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
       i += 1
       continue
     }
+    if marker == 0xEE &&
+      be16(data, i + 2) >= 14 &&
+      data[i + 4:i + 9] == b"Adobe" {
+      adobe = true
+    }
     if marker >= 0xC0 &&
       marker <= 0xCF &&
       marker != 0xC4 &&
       marker != 0xC8 &&
       marker != 0xCC {
-      // pdflite embeds 8-bit RGB JPEGs only (and those it can read)
-      if data[i + 4] != b'\x08' || data[i + 9] != b'\x03' {
-        raise Unsupported("the image \{file} (a JPEG not of 8-bit RGB)")
+      // Prawn inverts every CMYK JPEG; pdflite, Adobe's (which are the
+      // inverted ones). Another would be drawn in other colours than
+      // Prawn's.
+      if data[i + 9] == b'\x04' && !adobe {
+        raise Unsupported(
+          "the image \{file} (a CMYK JPEG without Adobe's marker)",
+        )
       }
+      // embedded as rendering will (one pdflite cannot embed refused now)
       try @pdflite.pdf_image_object_of_jpeg_data(data[:]) catch {
         _ => raise Unsupported("the image \{file} (a JPEG pdflite cannot read)")
       } noraise {
@@ -133,22 +144,6 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     i += 2 + be16(data, i + 2)
   }
   raise UnsupportedImageType("the JPEG \{file} has no frame")
-}
-
-///|
-/// Whether a PNG has a chunk of `name`.
-fn png_has_chunk(data : Bytes, name : String) -> Bool {
-  let mut i = 8
-  while i + 8 <= data.length() {
-    let length = be32(data, i)
-    let matches = name.length() == 4 &&
-      (0).until(4).all(k => data[i + 4 + k].to_int() == name[k].to_int())
-    if matches {
-      return true
-    }
-    i += 12 + length
-  }
-  false
 }
 
 ///|

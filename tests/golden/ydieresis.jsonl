@@ -1,0 +1,7 @@
+{"warning":"PDF's built-in fonts have very limited support for internationalized text.\nIf you need full UTF-8 support, consider using an external font instead.\n\nTo disable this warning, add the following line to your code:\nPrawn::Fonts::AFM.hide_m17n_warning = true"}
+{"query":["width_of","Ÿ"],"value":10.0}
+{"query":["width_of","ÿ"],"value":10.0}
+{"query":["width_of","AŸ",{"kerning":true}],"value":23.34}
+{"query":["width_of","AŸ",{"kerning":false}],"value":23.34}
+{"query":["width_of","Ÿo",{"kerning":true}],"value":21.12}
+{"query":["width_of","ÿo",{"kerning":true}],"value":20.72}

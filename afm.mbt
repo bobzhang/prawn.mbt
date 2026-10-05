@@ -290,10 +290,10 @@ fn afm_header(data : @afm.PdfAfmData, key : String) -> String? {
 ///|
 /// Build the face of a standard font from its AFM data, registering it in
 /// `registry` under `family` (Prawn's `Font::AFM`): glyph widths by WinAnsi
-/// code, the kerning pairs of the glyphs WinAnsi encodes (a name WinAnsi
-/// has twice, `space` and `hyphen`, kerns at its later code, as Prawn's
-/// name table has it), ascender and descender, and the line gap the font
-/// box leaves.
+/// code, the kerning pairs of the glyphs WinAnsi encodes (a name Prawn's
+/// name table has twice — `space`, `hyphen`, and `ydieresis`, which it has
+/// for `Ydieresis` too — kerns at its later code), ascender and descender,
+/// and the line gap the font box leaves.
 fn load_standard_face(
   registry : @fonts.FontRegistry,
   family : String,
@@ -305,17 +305,10 @@ fn load_standard_face(
     return None
   }
   let data = font.afm_data()
-  // glyph name → width, and the encoded glyphs' names by code (the AFM
-  // lists its encoded glyphs first, in code order)
+  // glyph name → width
   let widths : Map[String, Int] = Map([])
   for entry in data.char_name_widths {
     widths[ascii_text(entry.0)] = entry.1
-  }
-  let names_by_code : Map[Int, String] = Map([])
-  for i, metric in data.char_metrics {
-    if i < data.char_name_widths.length() {
-      names_by_code[metric.0] = ascii_text(data.char_name_widths[i].0)
-    }
   }
   let advances = Array::make(256, 0)
   let cmap : Map[Int, Int] = Map([])
@@ -327,19 +320,20 @@ fn load_standard_face(
     if codepoint == 0 {
       continue
     }
+    // Prawn's table names 0x9F `ydieresis` (it is `Ydieresis`): there it
+    // has ydieresis's width, and Ydieresis, of no code, kerns with nothing
+    let glyph_name = if code == 0x9F { "ydieresis" } else { glyph_name }
     advances[code] = widths.get(glyph_name).unwrap_or(0)
     cmap[codepoint] = code
     code_of_name[glyph_name] = code
   }
+  // every pair of the AFM, by glyph name: those of the glyphs it gives no
+  // code (the accented letters) too, which WinAnsi encodes
   let kern : Map[Int, Double] = Map([])
-  for entry in data.kerns {
-    let (left, right, amount) = entry
-    match (names_by_code.get(left), names_by_code.get(right)) {
-      (Some(l), Some(r)) =>
-        match (code_of_name.get(l), code_of_name.get(r)) {
-          (Some(lc), Some(rc)) => kern[(lc << 16) | rc] = amount.to_double()
-          _ => ()
-        }
+  for pair in font.kern_pairs_by_name() {
+    let (left, right, amount) = pair
+    match (code_of_name.get(left), code_of_name.get(right)) {
+      (Some(lc), Some(rc)) => kern[(lc << 16) | rc] = amount.to_double()
       _ => ()
     }
   }
