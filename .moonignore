@@ -1,0 +1,10 @@
+# Not packaged by `moon publish`: the tools and data the port is checked
+# with against Ruby Prawn (the op scripts and their goldens, the oracle
+# and comparison commands and the PDF inspector they use, the scripts), and
+# the development notes. LICENSE, NOTICE and LICENSES are packaged.
+tests/
+scripts/
+cmd/
+internal/
+docs/
+PLAN.md
