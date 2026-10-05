@@ -130,7 +130,11 @@ The comparator treats gray *g* as RGB (*g*, *g*, *g*): Prawn leaves default blac
 pagelayout writes RGB.
 
 A known divergence, kept as a failing seed: `control_characters` (Prawn sets a tab or carriage
-return inside a line as a glyph; this module drops it). Prawn writes invalid PDF
+return inside a line as a glyph; this module drops it). Images Prawn draws wrongly are drawn
+right rather than as Prawn draws them (a palette PNG's transparency when its rows are filtered or
+its indices under 8 bits, a truecolour PNG with a suggested palette, a JPEG of components named
+R, G and B with no JFIF or Adobe marker), and a CMYK JPEG without Adobe's marker, which Prawn
+inverts, is refused. Prawn writes invalid PDF
 for a path left open across a transformation block's `q`/`Q` or `cm`, and NaN for a rounded
 corner on an edge of no length; such cases are not compared.
 

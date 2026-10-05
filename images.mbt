@@ -51,6 +51,13 @@ fn be32(data : Bytes, at : Int) -> Int {
 /// checks it (UnsupportedImageType) and as far as pdflite can embed it
 /// faithfully (Unsupported otherwise, rather than drawing it wrongly or
 /// not at all).
+///
+/// Where Prawn itself draws an image wrongly, it is drawn right, not as
+/// Prawn draws it: a palette's transparency (Prawn takes the rows' filtered
+/// bytes, one a pixel, for the indices), a truecolour PNG with a suggested
+/// palette (Prawn draws it as indexed), and a JPEG of components named R, G
+/// and B without a JFIF or Adobe marker (Prawn leaves them to be taken for
+/// YCbCr).
 fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
   let n = data.length()
   let png_signature = b"\x89PNG\r\n\x1a\n"
