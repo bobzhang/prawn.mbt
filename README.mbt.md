@@ -10,7 +10,7 @@ output.
 
 | package | what it is |
 | --- | --- |
-| `bobzhang/prawn` | the document cursor, bounds, columns and pages (`Flow`), formatted text (`Fragment`, `Style`) and its line wrapping (`typeset_lines`, `Flow::typeset`, `Flow::typeset_box`), font metrics of TrueType and the standard AFM fonts (`FontCatalog`, `Face`) with fallback fonts and icon fonts |
+| `bobzhang/prawn` | the document cursor, bounds, columns and pages (`Flow`), formatted text (`Fragment`, `Style`) and its line wrapping (`typeset_lines`, `Flow::typeset`, `Flow::typeset_box`), font metrics of TrueType and the standard AFM fonts (`FontCatalog`, `Face`) with fallback fonts and icon fonts; and `Document`, Prawn's own API as far as it is ported (pages, the cursor and bounding boxes, text and text boxes, fonts, images, graphics) |
 | `bobzhang/prawn/svg` | a port of [prawn-svg](https://github.com/mogest/prawn-svg) 0.34.2: SVG documents rendered into pagelayout graphic operations |
 | `bobzhang/prawn/table` | [prawn-table](https://github.com/prawnpdf/prawn-table) 0.2.2's sizing: column widths and row heights |
 
@@ -28,7 +28,9 @@ flow.typeset(fragments, line_metrics(1.15, flow.font(style), style.size), style)
 The module was factored out of the PDF backend in
 [asciidoctor.mbt](https://github.com/bobzhang/asciidoctor.mbt), whose comparison
 with Ruby Asciidoctor PDF (`scripts/pdf_compare.mbtx`) checks it end to end.
-The goal here is a MoonBit Prawn as good as the Ruby original; [PLAN.md](PLAN.md)
+`Document` is checked against Ruby Prawn itself: operation scripts run through
+both, their PDFs and answers compared (`docs/op-scripts.md` in the repository).
+The goal here is a MoonBit Prawn as good as the Ruby original; [PLAN.md](https://github.com/bobzhang/prawn.mbt/blob/main/PLAN.md)
 has the plan.
 
 ## License
