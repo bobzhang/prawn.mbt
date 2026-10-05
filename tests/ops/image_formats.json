@@ -10,6 +10,7 @@
     ["image", "$PRAWN/data/images/page_white_text.png", { "at": [378, 600], "width": 100 }],
     ["image", "$PRAWN/data/images/indexed_color.png", { "at": [36, 450], "width": 100 }],
     ["image", "$PRAWN/data/images/dice.png", { "at": [150, 450], "width": 100 }],
-    ["image", "$PRAWN/data/images/pigs.jpg", { "at": [264, 450], "width": 100 }]
+    ["image", "$PRAWN/data/images/pigs.jpg", { "at": [264, 450], "width": 100 }],
+    ["image", "$PRAWN/data/images/fractal.jpg", { "at": [378, 450], "width": 100 }]
   ]
 }

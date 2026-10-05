@@ -73,14 +73,6 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     if ![0, 2, 3, 4, 6].contains(colour_type) {
       raise UnsupportedImageType("PNG uses an unsupported number of colors")
     }
-    // what pdflite cannot embed yet: 16 bits a component (read, not drawn),
-    // a transparent colour key (dropped), palette transparency (refused)
-    if data[24] == b'\x10' {
-      raise Unsupported("the image \{file} (a 16-bit PNG)")
-    }
-    if (colour_type == 0 || colour_type == 2) && png_has_chunk(data, "tRNS") {
-      raise Unsupported("the image \{file} (a PNG with a colour key)")
-    }
     // embedded as rendering will, its data inflated (a corrupt one
     // refused now, before the position moves)
     try
@@ -115,10 +107,7 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
       marker != 0xC4 &&
       marker != 0xC8 &&
       marker != 0xCC {
-      // pdflite embeds 8-bit RGB JPEGs only (and those it can read)
-      if data[i + 4] != b'\x08' || data[i + 9] != b'\x03' {
-        raise Unsupported("the image \{file} (a JPEG not of 8-bit RGB)")
-      }
+      // embedded as rendering will (one pdflite cannot embed refused now)
       try @pdflite.pdf_image_object_of_jpeg_data(data[:]) catch {
         _ => raise Unsupported("the image \{file} (a JPEG pdflite cannot read)")
       } noraise {
@@ -133,22 +122,6 @@ fn read_image(file : String, data : Bytes) -> ImageInfo raise PrawnError {
     i += 2 + be16(data, i + 2)
   }
   raise UnsupportedImageType("the JPEG \{file} has no frame")
-}
-
-///|
-/// Whether a PNG has a chunk of `name`.
-fn png_has_chunk(data : Bytes, name : String) -> Bool {
-  let mut i = 8
-  while i + 8 <= data.length() {
-    let length = be32(data, i)
-    let matches = name.length() == 4 &&
-      (0).until(4).all(k => data[i + 4 + k].to_int() == name[k].to_int())
-    if matches {
-      return true
-    }
-    i += 12 + length
-  }
-  false
 }
 
 ///|
