@@ -86,7 +86,7 @@ let exact_tags : Array[String] = [
 ///|
 /// The tag at `i` of `s` (`<link…>`, `<color…>`, `<font…>`, `<a…>` taking
 /// anything up to the next `>`), as Prawn's regex alternation finds it.
-fn tag_at(s : String, i : Int) -> String? {
+fn tag_at(s : String, i : Int32) -> String? {
   let rest = s[i:].to_owned()
   let open = fn(name : String) -> String? {
     guard rest.has_prefix(name) else { return None }
@@ -139,7 +139,7 @@ fn tag_at(s : String, i : Int) -> String? {
 ///|
 /// An attribute of a tag, quoted with `"` or `'` (`name="value"`); with
 /// `hash`, an optional `#` before the value is dropped.
-fn attribute(tag : String, name : String, hash? : Bool = false) -> String? {
+fn attribute(tag : String, name : String, hash~ : Bool = false) -> String? {
   for quote in ["\"", "'"] {
     let start = name + "=" + quote
     match tag.find(start) {
@@ -517,7 +517,7 @@ pub fn Document::formatted_text(
   fragments : Array[TextFragment],
   size? : Double,
   style? : FontStyle,
-  align? : Alignment = Left,
+  align~ : Alignment = Left,
   leading? : Double,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> Unit raise PrawnError {
@@ -628,9 +628,9 @@ fn ruby_float(s : String) -> Double raise PrawnError {
     let mut value = 0.0
     for c in hex {
       let digit = match c {
-        '0'..='9' => c.to_int() - '0'.to_int()
-        'a'..='f' => c.to_int() - 'a'.to_int() + 10
-        'A'..='F' => c.to_int() - 'A'.to_int() + 10
+        '0'..<='9' => c.to_int() - '0'.to_int()
+        'a'..<='f' => c.to_int() - 'a'.to_int() + 10
+        'A'..<='F' => c.to_int() - 'A'.to_int() + 10
         '_' => continue
         _ => raise bad
       }
@@ -638,7 +638,7 @@ fn ruby_float(s : String) -> Double raise PrawnError {
     }
     return if t.has_prefix("-") { -value } else { value }
   }
-  let digits = fn(from : Int) -> Int {
+  let digits = fn(from : Int32) -> Int32 {
     // how far a run of digits with single underscores between them goes
     let mut i = from
     while i < t.length() &&

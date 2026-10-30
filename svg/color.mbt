@@ -6,12 +6,12 @@
 
 ///|
 priv enum ColorCandidate {
-  Rgb(Int)
+  Rgb(Int32)
   Url(String)
 }
 
 ///|
-fn hex_digit(c : UInt16) -> Int? {
+fn hex_digit(c : UInt16) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0')
   } else if c >= 'a' && c <= 'f' {
@@ -29,7 +29,7 @@ fn hex_digit(c : UInt16) -> Int? {
 fn function_values(
   token : String,
   name : String,
-  count : Int,
+  count : Int32,
 ) -> Array[String]? {
   let lower = downcase(token)
   guard lower.has_prefix(name + "(") && lower.has_suffix(")") else {
@@ -76,7 +76,7 @@ fn function_values(
 }
 
 ///|
-fn clamp_int(v : Int, lo : Int, hi : Int) -> Int {
+fn clamp_int(v : Int32, lo : Int32, hi : Int32) -> Int32 {
   if v < lo {
     lo
   } else if v > hi {
@@ -88,7 +88,7 @@ fn clamp_int(v : Int, lo : Int, hi : Int) -> Int {
 
 ///|
 /// Ruby's `Float#round` (half away from zero).
-fn round_half_away(v : Double) -> Int {
+fn round_half_away(v : Double) -> Int32 {
   if v >= 0.0 {
     (v + 0.5).floor().to_int()
   } else {
@@ -214,7 +214,7 @@ fn parse_color(value : String) -> Array[ColorCandidate] {
 ///|
 /// The first plain colour among a value's candidates (prawn-svg's
 /// `css_color_to_prawn_color`).
-fn css_color(value : String?) -> Int? {
+fn css_color(value : String?) -> Int32? {
   for candidate in parse_color(value.unwrap_or("")) {
     if candidate is Rgb(v) {
       return Some(v)
@@ -224,6 +224,6 @@ fn css_color(value : String?) -> Int? {
 }
 
 ///|
-fn color_of(rgb : Int) -> @pagelayout.Color {
+fn color_of(rgb : Int32) -> @pagelayout.Color {
   @pagelayout.Color::rgb((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF)
 }

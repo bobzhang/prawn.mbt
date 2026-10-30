@@ -4,14 +4,14 @@
 
 ///|
 /// The dimensions (pixels) and media type of PNG and JPEG data.
-pub fn raster_info(data : Bytes) -> (Int, Int, String)? {
-  let be32 = fn(o : Int) {
+pub fn raster_info(data : Bytes) -> (Int32, Int32, String)? {
+  let be32 = fn(o : Int32) {
     (data[o].to_int() << 24) |
     (data[o + 1].to_int() << 16) |
     (data[o + 2].to_int() << 8) |
     data[o + 3].to_int()
   }
-  let u16 = fn(o : Int) { (data[o].to_int() << 8) | data[o + 1].to_int() }
+  let u16 = fn(o : Int32) { (data[o].to_int() << 8) | data[o + 1].to_int() }
   if data.length() > 24 &&
     data[0] == b'\x89' &&
     data[1] == b'P' &&

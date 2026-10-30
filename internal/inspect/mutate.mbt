@@ -91,8 +91,8 @@ fn inverse_translation(
 /// them and its inverse after, so later state is untouched.
 fn move_range(
   ops : Array[@content.PdfContentOp],
-  start : Int,
-  stop : Int,
+  start : Int32,
+  stop : Int32,
   dx : Double,
   dy : Double,
 ) -> Unit {
@@ -103,7 +103,7 @@ fn move_range(
 
 ///|
 /// The first BT … ET range of `ops`.
-fn first_text_object(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
+fn first_text_object(ops : Array[@content.PdfContentOp]) -> (Int32, Int32)? {
   let mut start = -1
   for i, op in ops {
     match op {
@@ -117,8 +117,8 @@ fn first_text_object(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
 
 ///|
 /// The last BT … ET range of `ops`.
-fn last_text_object(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
-  let mut found : (Int, Int)? = None
+fn last_text_object(ops : Array[@content.PdfContentOp]) -> (Int32, Int32)? {
+  let mut found : (Int32, Int32)? = None
   let mut start = -1
   for i, op in ops {
     match op {
@@ -157,7 +157,7 @@ fn is_painting(op : @content.PdfContentOp) -> Bool {
 ///|
 /// The first painted path: from its first construction op to its painting
 /// op.
-fn first_path(ops : Array[@content.PdfContentOp]) -> (Int, Int)? {
+fn first_path(ops : Array[@content.PdfContentOp]) -> (Int32, Int32)? {
   let mut start = -1
   for i, op in ops {
     match op {
@@ -350,7 +350,7 @@ pub fn mutate(bytes : Bytes, kind : String) -> Bytes? raise {
   let all_ops = pages.map(page => {
     doc.parse_content_ops_with_resources(page.resources, page.content)
   })
-  let set_ops = fn(index : Int) raise {
+  let set_ops = fn(index : Int32) raise {
     pages[index] = {
       ..pages[index],
       content: [@pdflite.pdf_content_stream_of_ops(all_ops[index])],

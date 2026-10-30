@@ -73,7 +73,7 @@ fn parse_transform(
   let mut m = @pagelayout.identity
   for call in css_method_calls(text) {
     let (name, args) = call
-    let arg = fn(i : Int) { args.get(i).map(ruby_to_f).unwrap_or(0.0) }
+    let arg = fn(i : Int32) { args.get(i).map(ruby_to_f).unwrap_or(0.0) }
     match name {
       "translate" => m = m.after(translate(arg(0), arg(1)))
       "translateX" => m = m.after(translate(arg(0), 0))

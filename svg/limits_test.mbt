@@ -6,8 +6,8 @@
 /// Render `text`, returning the number of ops and the warnings.
 fn render_warnings(
   text : String,
-  files? : Map[String, Bytes] = {},
-) -> (Int, Array[String]) raise {
+  files~ : Map[String, Bytes] = {},
+) -> (Int32, Array[String]) raise {
   let doc = @svg.SvgDocument::parse(text, (100, 100))
   let ops = doc.render(
     test_env(files~),

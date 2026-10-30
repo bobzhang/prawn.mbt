@@ -7,7 +7,7 @@
 /// A font the host can draw SVG text with.
 pub(all) struct SvgFont {
   /// the font's index in the page model
-  index : Int
+  index : Int32
   /// the advance of each UTF-16 code unit of a string at a size, kerning
   /// included (Prawn's `width_of`)
   advances : (String, Double) -> Array[Double]
@@ -41,19 +41,19 @@ pub struct SvgDocument {
   sizing : Sizing
   /// problems found while drawing (prawn-svg's `warnings`)
   warnings : Array[String]
-  priv styles : Map[Int, Array[(String, String)]]
+  priv styles : Map[Int32, Array[(String, String)]]
   priv elements_by_id : Map[String, Node]
   priv gradients : Map[String, GradientElement]
   priv mut env : Environment?
   /// the work budget, shared with the SVG documents drawn inside this one
   priv mut limits : Limits
   /// how many SVG documents this one is drawn inside (0 at the top)
-  priv mut nesting : Int
+  priv mut nesting : Int32
   /// how many elements are being processed, one inside the other
-  priv mut depth : Int
+  priv mut depth : Int32
   /// the elements being processed, innermost last (`Element` uids, shared
   /// by the copies `<use>` makes): a reference must not lead back to one
-  priv active : Array[Int]
+  priv active : Array[Int32]
   /// the gradients being read (ids): an `href` must not lead back to one
   priv resolving : Array[String]
   /// the first element with each id, once `find_raw` needs it
@@ -69,28 +69,28 @@ pub struct SvgDocument {
 /// for from this budget, which is shared by the SVG images drawn inside
 /// the document.
 priv struct Limits {
-  mut work : Int
+  mut work : Int32
 }
 
 ///|
 /// The work budget of a document and the SVG images in it. A drawing
 /// that legitimately needs more is far beyond what prawn-svg can render.
-let max_work : Int = 250_000
+let max_work : Int32 = 250_000
 
 ///|
 /// The deepest elements may be processed one inside the other, counting
 /// the elements each `<use>` brings in.
-let max_depth : Int = 512
+let max_depth : Int32 = 512
 
 ///|
 /// The deepest SVG documents may be drawn inside each other (`<image>`s
 /// of SVG documents).
-let max_nesting : Int = 8
+let max_nesting : Int32 = 8
 
 ///|
 /// Pay for `units` of work; false (with a warning, once) when the budget
 /// is exhausted, and the work must not be done.
-fn SvgDocument::spend(self : SvgDocument, units : Int) -> Bool {
+fn SvgDocument::spend(self : SvgDocument, units : Int32) -> Bool {
   if self.limits.work > max_work {
     return false
   }

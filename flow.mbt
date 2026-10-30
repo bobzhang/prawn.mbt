@@ -26,9 +26,9 @@ pub fn line_metrics(factor : Double, face : Face, size : Double) -> LineMetrics 
 /// A point in the flow: page, cursor, and how many items the page held,
 /// so backgrounds can be slid underneath content inked after it.
 pub(all) struct Mark {
-  page : Int
+  page : Int32
   y : Double
-  item : Int
+  item : Int32
 }
 
 ///|
@@ -37,10 +37,10 @@ pub(all) struct Mark {
 /// the next column at the box's top, and past the last one to a new page,
 /// where the box starts at the page's top.
 pub(all) struct Columns {
-  count : Int
+  count : Int32
   /// the distance between the left edges of adjacent columns
   stride : Double
-  mut current : Int
+  mut current : Int32
 }
 
 ///|
@@ -60,18 +60,18 @@ pub(all) struct Flow {
   /// starts on its first page
   mut top : Double
   mut bottom : Double
-  mut page : Int
+  mut page : Int32
   mut y : Double
   mut left : Double
   mut right : Double
   mut columns : Columns?
   /// the last line `typeset` placed: the line, its page and its baseline
-  mut last_line : (Line, Int, Double)?
+  mut last_line : (Line, Int32, Double)?
   /// whether that line was the first of its text (no hanging indent)
   mut last_line_first : Bool
   /// while above zero, what is inked does not count as content (Prawn's
   /// `tare_first_page_content_stream`: captions and backgrounds)
-  mut taring : Int
+  mut taring : Int32
   /// content was inked since the flow started, before its first page break
   mut inked : Bool
   /// at the flow's first page break: whether nothing had been inked
@@ -79,7 +79,7 @@ pub(all) struct Flow {
   mut first_break_empty : Bool?
   /// the left and right margins of a page by index, when they vary by page
   /// (`media=prepress`)
-  mut page_margins : ((Int) -> (Double, Double))?
+  mut page_margins : ((Int32) -> (Double, Double))?
   /// the current page's left and right margins
   mut margin_left : Double
   mut margin_right : Double
@@ -107,8 +107,8 @@ pub(all) struct PageSetup {
 pub fn Flow::new(
   catalog : FontCatalog,
   setup : PageSetup,
-  hooks? : Hooks = Hooks::new(),
-  scratch? : Bool = false,
+  hooks~ : Hooks = Hooks::new(),
+  scratch~ : Bool = false,
 ) -> Flow {
   {
     catalog,
@@ -141,7 +141,7 @@ pub fn Flow::new(
 /// Take the left and right margins of page `index` (`page_margins`; for
 /// `media=prepress`, asciidoctor-pdf's `init_page` sets the recto or verso
 /// margins), keeping any indentation from the margins.
-fn Flow::apply_page_margins(self : Flow, index : Int) -> Unit {
+fn Flow::apply_page_margins(self : Flow, index : Int32) -> Unit {
   match self.page_margins {
     Some(margins_of) => {
       let (l, r) = margins_of(index)
@@ -254,7 +254,7 @@ pub fn Flow::on_verso(self : Flow) -> Bool {
 ///|
 /// Make page `index` the current page (Prawn's `go_to_page`), in its
 /// margins; the cursor is left where it is.
-pub fn Flow::go_to_page(self : Flow, index : Int) -> Unit {
+pub fn Flow::go_to_page(self : Flow, index : Int32) -> Unit {
   self.page = index
   self.fit_page_size()
   self.apply_page_margins(index)
@@ -284,7 +284,7 @@ pub fn Flow::to_last_column(self : Flow) -> Unit {
 /// bottom of the last one.
 pub fn Flow::column_box(
   self : Flow,
-  count : Int,
+  count : Int32,
   gap : Double,
   body : () -> Unit,
 ) -> Unit {
@@ -449,7 +449,7 @@ pub fn rect_item(
   h : Double,
   fill? : Color,
   stroke? : Color,
-  stroke_width? : Double = 0.0,
+  stroke_width~ : Double = 0.0,
 ) -> @pagelayout.PageItem {
   Rect({
     x_pt: x,
@@ -740,12 +740,12 @@ pub fn Flow::typeset(
   fragments : Array[Fragment],
   metrics : LineMetrics,
   base : Style,
-  align? : Alignment = Left,
-  bottom_gutter? : Double = 0.0,
-  hanging_indent? : Double = 0.0,
-  normalize_line_height? : Bool = false,
+  align~ : Alignment = Left,
+  bottom_gutter~ : Double = 0.0,
+  hanging_indent~ : Double = 0.0,
+  normalize_line_height~ : Bool = false,
   first_line_style? : Style,
-  text_indent? : Double = 0.0,
+  text_indent~ : Double = 0.0,
 ) -> Unit {
   self.last_line = None
   // a hanging indent: the first line takes the whole width, the next ones
@@ -857,7 +857,7 @@ pub fn Flow::height_of(
   fragments : Array[Fragment],
   metrics : LineMetrics,
   base : Style,
-  normalize_line_height? : Bool = false,
+  normalize_line_height~ : Bool = false,
   width? : Double,
 ) -> Double {
   let lines = typeset_lines(
@@ -917,7 +917,7 @@ pub fn Flow::text(self : Flow) -> TextContext {
 
 ///|
 /// Whether `height` fits below the cursor (prawn-table's `fits_on_page?`).
-pub fn Flow::fits(self : Flow, height : Double, y? : Double = self.y) -> Bool {
+pub fn Flow::fits(self : Flow, height : Double, y~ : Double = self.y) -> Bool {
   height < self.bottom - y + 1.0e-9
 }
 

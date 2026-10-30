@@ -5,7 +5,7 @@
 pub(all) struct PageView {
   width : Double
   height : Double
-  rotate : Int
+  rotate : Int32
   glyphs : Array[Glyph]
   marks : Array[Mark]
 }
@@ -40,7 +40,7 @@ pub(all) struct Glyph {
   matrix : Array[Double]
   x : Double
   y : Double
-  mode : Int
+  mode : Int32
   fill : Paint?
   stroke : Paint?
   /// Its stroke's pen (see `pen`), empty when it is not stroked.
@@ -54,7 +54,7 @@ pub(all) struct Glyph {
   /// paint-order checks; not compared itself.
   extent : Rect
   /// Its position in the page's paint order (glyphs and marks together).
-  order : Int
+  order : Int32
 }
 
 ///|
@@ -73,7 +73,7 @@ pub(all) struct Mark {
   clip : Rect?
   blend : String
   extent : Rect
-  order : Int
+  order : Int32
 }
 
 ///|
@@ -273,7 +273,7 @@ fn fnv(data : Bytes) -> String {
 fn object_json(
   doc : @pdflite.PdfDocument,
   obj : @syntax.PdfObject,
-  depth? : Int = 0,
+  depth~ : Int32 = 0,
 ) -> Json {
   if depth > 8 {
     return "…"
@@ -281,20 +281,22 @@ fn object_json(
   match obj {
     PdfIndirect(n) =>
       object_json(doc, doc.lookup_object_or_null(n), depth=depth + 1)
-    PdfNameObject(n) => ("/" + name_text(n)).to_json()
+    PdfNameObject(n) => Json("/" + name_text(n))
     PdfArray(items) => {
       let out = items.map(x => object_json(doc, x, depth=depth + 1))
       // an indexed colour space's lookup table, a string or a stream: its
       // bytes either way
-      if out.length() == 4 && out[0] == "/Indexed".to_json() {
+      if out.length() == 4 && out[0] == Json("/Indexed") {
         match items[3] {
           PdfString(s) =>
             out[3] = {
-              "data": fnv(
-                Bytes::from_array(
-                  s.iter().map(c => c.to_int().to_byte()).collect(),
+              "data": Json(
+                fnv(
+                  Bytes::from_array(
+                    s.iter().map(c => c.to_int().to_byte()).collect(),
+                  ),
                 ),
-              ).to_json(),
+              ),
             }
           _ => ()
         }
@@ -323,7 +325,7 @@ fn object_json(
       }
       // what a stream says by default, written or not: an XObject's type,
       // and an image's decode array when it is its colour space's default
-      if out.get("Type") == Some("/XObject".to_json()) {
+      if out.get("Type") == Some(Json("/XObject")) {
         out.remove("Type")
       }
       match (out.get("Decode"), out.get("ColorSpace")) {
@@ -332,7 +334,7 @@ fn object_json(
         _ => ()
       }
       let data = obj.stream_bytes() catch { _ => b"" }
-      out["data"] = fnv(data).to_json()
+      out["data"] = Json(fnv(data))
       Json::object(out)
     }
     _ => ToJson::to_json(obj)
@@ -345,7 +347,7 @@ priv struct Walk {
   doc : @pdflite.PdfDocument
   glyphs : Array[Glyph]
   marks : Array[Mark]
-  mut order : Int
+  mut order : Int32
   /// The clip in effect (page space; `None` is the whole page), with the
   /// clips saved by `q`.
   mut clip : Rect?
@@ -353,7 +355,7 @@ priv struct Walk {
 }
 
 ///|
-fn Walk::next_order(self : Walk) -> Int {
+fn Walk::next_order(self : Walk) -> Int32 {
   self.order = self.order + 1
   self.order
 }
@@ -503,14 +505,14 @@ fn path_geometry(
     if closed {
       kinds.write_char('h')
     }
-    subpaths.push(kinds.to_string().to_json())
+    subpaths.push(Json(kinds.to_string()))
   }
   let exact : Map[String, Json] = Map([])
   exact["subpaths"] = Json::array(subpaths)
-  exact["stroked"] = drawn.stroked.to_json()
-  exact["filled"] = drawn.filled.to_json()
+  exact["stroked"] = Json(drawn.stroked)
+  exact["filled"] = Json(drawn.filled)
   if drawn.filled {
-    exact["even_odd"] = (drawn.path.winding_rule is PdfPathEvenOdd).to_json()
+    exact["even_odd"] = Json(drawn.path.winding_rule is PdfPathEvenOdd)
   }
   (points, exact)
 }
@@ -550,12 +552,12 @@ fn pen(
     },
   )
   let exact : Map[String, Json] = Map([])
-  exact["cap"] = ps.line_cap.to_json()
-  exact["join"] = ps.line_join.to_json()
+  exact["cap"] = Json(ps.line_cap)
+  exact["join"] = Json(ps.line_join)
   if ps.line_join == 0 {
-    exact["miter_limit"] = state.miter_limit.to_json()
+    exact["miter_limit"] = Json(state.miter_limit)
   }
-  exact["dashes"] = ps.dash_pattern.array.length().to_json()
+  exact["dashes"] = Json(ps.dash_pattern.array.length())
   let half = w /
     2.0 *
     (ctm.a * ctm.a + ctm.b * ctm.b).max(ctm.c * ctm.c + ctm.d * ctm.d).sqrt()
@@ -595,8 +597,8 @@ fn soft_mask(
       inner.form(plain, @syntax.pdf_dictionary([]), group) catch {
         _ => ()
       }
-      out["text"] = text_of(inner.glyphs).to_json()
-      out["marks"] = kinds(inner.marks).to_json()
+      out["text"] = Json(text_of(inner.glyphs))
+      out["marks"] = Json(kinds(inner.marks))
     }
     None => ()
   }
@@ -796,7 +798,7 @@ fn Walk::ops(
       Op_InlineImage(dict, _, data) =>
         self.image(state, "inline-image", {
           "dictionary": object_json(doc, dict),
-          "data": fnv(data).to_json(),
+          "data": Json(fnv(data)),
         })
       Op_Do(name) => {
         let xobject = lookup(doc, resources, "XObject").bind(x => {
@@ -960,7 +962,7 @@ fn default_decode(space : String) -> Json {
     _ => 0
   }
   // a PDF integer as `object_json` gives it
-  let int = (n : Int) => Json::array(["PdfInteger".to_json(), n.to_json()])
+  let int = (n : Int32) => Json::array([Json("PdfInteger"), Json(n)])
   let pair = [int(0), int(1)]
   Json::array(Array::makei(components, _ => pair).flatten())
 }

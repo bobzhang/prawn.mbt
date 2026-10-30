@@ -120,7 +120,7 @@ pub fn source_wrap(
       item.unit != pad_unit &&
       item.offset >= 0
     }
-    let mut cut : (Int, Int)? = None
+    let mut cut : (Int32, Int32)? = None
     let mut split_number : Array[Fragment]? = None
     for index, range in ranges {
       let (start, end, hard) = range

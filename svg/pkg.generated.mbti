@@ -10,7 +10,7 @@ pub fn decode_base64(StringView) -> Bytes
 
 pub fn parse_xml(String) -> Element raise XmlError
 
-pub fn raster_info(Bytes) -> (Int, Int, String)?
+pub fn raster_info(Bytes) -> (Int32, Int32, String)?
 
 pub fn ruby_to_f(String) -> Double
 
@@ -90,7 +90,7 @@ pub fn SvgDocument::parse(String, (Double, Double), width? : Double, height? : D
 pub fn SvgDocument::render(Self, Environment, origin~ : (Double, Double), page_height~ : Double, stack~ : TransformationStack) -> Array[@pagelayout.GraphicOp]
 
 pub(all) struct SvgFont {
-  index : Int
+  index : Int32
   advances : (String, Double) -> Array[Double]
   height : (Double) -> Double
 }

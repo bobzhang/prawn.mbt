@@ -197,7 +197,7 @@ fn overlap(a : Rect, b : Rect) -> Bool {
 }
 
 ///|
-fn min(a : Int, b : Int) -> Int {
+fn min(a : Int32, b : Int32) -> Int32 {
   if a < b {
     a
   } else {
@@ -270,7 +270,7 @@ fn text_of(glyphs : Array[Glyph]) -> String {
 
 ///|
 fn kinds(marks : Array[Mark]) -> String {
-  let counts : Map[String, Int] = Map([])
+  let counts : Map[String, Int32] = Map([])
   for m in marks {
     counts[m.kind] = counts.get(m.kind).unwrap_or(0) + 1
   }
@@ -284,7 +284,7 @@ fn kinds(marks : Array[Mark]) -> String {
 pub fn compare(
   expected : Array[PageView],
   actual : Array[PageView],
-  tol? : Tolerance = default_tolerance,
+  tol~ : Tolerance = default_tolerance,
 ) -> Array[String] {
   let out : Array[String] = []
   if expected.length() != actual.length() {

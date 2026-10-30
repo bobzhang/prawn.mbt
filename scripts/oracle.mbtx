@@ -1,3 +1,12 @@
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/env",
+}
+----
+
 // Run operation scripts (docs/op-scripts.md) through Ruby Prawn.
 //
 // Usage: moon run --target native scripts/oracle.mbtx -- [options] [NAME...]
@@ -12,12 +21,6 @@
 //
 // Exits non-zero when a script fails to run (or, with --determinism, is not
 // deterministic).
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-  "moonbitlang/core/env",
-}
 
 ///|
 /// Where Ruby is installed when it is not on PATH as `ruby` (Homebrew's,
@@ -125,9 +128,9 @@ async fn main {
   if !exists("\{@fs.realpath(".")}/.repos/prawn/lib/prawn.rb") {
     fail("Prawn is expected in .repos/prawn (see PLAN.md)")
   }
-  let scripts = @fs.readdir(opts.ops, sort=true).filter(f => f.has_suffix(
-    ".json",
-  ))
+  let scripts = @fs.readdir(opts.ops, sort=true).filter(f => {
+    f.has_suffix(".json")
+  })
   let selected = scripts.filter(f => {
     opts.names.is_empty() || opts.names.contains(f[:f.length() - 5].to_owned())
   })

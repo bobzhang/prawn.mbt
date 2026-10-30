@@ -30,7 +30,7 @@ fn FontStyle::flags(self : FontStyle) -> (Bool, Bool) {
 pub fn Document::font(
   self : Document,
   name : String,
-  style? : FontStyle = Normal,
+  style~ : FontStyle = Normal,
   size? : Double,
   body? : () -> Unit raise,
 ) -> Unit raise {

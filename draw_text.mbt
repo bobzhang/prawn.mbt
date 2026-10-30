@@ -9,8 +9,8 @@ pub fn Document::draw_text(
   at~ : (Double, Double),
   size? : Double,
   style? : FontStyle,
-  rotate? : Double = 0.0,
-  kerning? : Bool = true,
+  rotate~ : Double = 0.0,
+  kerning~ : Bool = true,
 ) -> Unit raise {
   // Prawn's `process_text_options`: the current font in `style`, which a
   // font of no family cannot take
@@ -84,12 +84,12 @@ pub fn Document::draw_text(
 /// a label every `step_length` points.
 pub fn Document::stroke_axis(
   self : Document,
-  at? : (Double, Double) = (0.0, 0.0),
+  at~ : (Double, Double) = (0.0, 0.0),
   width? : Double,
   height? : Double,
-  step_length? : Double = 100.0,
-  negative_axes_length? : Double = 20.0,
-  color? : Color = Color::rgb(0, 0, 0),
+  step_length~ : Double = 100.0,
+  negative_axes_length~ : Double = 20.0,
+  color~ : Color = Color::rgb(0, 0, 0),
 ) -> Unit raise {
   let b = self.bounds()
   let width = width.unwrap_or(b.width - at.0)

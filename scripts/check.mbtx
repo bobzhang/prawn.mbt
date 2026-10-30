@@ -1,3 +1,11 @@
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/env",
+}
+----
+
 // Full validation: formatting and interfaces (brought up to date, as CI
 // requires them), type-check (all targets), unit tests, and the
 // comparison's self-test on the goldens in tests/golden (PLAN.md §3).
@@ -6,11 +14,6 @@
 //   --oracle   also rerun the op scripts through Ruby Prawn (needs Ruby and
 //              .repos; see scripts/oracle.mbtx) and require the goldens to
 //              be unchanged
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/process",
-  "moonbitlang/core/env",
-}
 
 ///|
 async fn step(name : String, cmd : String, args : Array[String]) -> Unit {

@@ -1,11 +1,11 @@
 ///|
 fn cell(
-  row : Int,
-  column : Int,
+  row : Int32,
+  column : Int32,
   width : Double,
   min : Double,
-  colspan? : Int = 1,
-  master? : Int = -1,
+  colspan~ : Int32 = 1,
+  master~ : Int32 = -1,
 ) -> @table.WidthCell {
   { row, column, colspan, master, width, min, }
 }

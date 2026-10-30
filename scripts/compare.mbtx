@@ -1,3 +1,12 @@
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/env",
+}
+----
+
 // Run every operation script through this module and compare the result
 // with Ruby Prawn's goldens (tests/golden): the PDFs under PLAN.md §3, the
 // observation logs entry by entry.
@@ -10,12 +19,6 @@
 //
 // Prints one line per script (`pass`, or what differs) and a summary. It
 // reports; it does not gate (milestone 1 has just begun).
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-  "moonbitlang/core/env",
-}
 
 ///|
 let oracle : String = "_build/native/release/build/cmd/oracle/oracle.exe"
@@ -94,7 +97,9 @@ async fn main {
     let pdf = "\{out}/\{name}.pdf"
     let log = "\{out}/\{name}.jsonl"
     let (code, run) = @process.collect_output_merged(oracle, [
-      "\{ops}/\{name}.json", pdf, log,
+      "\{ops}/\{name}.json",
+      pdf,
+      log,
     ])
     if code != 0 {
       println("FAIL \{name}: the script did not run\n  \{run.text().trim()}")
@@ -110,7 +115,8 @@ async fn main {
     } else {
       println("FAIL \{name}: \{found.length()} difference(s)")
       let shown = if verbose { found.length() } else { 3 }
-      for d in found[:if shown < found.length() { shown } else { found.length() }] {
+      for
+        d in found[:if shown < found.length() { shown } else { found.length() }] {
         println("  \{d}")
       }
     }

@@ -9,7 +9,7 @@ priv struct GradientElement {
   bounding_box : Bool
   /// linear: x1, y1, x2, y2; radial: cx, cy, fx, fy, r
   coords : Array[Double]
-  stops : Array[(Double, Int)]
+  stops : Array[(Double, Int32)]
   transform : @pagelayout.Matrix?
 }
 
@@ -98,7 +98,7 @@ fn SvgDocument::register_gradient(
   }
   // the stops: `stop` children with an offset, each offset at least the
   // previous one, the colour their `stop-color` gives (black by default)
-  let stops : Array[(Double, Int)] = []
+  let stops : Array[(Double, Int32)] = []
   for child in source.elements() {
     guard child.name == "stop" && child.attr("offset") is Some(offset) else {
       continue

@@ -32,9 +32,9 @@ priv struct Box {
 ///|
 /// A column box's columns (Prawn's `ColumnBox`).
 priv struct ColumnState {
-  count : Int
+  count : Int32
   spacer : Double
-  mut current : Int
+  mut current : Int32
   reflow_margins : Bool
 }
 
@@ -160,7 +160,7 @@ fn Document::generate_margin_box(self : Document) -> Unit {
 /// another size or layout makes the margin box current, as Prawn does).
 fn Document::page_changed(
   self : Document,
-  size_changed? : Bool = false,
+  size_changed~ : Bool = false,
 ) -> Unit {
   self.generate_margin_box()
   if size_changed {
@@ -253,9 +253,9 @@ pub fn Document::column_box(
   at : (Double, Double),
   width : Double,
   height? : Double,
-  columns? : Int = 3,
+  columns~ : Int32 = 3,
   spacer? : Double,
-  reflow_margins? : Bool = false,
+  reflow_margins~ : Bool = false,
   body : () -> Unit raise,
 ) -> Unit raise {
   let parent = self.bbox
@@ -284,7 +284,7 @@ pub fn Document::column_box(
 pub fn Document::indent(
   self : Document,
   left : Double,
-  right? : Double = 0.0,
+  right~ : Double = 0.0,
   body : () -> Unit raise,
 ) -> Unit raise {
   self.bbox.pad(left, right)
@@ -385,7 +385,7 @@ pub(all) enum SpanPosition {
 pub fn Document::span(
   self : Document,
   width : Double,
-  position? : SpanPosition = SpanLeft,
+  position~ : SpanPosition = SpanLeft,
   body : () -> Unit raise,
 ) -> Unit raise {
   let original_y = self.y()

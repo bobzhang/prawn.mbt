@@ -30,8 +30,8 @@ pub extend Alignment with Eq::{not_equal, equal}
 
 ///|
 pub(all) struct Item {
-  unit : Int
-  fragment : Int
+  unit : Int32
+  fragment : Int32
   mut fit : Double
   draw : Double
   /// kerning with the next character, points; part of `draw`, and of
@@ -40,14 +40,14 @@ pub(all) struct Item {
   hard_break : Bool
   anchor : String?
   /// the position of its code unit in its fragment's text, or -1
-  offset : Int
+  offset : Int32
 }
 
 ///|
 /// One placed run of a line; `x` is relative to the line's left edge.
 pub(all) struct LineRun {
   /// the index of the fragment it is part of
-  fragment : Int
+  fragment : Int32
   text : String
   style : Style
   face : Face
@@ -71,14 +71,14 @@ pub(all) struct Line {
   empty_links : Array[(Double, Style, Face)]
   /// inline images: x, their index, width, height, whether they make the
   /// line taller, and their fragment's style and face
-  images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
+  images : Array[(Double, Int32, Double, Double, Bool, Style, Face)]
   /// the line marks of highlighted source lines (`Style::line_mark`): x,
   /// their fragment's style and face
   marks : Array[(Double, Style, Face)]
   /// every fragment the line holds, in order (Prawn draws each, one with
   /// nothing to show on the line too): its index, the x it starts at, its
   /// style and face
-  held : Array[(Int, Double, Style, Face)]
+  held : Array[(Int32, Double, Style, Face)]
 }
 
 ///|
@@ -87,13 +87,13 @@ pub(all) struct Line {
 let pad_unit = -1
 
 ///|
-fn is_break_space(unit : Int) -> Bool {
+fn is_break_space(unit : Int32) -> Bool {
   unit == 0x20
 }
 
 ///|
 /// Prawn's whitespace break characters: space, tab, zero-width space.
-fn is_whitespace(unit : Int) -> Bool {
+fn is_whitespace(unit : Int32) -> Bool {
   unit == 0x20 || unit == 0x09 || unit == 0x200B
 }
 
@@ -103,7 +103,7 @@ fn is_whitespace(unit : Int) -> Bool {
 fn token_starts(items : Array[Item]) -> Array[Bool] {
   let n = items.length()
   let starts = Array::make(n, false)
-  let kind = fn(i : Int) -> Int {
+  let kind = fn(i : Int32) -> Int32 {
     let unit = items[i].unit
     // an anchor stands for asciidoctor-pdf's placeholder text, a NUL: part
     // of the word it touches, and no break opportunity
@@ -142,7 +142,7 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
           // the hyphens ending a word are its own, not those a next
           // fragment starts with (Prawn tokenizes each fragment: `-common`
           // is a token of its own, and a place to break)
-          let own = fn(k : Int) { items[k].fragment == items[k - 1].fragment }
+          let own = fn(k : Int32) { items[k].fragment == items[k - 1].fragment }
           if j < end && kind(j) == 3 && own(j) {
             j += 1
           } else {
@@ -176,7 +176,7 @@ fn token_starts(items : Array[Item]) -> Array[Bool] {
 pub fn build_items(
   fragments : Array[Fragment],
   ctx : TextContext,
-  available? : Double = 1.0e9,
+  available~ : Double = 1.0e9,
 ) -> (Array[Item], Array[Face]) {
   let items : Array[Item] = []
   let faces : Array[Face] = []
@@ -272,9 +272,9 @@ pub fn typeset_lines(
   ctx : TextContext,
   width : Double,
   align : Alignment,
-  first_width? : Double = width,
-  indent_paragraphs? : Bool = false,
-  paragraphs? : Bool = false,
+  first_width~ : Double = width,
+  indent_paragraphs~ : Bool = false,
+  paragraphs~ : Bool = false,
 ) -> Array[Line] {
   typeset_paragraph_lines(
     fragments,
@@ -295,9 +295,9 @@ fn typeset_paragraph_lines(
   ctx : TextContext,
   width : Double,
   align : Alignment,
-  first_width? : Double = width,
-  indent_paragraphs? : Bool = false,
-  paragraphs? : Bool = false,
+  first_width~ : Double = width,
+  indent_paragraphs~ : Bool = false,
+  paragraphs~ : Bool = false,
 ) -> (Array[Line], Array[Bool]) {
   let fragments = ctx.apply_fallbacks(fragments)
   let (items, faces, ranges) = break_lines(
@@ -342,8 +342,8 @@ fn break_lines(
   ctx : TextContext,
   width : Double,
   first_width : Double,
-  indent_paragraphs? : Bool = false,
-) -> (Array[Item], Array[Face], Array[(Int, Int, Bool)]) {
+  indent_paragraphs~ : Bool = false,
+) -> (Array[Item], Array[Face], Array[(Int32, Int32, Bool)]) {
   let (items, faces) = build_items(fragments, ctx, available=width)
   let n = items.length()
   let starts = token_starts(items)
@@ -354,7 +354,7 @@ fn break_lines(
     }
   }
   let joined = joined_widths(fragments, faces)
-  let ranges : Array[(Int, Int, Bool)] = [] // start, end, ended by hard break
+  let ranges : Array[(Int32, Int32, Bool)] = [] // start, end, ended by hard break
   let mut start = 0
   while start <= n {
     if start >= n {
@@ -561,15 +561,15 @@ fn joined_widths(
 fn char_wrap_limit(
   items : Array[Item],
   starts : Array[Bool],
-  start : Int,
-  i : Int,
+  start : Int32,
+  i : Int32,
   w : Double,
   limit : Double,
-) -> Int {
+) -> Int32 {
   let n = items.length()
   // the width of an item without the kerning with the next character of
   // its token (see `typeset_lines`)
-  let plain = fn(k : Int) {
+  let plain = fn(k : Int32) {
     if k + 1 < n && !starts[k + 1] {
       items[k].fit - items[k].kern
     } else {
@@ -603,7 +603,7 @@ fn char_wrap_limit(
 ///|
 /// Prawn's break characters (`LineWrap#break_chars`): whitespace, the
 /// zero-width space, the soft hyphen and the hyphen.
-fn is_break_char(unit : Int) -> Bool {
+fn is_break_char(unit : Int32) -> Bool {
   is_whitespace(unit) || unit == 0xAD || unit == 0x2D
 }
 
@@ -619,10 +619,10 @@ fn is_break_char(unit : Int) -> Bool {
 /// that overflowed, even when the word began in an earlier fragment.
 fn pull_back_limit(
   items : Array[Item],
-  start : Int,
-  token : Int,
-  i : Int,
-) -> Int {
+  start : Int32,
+  token : Int32,
+  i : Int32,
+) -> Int32 {
   let fragment = items[i].fragment
   if items[token].fragment == fragment {
     return token
@@ -652,13 +652,13 @@ fn place_line(
   fragments : Array[Fragment],
   faces : Array[Face],
   items : Array[Item],
-  from : Int,
-  to : Int,
+  from : Int32,
+  to : Int32,
   limit : Double,
   align : Alignment,
   justify : Bool,
   hard : Bool,
-  paragraphs? : Bool = false,
+  paragraphs~ : Bool = false,
 ) -> Line {
   // the spaces a line ends with are not part of it, nor are anchors that
   // end it: Prawn's `omit_trailing_whitespace_from_line_width` takes a
@@ -711,13 +711,13 @@ fn place_line(
       }
     }
   }
-  let hidden = fn(i : Int) {
+  let hidden = fn(i : Int32) {
     items[i].unit == 0x200B || (items[i].unit == 0xAD && i != printed_hyphen)
   }
   // what an item takes as drawn: kerned with the next character drawn of
   // its fragment on the line, as Prawn draws each fragment's text as one
   // string (none after the last, at the end of a fragment or the line)
-  let drawn = fn(i : Int) -> Double {
+  let drawn = fn(i : Int32) -> Double {
     let item = items[i]
     let mut j = i + 1
     while j < visible_end &&
@@ -772,9 +772,9 @@ fn place_line(
   let mut ascender = 0.0
   let mut descender = 0.0
   let mut height = 0.0
-  let images : Array[(Double, Int, Double, Double, Bool, Style, Face)] = []
+  let images : Array[(Double, Int32, Double, Double, Bool, Style, Face)] = []
   let marks : Array[(Double, Style, Face)] = []
-  fn measure(fragment : Int) {
+  fn measure(fragment : Int32) {
     let style = fragments[fragment].style
     let face = faces[fragment]
     let mut a = face.ascender_pt(style.size)
@@ -912,7 +912,7 @@ fn place_line(
   // zero wide where the fragment sits, as Prawn annotates every fragment
   // of the line
   let empty_links : Array[(Double, Style, Face)] = []
-  let held : Array[(Int, Double, Style, Face)] = []
+  let held : Array[(Int32, Double, Style, Face)] = []
   let mut seen = -1
   let mut position = offset
   for k in from..<to {
@@ -960,7 +960,7 @@ fn first_line_break(
   ctx : TextContext,
   width : Double,
   align : Alignment,
-) -> (Line, (Int, Int)?) {
+) -> (Line, (Int32, Int32)?) {
   let (items, faces, ranges) = break_lines(fragments, ctx, width, width)
   let (from, to, hard) = ranges[0]
   let next = if hard { to + 1 } else { to }
@@ -985,6 +985,6 @@ fn first_line_break(
 ///|
 /// What Ruby's `rstrip` takes off the end of a string: NUL and ASCII
 /// white space but the line break.
-fn is_rstripped(unit : Int) -> Bool {
+fn is_rstripped(unit : Int32) -> Bool {
   unit == 0x20 || (unit >= 0x09 && unit <= 0x0D && unit != 0x0A) || unit == 0
 }

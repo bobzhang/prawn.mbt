@@ -47,7 +47,7 @@ pub fn margins_of(values : Array[Double]) -> (Double, Double, Double, Double) {
 pub struct Document {
   /// the pages (pagelayout's page model) and the current one
   priv model : @pagelayout.PageModel
-  priv mut page_index : Int
+  priv mut page_index : Int32
   /// Prawn's `y`: the position, up from the bottom of the current page
   priv mut position : Double
   /// the margins pages are made with: top, right, bottom, left
@@ -117,10 +117,10 @@ fn oriented(size : (Double, Double), layout : String) -> (Double, Double) {
 /// all round). Font files are read through `assets`, given a path as it
 /// was named (none by default). Like Prawn, it starts with a page.
 pub fn Document::new(
-  size? : (Double, Double) = (612.0, 792.0),
-  layout? : String = "portrait",
-  margin? : Array[Double] = [36.0],
-  assets? : (String) -> Bytes? = _ => None,
+  size~ : (Double, Double) = (612.0, 792.0),
+  layout~ : String = "portrait",
+  margin~ : Array[Double] = [36.0],
+  assets~ : (String) -> Bytes? = _ => None,
 ) -> Document raise {
   let (w, h) = oriented(size, layout)
   let (top, right, bottom, left) = margins_of(margin)
@@ -231,9 +231,9 @@ pub fn Document::text(
   string : String,
   size? : Double,
   style? : FontStyle,
-  align? : Alignment = Left,
+  align~ : Alignment = Left,
   leading? : Double,
-  inline_format? : Bool = false,
+  inline_format~ : Bool = false,
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> Unit raise PrawnError {
   // the current font in `style` while this is set (Prawn's `:style`, which
@@ -270,13 +270,13 @@ pub fn Document::cursor(self : Document) -> Double {
 
 ///|
 /// Prawn's `page_number` (from 1).
-pub fn Document::page_number(self : Document) -> Int {
+pub fn Document::page_number(self : Document) -> Int32 {
   self.page_index + 1
 }
 
 ///|
 /// Prawn's `page_count`.
-pub fn Document::page_count(self : Document) -> Int {
+pub fn Document::page_count(self : Document) -> Int32 {
   self.model.pages.length()
 }
 
@@ -338,7 +338,7 @@ pub fn Document::width_of(
   string : String,
   size? : Double,
   style? : FontStyle,
-  kerning? : Bool = false,
+  kerning~ : Bool = false,
 ) -> Double raise PrawnError {
   // the current font in `style` while this is measured (Prawn's `:style`)
   let saved_font = self.apply_style(style, UnknownFont(" is not a known font."))
@@ -414,13 +414,13 @@ fn Document::check(
   string : String,
   style : Style,
   width : Double?,
-  fallbacks? : Bool = true,
+  fallbacks~ : Bool = true,
 ) -> Unit raise PrawnError {
   let face = self.face_of(style)
   // each character in the font it is set in: its own, or the first
   // fallback that has it (Prawn splits the text across them before it
   // encodes it; `width_of` and `draw_text` do not)
-  let face_for = fn(cp : Int) raise PrawnError {
+  let face_for = fn(cp : Int32) raise PrawnError {
     if fallbacks && !self.fallbacks.is_empty() {
       self.glyph_face(style, cp)
     } else {
@@ -448,7 +448,7 @@ fn Document::check(
 ///|
 /// Prawn's `go_to_page` (from 1): back to an existing page, at the top of
 /// its margin box.
-pub fn Document::go_to_page(self : Document, number : Int) -> Unit {
+pub fn Document::go_to_page(self : Document, number : Int32) -> Unit {
   self.page_index = number - 1
   self.page_changed()
 }

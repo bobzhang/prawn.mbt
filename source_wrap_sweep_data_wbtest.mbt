@@ -11,7 +11,7 @@
 // finishes; `Error`: it fails, on a last line with nothing after its
 // number, which no document has), then, for a highlighted line, where its
 // highlight callback is called: `line:x`.
-let sweep_cases : Array[(Double, Int, Array[String], Int, String)] = [
+let sweep_cases : Array[(Double, Int32, Array[String], Int32, String)] = [
   (4.0, 1, ["a"], -1, "CannotFit"),
   (6.0, 1, ["a"], -1, "1|a"),
   (12.0, 1, ["a"], -1, "LEFT"),

@@ -133,7 +133,7 @@ fn Document::face_by_key(self : Document, key : (String, Bool, Bool)) -> Face {
 ///|
 /// Prawn's `glyph_present?`: a standard font has a character it can encode
 /// (a line break included); a TrueType font, one its cmap maps.
-fn glyph_present(face : Face, cp : Int) -> Bool {
+fn glyph_present(face : Face, cp : Int32) -> Bool {
   if face.standard {
     cp < 0x80 || winansi_code_of(cp) is Some(_)
   } else {
@@ -183,7 +183,7 @@ fn Document::fallback_face(
 fn Document::glyph_font(
   self : Document,
   style : Style,
-  cp : Int,
+  cp : Int32,
 ) -> String? raise PrawnError {
   let (own, flags) = self.own_font(style)
   let fragment_font = match own {
@@ -215,7 +215,7 @@ fn Document::glyph_font(
 fn Document::glyph_face(
   self : Document,
   style : Style,
-  cp : Int,
+  cp : Int32,
 ) -> Face raise PrawnError {
   match self.glyph_font(style, cp) {
     None => self.face_of(style)

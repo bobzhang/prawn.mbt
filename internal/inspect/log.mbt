@@ -47,7 +47,7 @@ fn json_difference(a : Json, b : Json, tol : Double) -> String? {
 pub fn compare_logs(
   expected : String,
   actual : String,
-  tol? : Double = 1.0e-6,
+  tol~ : Double = 1.0e-6,
 ) -> Array[String] raise {
   let parse = fn(text : String) raise {
     let out : Array[Json] = []

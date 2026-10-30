@@ -2,11 +2,11 @@
 fn glyph(
   text : String,
   x : Double,
-  order : Int,
-  fill? : @inspect.Paint? = Some(black),
-  stroke? : @inspect.Paint? = None,
-  matrix? : Array[Double] = [12.0, 0.0, 0.0, 12.0],
-  blend? : String = "Normal",
+  order : Int32,
+  fill~ : @inspect.Paint? = Some(black),
+  stroke~ : @inspect.Paint? = None,
+  matrix~ : Array[Double] = [12.0, 0.0, 0.0, 12.0],
+  blend~ : String = "Normal",
 ) -> @inspect.Glyph {
   {
     text,
@@ -37,9 +37,9 @@ let black : @inspect.Paint = { space: "DeviceGray", values: [0.0], alpha: 1.0, }
 ///|
 fn rect(
   x : Double,
-  order : Int,
-  exact? : Json = { "subpaths": ["lllh"] },
-  kind? : String = "path",
+  order : Int32,
+  exact~ : Json = { "subpaths": ["lllh"] },
+  kind~ : String = "path",
 ) -> @inspect.Mark {
   {
     kind,

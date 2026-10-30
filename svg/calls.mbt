@@ -21,7 +21,7 @@ priv struct GradientArgs {
   r1 : Double
   to : (Double, Double)
   r2 : Double
-  stops : Array[(Double, Int)]
+  stops : Array[(Double, Int32)]
   transform : @pagelayout.Matrix
 }
 
@@ -54,8 +54,8 @@ priv enum Call {
   /// `fill`, `stroke`, `fill_and_stroke`, `end_path` with a block; the flag
   /// is the even-odd fill rule
   Paint(PaintKind, Bool, Array[Call])
-  FillColor(Int)
-  StrokeColor(Int)
+  FillColor(Int32)
+  StrokeColor(Int32)
   FillGradient(GradientArgs)
   StrokeGradient(GradientArgs)
   LineWidth(Double)
@@ -104,7 +104,7 @@ fn Call::copy(self : Call) -> Call {
 ///|
 /// The number of calls in `calls`, those in blocks included (what copying
 /// them costs).
-fn call_count(calls : Array[Call]) -> Int {
+fn call_count(calls : Array[Call]) -> Int32 {
   let mut n = 0
   for call in calls {
     n += 1

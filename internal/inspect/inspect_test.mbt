@@ -1,7 +1,7 @@
 ///|
 /// A one-page PDF (612 × 792) showing `content`, with Helvetica as /F1 and
 /// `resources` (dictionary entries) added to its resources.
-fn pdf(content : String, resources? : String = "") -> Bytes {
+fn pdf(content : String, resources~ : String = "") -> Bytes {
   let objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -11,7 +11,7 @@ fn pdf(content : String, resources? : String = "") -> Bytes {
   ]
   let out = StringBuilder()
   out.write_string("%PDF-1.4\n")
-  let offsets : Array[Int] = []
+  let offsets : Array[Int32] = []
   for i, body in objects {
     offsets.push(out.to_string().length())
     out.write_string("\{i + 1} 0 obj\n\{body}\nendobj\n")
@@ -35,7 +35,7 @@ fn pdf(content : String, resources? : String = "") -> Bytes {
 }
 
 ///|
-fn differs(a : String, b : String, resources? : String = "") -> Bool raise {
+fn differs(a : String, b : String, resources~ : String = "") -> Bool raise {
   !@inspect.compare(
     @inspect.inspect(pdf(a, resources~)),
     @inspect.inspect(pdf(b, resources~)),

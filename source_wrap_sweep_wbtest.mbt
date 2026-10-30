@@ -4,9 +4,9 @@
 /// mark as `^`, trailing spaces dropped; `CannotFit` when it cannot fit.
 fn sweep_result(
   width : Double,
-  start : Int,
+  start : Int32,
   lines : Array[String],
-  highlight : Int,
+  highlight : Int32,
 ) -> String raise {
   let courier = { ..mono_style(), family: "Courier", }
   let builtin = { catalog: FontCatalog::load([]), hooks: Hooks::new(), }

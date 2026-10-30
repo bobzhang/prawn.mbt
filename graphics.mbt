@@ -82,15 +82,15 @@ let kappa : Double = 4.0 * ((2.0.sqrt() - 1.0) / 3.0)
 pub fn color_of_hex(hex : String) -> Color raise PrawnError {
   let bad = ArgumentError("Unknown type of color: \"\{hex}\"")
   guard hex.length() == 6 else { raise bad }
-  let digit = fn(c : Char) -> Int? {
+  let digit = fn(c : Char) -> Int32? {
     match c {
-      '0'..='9' => Some(c.to_int() - '0'.to_int())
-      'a'..='f' => Some(c.to_int() - 'a'.to_int() + 10)
-      'A'..='F' => Some(c.to_int() - 'A'.to_int() + 10)
+      '0'..<='9' => Some(c.to_int() - '0'.to_int())
+      'a'..<='f' => Some(c.to_int() - 'a'.to_int() + 10)
+      'A'..<='F' => Some(c.to_int() - 'A'.to_int() + 10)
       _ => None
     }
   }
-  let parts : Array[Int] = []
+  let parts : Array[Int32] = []
   for i in 0..<3 {
     guard digit(hex[2 * i].unsafe_to_char()) is Some(hi) &&
       digit(hex[2 * i + 1].unsafe_to_char()) is Some(lo) else {
@@ -144,7 +144,7 @@ pub fn Document::dash(
   self : Document,
   lengths : Array[Double],
   space? : Double,
-  phase? : Double = 0.0,
+  phase~ : Double = 0.0,
 ) -> Unit raise PrawnError {
   if lengths.iter().all(x => x == 0.0) {
     raise ArgumentError(
@@ -397,9 +397,9 @@ pub fn Document::close_path(self : Document) -> Unit {
 /// Paints the path built so far and starts a new one.
 fn Document::paint(
   self : Document,
-  fill? : Bool = false,
-  stroke? : Bool = false,
-  even_odd? : Bool = false,
+  fill~ : Bool = false,
+  stroke~ : Bool = false,
+  even_odd~ : Bool = false,
 ) -> Unit {
   // the paint operator is content: pdf-core makes a graphics state for it
   // when the stack has none (`add_content`), even for an empty path
@@ -470,7 +470,7 @@ pub fn Document::close_and_stroke(self : Document) -> Unit {
 
 ///|
 /// Prawn's `fill`.
-pub fn Document::fill(self : Document, even_odd? : Bool = false) -> Unit {
+pub fn Document::fill(self : Document, even_odd~ : Bool = false) -> Unit {
   self.paint(fill=true, even_odd~)
 }
 
@@ -479,7 +479,7 @@ pub fn Document::fill(self : Document, even_odd? : Bool = false) -> Unit {
 /// subpath before it fills and strokes.
 pub fn Document::fill_and_stroke(
   self : Document,
-  even_odd? : Bool = false,
+  even_odd~ : Bool = false,
 ) -> Unit {
   if !(self.path().last() is Some(Close)) {
     self.add_segment(Close)

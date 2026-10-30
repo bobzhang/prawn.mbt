@@ -14,24 +14,24 @@ pub(all) struct Hooks {
   /// the width and height of inline image `index` in a line `available`
   /// wide whose font is `font_height` tall, and whether it makes the line
   /// taller (more than one and a half lines tall)
-  image_size : (Int, Double, Double) -> (Double, Double, Bool)
+  image_size : (Int32, Double, Double) -> (Double, Double, Bool)
   /// the items that draw inline image `index` in `flow` with its top left
   /// corner at (`x`, `top`), `width` by `height`
-  image_items : (Flow, Int, Double, Double, Double, Double) -> Array[
+  image_items : (Flow, Int32, Double, Double, Double, Double) -> Array[
     @pagelayout.PageItem,
   ]
   /// a named destination was inked on page `number` (from 1), outside dry
   /// runs
-  anchor_inked : (String, Int) -> Unit
+  anchor_inked : (String, Int32) -> Unit
   /// a run whose style's `callback` is `index` was inked, outside dry runs
   /// (once per run: a fragment split across lines is told of each piece)
-  fragment_inked : (Int) -> Unit
+  fragment_inked : (Int32) -> Unit
 }
 
 ///|
 /// Hooks for a document without inline images, whose unknown fonts go
 /// unreported.
-pub fn Hooks::new(base_family? : String = "Helvetica") -> Hooks {
+pub fn Hooks::new(base_family~ : String = "Helvetica") -> Hooks {
   {
     base_family,
     unknown_font: _ => (),
