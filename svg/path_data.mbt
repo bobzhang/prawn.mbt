@@ -26,7 +26,7 @@ fn PathCommand::destination(self : PathCommand) -> (Double, Double) {
 ///|
 priv struct PathScanner {
   text : String
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -50,7 +50,7 @@ fn PathScanner::number(self : PathScanner) -> Double? {
   self.skip(true)
   let s = self.text
   let n = s.length()
-  let digit = fn(i : Int) { i < n && s[i] >= '0' && s[i] <= '9' }
+  let digit = fn(i : Int32) { i < n && s[i] >= '0' && s[i] <= '9' }
   let begin = self.pos
   let mut i = self.pos
   if i < n && (s[i] == '+' || s[i] == '-') {

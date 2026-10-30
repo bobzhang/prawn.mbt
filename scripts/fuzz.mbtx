@@ -1,3 +1,16 @@
+----
+import {
+  "moonbitlang/async@0.22.4",
+  "moonbitlang/async@0.22.4/fs",
+  "moonbitlang/async@0.22.4/process",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/env",
+  "moonbitlang/core/quickcheck",
+  "moonbitlang/core/quickcheck/splitmix",
+  "moonbitlang/core/string",
+}
+----
+
 // Differential fuzzing (PLAN.md §3): random operation scripts
 // (docs/op-scripts.md) run through Ruby Prawn and through this module and
 // compared as the goldens are; a script on which they differ is shrunk to
@@ -13,16 +26,6 @@
 //
 // Writes each failure, shrunk, to DIR/failures/NAME.json and prints it
 // with its first differences. Exits non-zero when any script differs.
-import {
-  "moonbitlang/async@0.22.4",
-  "moonbitlang/async/fs",
-  "moonbitlang/async/process",
-  "moonbitlang/core/cmp",
-  "moonbitlang/core/env",
-  "moonbitlang/core/quickcheck",
-  "moonbitlang/core/quickcheck/splitmix",
-  "moonbitlang/core/string",
-}
 
 ///|
 let oracle : String = "_build/native/release/build/cmd/oracle/oracle.exe"
@@ -47,21 +50,21 @@ using @quickcheck {type Generator}
 
 ///|
 /// A generator from a function of the size and the random state.
-fn[T] gen(f : (Int, @splitmix.RandomState) -> T) -> Generator[T] {
+fn[T] gen(f : (Int32, @splitmix.RandomState) -> T) -> Generator[T] {
   @quickcheck.Generator::Generator(f)
 }
 
 ///|
 let words : Array[String] = [
   "the", "quick", "brown", "fox", "jumps", "over", "a", "lazy", "dog", "I", "x",
-  "Prawn", "MoonBit", "AVATAR", "Typography", "WAVE", "To", "fi", "well-known",
-  "hyphen-ated-compound", "supercalifragilisticexpialidocious", "1234567890",
-  "(parens)", "\"quoted\"", "end.", "comma,", "—dash—", "50%",
+  "Prawn", "MoonBit", "AVATAR", "Typography", "WAVE", "To", "fi", "well-known", "hyphen-ated-compound",
+  "supercalifragilisticexpialidocious", "1234567890", "(parens)", "\"quoted\"", "end.",
+  "comma,", "—dash—", "50%",
 ]
 
 ///|
 /// What goes between words: mostly a space, sometimes more, or a break.
-let separators : Array[(UInt, String)] = [
+let separators : Array[(UInt32, String)] = [
   (12, " "),
   (2, "  "),
   (2, "\n"),
@@ -76,35 +79,40 @@ let separators : Array[(UInt, String)] = [
 /// module deliberately does not.
 fn number(x : Double) -> Json {
   let s = x.to_string()
-  Json::number(x, repr=if s.contains(".") || s.contains("e") { s } else { s + ".0" })
+  Json::number(
+    x,
+    repr=if s.contains(".") || s.contains("e") { s } else { s + ".0" },
+  )
 }
 
 ///|
 fn symbol(name : String) -> Json {
-  (":" + name).to_json()
+  Json(":" + name)
 }
 
 ///|
 /// Text of up to `size` words.
-fn text_gen(size : Int) -> Generator[String] {
+fn text_gen(size : Int32) -> Generator[String] {
   let sep = @quickcheck.frequency(
     separators.map(s => (s.0, @quickcheck.pure(s.1))),
   )
   let word = @quickcheck.elements(words)
-  @quickcheck.int_range(0, size + 1).flat_map(n => gen((sz, rs) => {
-    let sb = StringBuilder()
-    for i in 0..<n {
-      if i > 0 {
-        sb.write_string(sep.run(sz, rs))
+  @quickcheck.int_range(0, size + 1).flat_map(n => {
+    gen((sz, rs) => {
+      let sb = StringBuilder()
+      for i in 0..<n {
+        if i > 0 {
+          sb.write_string(sep.run(sz, rs))
+        }
+        sb.write_string(word.run(sz, rs))
       }
-      sb.write_string(word.run(sz, rs))
-    }
-    sb.to_string()
-  }))
+      sb.to_string()
+    })
+  })
 }
 
 ///|
-fn maybe(g : Generator[Json], weight? : UInt = 1) -> Generator[Json?] {
+fn maybe(g : Generator[Json], weight~ : UInt32 = 1) -> Generator[Json?] {
   @quickcheck.frequency([
     (weight, g.map(x => Some(x))),
     (2, @quickcheck.pure(None)),
@@ -144,14 +152,14 @@ fn leading_gen() -> Generator[Json] {
 }
 
 ///|
-fn range_gen(lo : Int, hi : Int, step : Int) -> Generator[Json] {
-  @quickcheck.int_range(lo / step, hi / step + 1).map(n => number(
-    (n * step).to_double(),
-  ))
+fn range_gen(lo : Int32, hi : Int32, step : Int32) -> Generator[Json] {
+  @quickcheck.int_range(lo / step, hi / step + 1).map(n => {
+    number((n * step).to_double())
+  })
 }
 
 ///|
-fn fragment_gen(size : Int) -> Generator[Json] {
+fn fragment_gen(size : Int32) -> Generator[Json] {
   let styles = gen((_, rs) => {
     let all = [
       "bold", "italic", "underline", "strikethrough", "superscript", "subscript",
@@ -166,7 +174,7 @@ fn fragment_gen(size : Int) -> Generator[Json] {
   })
   gen((sz, rs) => {
     let map : Map[String, Json] = {
-      "text": text_gen(size / 2 + 1).run(sz, rs).to_json(),
+      "text": Json(text_gen(size / 2 + 1).run(sz, rs)),
     }
     if rs.next_uint(limit=2) == 0 {
       map["styles"] = styles.run(sz, rs)
@@ -175,19 +183,19 @@ fn fragment_gen(size : Int) -> Generator[Json] {
       map["size"] = size_gen().run(sz, rs)
     }
     if rs.next_uint(limit=4) == 0 {
-      map["color"] = @quickcheck.elements(["FF0000", "0000FF", "008800"])
-        .run(sz, rs)
-        .to_json()
+      map["color"] = Json(
+        @quickcheck.elements(["FF0000", "0000FF", "008800"]).run(sz, rs),
+      )
     }
     if rs.next_uint(limit=6) == 0 {
-      map["link"] = "https://example.com".to_json()
+      map["link"] = Json("https://example.com")
     }
     Json::object(map)
   })
 }
 
 ///|
-fn text_op(size : Int) -> Generator[Json] {
+fn text_op(size : Int32) -> Generator[Json] {
   let plain = text_gen(size).zip_with(
     options([
       ("size", maybe(size_gen())),
@@ -195,10 +203,10 @@ fn text_op(size : Int) -> Generator[Json] {
       ("leading", maybe(leading_gen())),
       (
         "draw_text_callback",
-        maybe(@quickcheck.pure(Json::object({ "trace": "dtc".to_json() }))),
+        maybe(@quickcheck.pure(Json::object({ "trace": Json("dtc") }))),
       ),
     ]),
-    (s, o) => Json::array(["text".to_json(), s.to_json(), o]),
+    (s, o) => Json::array([Json("text"), Json(s), o]),
   )
   let inline = inline_text_gen(size).zip_with(
     options([("size", maybe(size_gen())), ("align", maybe(align_gen()))]),
@@ -206,14 +214,14 @@ fn text_op(size : Int) -> Generator[Json] {
       guard o is Object(map) else { return Json::null() }
       let map = map.copy()
       map["inline_format"] = Json::boolean(true)
-      Json::array(["text".to_json(), s.to_json(), Json::object(map)])
+      Json::array([Json("text"), Json(s), Json::object(map)])
     },
   )
   @quickcheck.frequency([(3, plain), (1, inline)])
 }
 
 ///|
-fn formatted_text_op(size : Int) -> Generator[Json] {
+fn formatted_text_op(size : Int32) -> Generator[Json] {
   @quickcheck.int_range(1, 5)
   .flat_map(n => fragment_gen(size).array_with_size(n))
   .zip_with(
@@ -222,15 +230,15 @@ fn formatted_text_op(size : Int) -> Generator[Json] {
       ("align", maybe(align_gen())),
       ("leading", maybe(leading_gen())),
     ]),
-    (fs, o) => Json::array(["formatted_text".to_json(), Json::array(fs), o]),
+    (fs, o) => Json::array([Json("formatted_text"), Json::array(fs), o]),
   )
 }
 
 ///|
-fn text_box_op(size : Int) -> Generator[Json] {
-  let at = range_gen(0, 300, 10).zip_with(range_gen(100, 700, 10), (x, y) => Json::array([
-    x, y,
-  ]))
+fn text_box_op(size : Int32) -> Generator[Json] {
+  let at = range_gen(0, 300, 10).zip_with(range_gen(100, 700, 10), (x, y) => {
+    Json::array([x, y])
+  })
   text_gen(size).zip_with(
     options([
       ("at", maybe(at, weight=4)),
@@ -252,30 +260,28 @@ fn text_box_op(size : Int) -> Generator[Json] {
       ),
       ("leading", maybe(leading_gen())),
     ]),
-    (s, o) => Json::array(["?text_box".to_json(), s.to_json(), o]),
+    (s, o) => Json::array([Json("?text_box"), Json(s), o]),
   )
 }
 
 ///|
-fn query_op(size : Int) -> Generator[Json] {
+fn query_op(size : Int32) -> Generator[Json] {
   @quickcheck.one_of([
-    @quickcheck.pure(Json::array(["?cursor".to_json()])),
-    @quickcheck.pure(Json::array(["?bounds".to_json()])),
-    @quickcheck.pure(Json::array(["?page_count".to_json()])),
-    @quickcheck.pure(Json::array(["?page_number".to_json()])),
+    @quickcheck.pure(Json::array([Json("?cursor")])),
+    @quickcheck.pure(Json::array([Json("?bounds")])),
+    @quickcheck.pure(Json::array([Json("?page_count")])),
+    @quickcheck.pure(Json::array([Json("?page_number")])),
     text_gen(size).zip_with(
       options([
         ("size", maybe(size_gen())),
         ("width", maybe(range_gen(60, 400, 10))),
         ("leading", maybe(leading_gen())),
       ]),
-      (s, o) => Json::array(["?height_of".to_json(), s.to_json(), o]),
+      (s, o) => Json::array([Json("?height_of"), Json(s), o]),
     ),
-    text_gen(size).zip_with(options([("size", maybe(size_gen()))]), (s, o) => Json::array([
-      "?width_of".to_json(),
-      s.to_json(),
-      o,
-    ])),
+    text_gen(size).zip_with(options([("size", maybe(size_gen()))]), (s, o) => {
+      Json::array([Json("?width_of"), Json(s), o])
+    }),
   ])
 }
 
@@ -285,17 +291,22 @@ fn block(ops : Array[Json]) -> Json {
 }
 
 ///|
+
 ///|
 fn point_gen() -> Generator[Json] {
-  range_gen(0, 500, 10).zip_with(range_gen(50, 750, 10), (x, y) => Json::array([
-    x, y,
-  ]))
+  range_gen(0, 500, 10).zip_with(range_gen(50, 750, 10), (x, y) => {
+    Json::array([x, y])
+  })
 }
 
 ///|
 /// `n` points, no two in a row (round the end too) the same: Prawn writes
 /// NaN for a rounded corner on an edge of no length.
-fn distinct_points(n : Int, sz : Int, rs : @splitmix.RandomState) -> Array[Json] {
+fn distinct_points(
+  n : Int32,
+  sz : Int32,
+  rs : @splitmix.RandomState,
+) -> Array[Json] {
   let out : Array[Json] = []
   while out.length() < n {
     let p = point_gen().run(sz, rs)
@@ -313,8 +324,9 @@ fn distinct_points(n : Int, sz : Int, rs : @splitmix.RandomState) -> Array[Json]
 
 ///|
 fn color_gen() -> Generator[Json] {
-  @quickcheck.elements(["000000", "FF0000", "0000FF", "008800", "CCCC00", "777777"])
-  .map(c => c.to_json())
+  @quickcheck.elements([
+    "000000", "FF0000", "0000FF", "008800", "CCCC00", "777777",
+  ]).map(c => Json(c))
 }
 
 ///|
@@ -324,69 +336,80 @@ fn shape_op() -> Generator[Json] {
   let paint = @quickcheck.elements(["stroke_", "fill_", "fill_and_stroke_"])
   let len = range_gen(5, 200, 5)
   let shape = @quickcheck.one_of([
-    gen((sz, rs) => [
-      "rectangle".to_json(),
-      point_gen().run(sz, rs),
-      len.run(sz, rs),
-      len.run(sz, rs),
-    ]),
-    gen((sz, rs) => [
-      "rounded_rectangle".to_json(),
-      point_gen().run(sz, rs),
-      len.run(sz, rs),
-      len.run(sz, rs),
-      range_gen(0, 20, 2).run(sz, rs),
-    ]),
-    gen((sz, rs) => [
-      "circle".to_json(),
-      point_gen().run(sz, rs),
-      range_gen(2, 80, 2).run(sz, rs),
-    ]),
-    gen((sz, rs) => [
-      "ellipse".to_json(),
-      point_gen().run(sz, rs),
-      range_gen(2, 80, 2).run(sz, rs),
-      range_gen(2, 80, 2).run(sz, rs),
-    ]),
+    gen((sz, rs) => {
+      [
+        Json("rectangle"),
+        point_gen().run(sz, rs),
+        len.run(sz, rs),
+        len.run(sz, rs),
+      ]
+    }),
+    gen((sz, rs) => {
+      [
+        Json("rounded_rectangle"),
+        point_gen().run(sz, rs),
+        len.run(sz, rs),
+        len.run(sz, rs),
+        range_gen(0, 20, 2).run(sz, rs),
+      ]
+    }),
+    gen((sz, rs) => {
+      [Json("circle"), point_gen().run(sz, rs), range_gen(2, 80, 2).run(sz, rs)]
+    }),
+    gen((sz, rs) => {
+      [
+        Json("ellipse"),
+        point_gen().run(sz, rs),
+        range_gen(2, 80, 2).run(sz, rs),
+        range_gen(2, 80, 2).run(sz, rs),
+      ]
+    }),
     gen((sz, rs) => {
       let n = rs.next_uint(limit=4).reinterpret_as_int() + 3
-      ["polygon".to_json(), ..distinct_points(n, sz, rs)]
+      [Json("polygon"), ..distinct_points(n, sz, rs)]
     }),
     gen((sz, rs) => {
       let n = rs.next_uint(limit=3).reinterpret_as_int() + 3
       [
-        "rounded_polygon".to_json(),
+        Json("rounded_polygon"),
         range_gen(2, 20, 2).run(sz, rs),
         ..distinct_points(n, sz, rs),
       ]
     }),
-    gen((sz, rs) => [
-      "curve".to_json(),
-      point_gen().run(sz, rs),
-      point_gen().run(sz, rs),
-      Json::object({
-        "bounds": Json::array([point_gen().run(sz, rs), point_gen().run(sz, rs)]),
-      }),
-    ]),
+    gen((sz, rs) => {
+      [
+        Json("curve"),
+        point_gen().run(sz, rs),
+        point_gen().run(sz, rs),
+        Json::object({
+          "bounds": Json::array([
+            point_gen().run(sz, rs),
+            point_gen().run(sz, rs),
+          ]),
+        }),
+      ]
+    }),
   ])
   let line = @quickcheck.one_of([
-    gen((sz, rs) => [
-      "stroke_line".to_json(),
-      point_gen().run(sz, rs),
-      point_gen().run(sz, rs),
-    ]),
-    gen((sz, rs) => [
-      "stroke_horizontal_line".to_json(),
-      range_gen(0, 300, 10).run(sz, rs),
-      range_gen(300, 540, 10).run(sz, rs),
-      Json::object({ "at": range_gen(50, 750, 10).run(sz, rs) }),
-    ]),
-    gen((sz, rs) => [
-      "stroke_vertical_line".to_json(),
-      range_gen(50, 300, 10).run(sz, rs),
-      range_gen(300, 750, 10).run(sz, rs),
-      Json::object({ "at": range_gen(0, 540, 10).run(sz, rs) }),
-    ]),
+    gen((sz, rs) => {
+      [Json("stroke_line"), point_gen().run(sz, rs), point_gen().run(sz, rs)]
+    }),
+    gen((sz, rs) => {
+      [
+        Json("stroke_horizontal_line"),
+        range_gen(0, 300, 10).run(sz, rs),
+        range_gen(300, 540, 10).run(sz, rs),
+        Json::object({ "at": range_gen(50, 750, 10).run(sz, rs) }),
+      ]
+    }),
+    gen((sz, rs) => {
+      [
+        Json("stroke_vertical_line"),
+        range_gen(50, 300, 10).run(sz, rs),
+        range_gen(300, 750, 10).run(sz, rs),
+        Json::object({ "at": range_gen(0, 540, 10).run(sz, rs) }),
+      ]
+    }),
   ])
   @quickcheck.frequency([
     (
@@ -394,11 +417,11 @@ fn shape_op() -> Generator[Json] {
       gen((sz, rs) => {
         let parts = shape.run(sz, rs)
         guard parts[0] is String(name) else { return Json::array(parts) }
-        Json::array([(paint.run(sz, rs) + name).to_json(), ..parts[1:]])
+        Json::array([Json(paint.run(sz, rs) + name), ..parts[1:]])
       }),
     ),
     (2, line.map(parts => Json::array(parts))),
-    (1, @quickcheck.pure(Json::array(["stroke_bounds".to_json()]))),
+    (1, @quickcheck.pure(Json::array([Json("stroke_bounds")]))),
   ])
 }
 
@@ -406,31 +429,27 @@ fn shape_op() -> Generator[Json] {
 /// A change to the graphics state.
 fn style_op() -> Generator[Json] {
   @quickcheck.one_of([
-    color_gen().map(c => Json::array(["fill_color".to_json(), c])),
-    color_gen().map(c => Json::array(["stroke_color".to_json(), c])),
-    @quickcheck.elements([0.0, 0.5, 1.0, 2.0, 4.0]).map(w => Json::array([
-      "line_width".to_json(),
-      number(w),
-    ])),
-    @quickcheck.elements([1.0, 3.0, 5.0]).map(d => Json::array([
-      "dash".to_json(),
-      number(d),
-    ])),
-    @quickcheck.pure(Json::array(["undash".to_json()])),
-    @quickcheck.elements(["butt", "round", "projecting_square"]).map(s => Json::array([
-      "cap_style".to_json(),
-      symbol(s),
-    ])),
-    @quickcheck.elements(["miter", "round", "bevel"]).map(s => Json::array([
-      "join_style".to_json(),
-      symbol(s),
-    ])),
+    color_gen().map(c => Json::array([Json("fill_color"), c])),
+    color_gen().map(c => Json::array([Json("stroke_color"), c])),
+    @quickcheck.elements([0.0, 0.5, 1.0, 2.0, 4.0]).map(w => {
+      Json::array([Json("line_width"), number(w)])
+    }),
+    @quickcheck.elements([1.0, 3.0, 5.0]).map(d => {
+      Json::array([Json("dash"), number(d)])
+    }),
+    @quickcheck.pure(Json::array([Json("undash")])),
+    @quickcheck.elements(["butt", "round", "projecting_square"]).map(s => {
+      Json::array([Json("cap_style"), symbol(s)])
+    }),
+    @quickcheck.elements(["miter", "round", "bevel"]).map(s => {
+      Json::array([Json("join_style"), symbol(s)])
+    }),
   ])
 }
 
 ///|
 /// Text with Prawn's inline format tags around some of its words.
-fn inline_text_gen(size : Int) -> Generator[String] {
+fn inline_text_gen(size : Int32) -> Generator[String] {
   let tags = [
     ("<b>", "</b>"),
     ("<i>", "</i>"),
@@ -442,34 +461,35 @@ fn inline_text_gen(size : Int) -> Generator[String] {
     ("<link href=\"https://example.com\">", "</link>"),
     ("<font size=\"18\">", "</font>"),
   ]
-  text_gen(size).flat_map(text => gen((_, rs) => {
-    let words = text.split(" ").map(w => w.to_owned()).to_array()
-    let out = []
-    for w in words {
-      if !w.is_empty() && rs.next_uint(limit=3) == 0 {
-        let (open, close) = tags[rs.next_uint(limit=tags.length().reinterpret_as_uint()).reinterpret_as_int()]
-        out.push(open + w + close)
-      } else {
-        out.push(w)
+  text_gen(size).flat_map(text => {
+    gen((_, rs) => {
+      let words = text.split(" ").map(w => w.to_owned()).to_array()
+      let out = []
+      for w in words {
+        if !w.is_empty() && rs.next_uint(limit=3) == 0 {
+          let (open, close) = tags[rs
+            .next_uint(limit=tags.length().reinterpret_as_uint())
+            .reinterpret_as_int()]
+          out.push(open + w + close)
+        } else {
+          out.push(w)
+        }
       }
-    }
-    out.iter().join(" ")
-  }))
+      out.iter().join(" ")
+    })
+  })
 }
 
 ///|
 /// An op; `depth` bounds how deep boxes nest.
-fn op_gen(size : Int, depth : Int) -> Generator[Json] {
-  let simple : Array[(UInt, Generator[Json])] = [
+fn op_gen(size : Int32, depth : Int32) -> Generator[Json] {
+  let simple : Array[(UInt32, Generator[Json])] = [
     (6, text_op(size)),
     (4, formatted_text_op(size)),
     (2, text_box_op(size)),
     (3, query_op(size)),
-    (
-      2,
-      range_gen(0, 120, 5).map(n => Json::array(["move_down".to_json(), n])),
-    ),
-    (1, @quickcheck.pure(Json::array(["start_new_page".to_json()]))),
+    (2, range_gen(0, 120, 5).map(n => Json::array([Json("move_down"), n]))),
+    (1, @quickcheck.pure(Json::array([Json("start_new_page")]))),
     (
       1,
       options([
@@ -479,11 +499,15 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
         ),
         (
           "size",
-          maybe(@quickcheck.elements(["A4", "A5", "LETTER", "LEGAL"]).map(s => s.to_json())),
+          maybe(
+            @quickcheck.elements(["A4", "A5", "LETTER", "LEGAL"]).map(s => {
+              Json(s)
+            }),
+          ),
         ),
-      ]).map(o => Json::array(["start_new_page".to_json(), o])),
+      ]).map(o => Json::array([Json("start_new_page"), o])),
     ),
-    (1, @quickcheck.pure(Json::array(["go_to_page".to_json(), Json::number(1.0)]))),
+    (1, @quickcheck.pure(Json::array([Json("go_to_page"), Json::number(1.0)]))),
     (3, shape_op()),
     (2, style_op()),
   ]
@@ -491,7 +515,7 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
     return @quickcheck.frequency(simple)
   }
   let inner = gen((sz, rs) => ops_gen(size / 2 + 1, depth - 1).run(sz, rs))
-  let boxes : Array[(UInt, Generator[Json])] = [
+  let boxes : Array[(UInt32, Generator[Json])] = [
     (
       2,
       gen((sz, rs) => {
@@ -502,8 +526,11 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
           opts["height"] = range_gen(40, 400, 10).run(sz, rs)
         }
         Json::array([
-          "bounding_box".to_json(),
-          Json::array([range_gen(0, 100, 10).run(sz, rs), range_gen(200, 720, 10).run(sz, rs)]),
+          Json("bounding_box"),
+          Json::array([
+            range_gen(0, 100, 10).run(sz, rs),
+            range_gen(200, 720, 10).run(sz, rs),
+          ]),
           Json::object(opts),
           block(inner.run(sz, rs)),
         ])
@@ -514,7 +541,9 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
       gen((sz, rs) => {
         let opts : Map[String, Json] = {
           "width": range_gen(200, 540, 10).run(sz, rs),
-          "columns": Json::number(rs.next_uint(limit=3).reinterpret_as_int().to_double() + 1.0),
+          "columns": Json::number(
+            rs.next_uint(limit=3).reinterpret_as_int().to_double() + 1.0,
+          ),
         }
         if rs.next_uint(limit=2) == 0 {
           opts["height"] = range_gen(60, 400, 10).run(sz, rs)
@@ -523,8 +552,11 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
           opts["spacer"] = range_gen(0, 30, 5).run(sz, rs)
         }
         Json::array([
-          "column_box".to_json(),
-          Json::array([range_gen(0, 50, 10).run(sz, rs), range_gen(200, 720, 10).run(sz, rs)]),
+          Json("column_box"),
+          Json::array([
+            range_gen(0, 50, 10).run(sz, rs),
+            range_gen(200, 720, 10).run(sz, rs),
+          ]),
           Json::object(opts),
           block(inner.run(sz, rs)),
         ])
@@ -534,26 +566,25 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
       1,
       gen((sz, rs) => {
         Json::array([
-          "indent".to_json(),
+          Json("indent"),
           range_gen(0, 60, 10).run(sz, rs),
           range_gen(0, 60, 10).run(sz, rs),
           block(inner.run(sz, rs)),
         ])
       }),
     ),
-    (
-      1,
-      gen((sz, rs) => Json::array(["float".to_json(), block(inner.run(sz, rs))])),
-    ),
+    (1, gen((sz, rs) => Json::array([Json("float"), block(inner.run(sz, rs))]))),
     (
       1,
       gen((sz, rs) => {
-        let opts : Map[String, Json] = { "block": Json::array(inner.run(sz, rs)) }
+        let opts : Map[String, Json] = {
+          "block": Json::array(inner.run(sz, rs)),
+        }
         if rs.next_uint(limit=2) == 0 {
           opts["origin"] = point_gen().run(sz, rs)
         }
         Json::array([
-          "rotate".to_json(),
+          Json("rotate"),
           range_gen(-90, 90, 15).run(sz, rs),
           Json::object(opts),
         ])
@@ -562,12 +593,14 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
     (
       1,
       gen((sz, rs) => {
-        let opts : Map[String, Json] = { "block": Json::array(inner.run(sz, rs)) }
+        let opts : Map[String, Json] = {
+          "block": Json::array(inner.run(sz, rs)),
+        }
         if rs.next_uint(limit=2) == 0 {
           opts["origin"] = point_gen().run(sz, rs)
         }
         Json::array([
-          "scale".to_json(),
+          Json("scale"),
           @quickcheck.elements([0.5, 0.75, 1.5, 2.0]).map(number).run(sz, rs),
           Json::object(opts),
         ])
@@ -575,47 +608,50 @@ fn op_gen(size : Int, depth : Int) -> Generator[Json] {
     ),
     (
       1,
-      gen((sz, rs) => Json::array([
-        "translate".to_json(),
-        range_gen(-100, 100, 10).run(sz, rs),
-        range_gen(-100, 100, 10).run(sz, rs),
-        block(inner.run(sz, rs)),
-      ])),
+      gen((sz, rs) => {
+        Json::array([
+          Json("translate"),
+          range_gen(-100, 100, 10).run(sz, rs),
+          range_gen(-100, 100, 10).run(sz, rs),
+          block(inner.run(sz, rs)),
+        ])
+      }),
     ),
     (
       1,
-      gen((sz, rs) => Json::array([
-        "transparent".to_json(),
-        @quickcheck.elements([0.25, 0.5, 0.75]).map(number).run(sz, rs),
-        block(inner.run(sz, rs)),
-      ])),
+      gen((sz, rs) => {
+        Json::array([
+          Json("transparent"),
+          @quickcheck.elements([0.25, 0.5, 0.75]).map(number).run(sz, rs),
+          block(inner.run(sz, rs)),
+        ])
+      }),
     ),
     (
       1,
-      gen((sz, rs) => Json::array([
-        "save_graphics_state".to_json(),
-        block(inner.run(sz, rs)),
-      ])),
+      gen((sz, rs) => {
+        Json::array([Json("save_graphics_state"), block(inner.run(sz, rs))])
+      }),
     ),
   ]
   @quickcheck.frequency([..simple, ..boxes])
 }
 
 ///|
-fn ops_gen(size : Int, depth : Int) -> Generator[Array[Json]] {
-  @quickcheck.int_range(1, size / 2 + 2).flat_map(n => op_gen(size, depth).array_with_size(
-    n,
-  ))
+fn ops_gen(size : Int32, depth : Int32) -> Generator[Array[Json]] {
+  @quickcheck.int_range(1, size / 2 + 2).flat_map(n => {
+    op_gen(size, depth).array_with_size(n)
+  })
 }
 
 ///|
-fn script_gen(size : Int) -> Generator[Json] {
+fn script_gen(size : Int32) -> Generator[Json] {
   ops_gen(size, 2).map(ops => {
     // the position and page count at the end, always observed
     let all = [
       ..ops,
-      Json::array(["?cursor".to_json()]),
-      Json::array(["?page_count".to_json()]),
+      Json::array([Json("?cursor")]),
+      Json::array([Json("?page_count")]),
     ]
     Json::object({ "ops": Json::array(all) })
   })
@@ -726,7 +762,9 @@ async fn run_all(
   }
   @fs.write_file("\{dir}/list", list.to_string(), create_mode=CreateOrTruncate)
   let (ruby_code, out) = @process.collect_output_merged(ruby, [
-    driver, "--batch", "\{dir}/list",
+    driver,
+    "--batch",
+    "\{dir}/list",
   ])
   // Ruby's verdict on each script, by its path: Ok, or what it raised
   let verdicts : Map[String, Result[Unit, String]] = Map([])
@@ -764,7 +802,8 @@ async fn run_all(
     let ruby_error = match verdicts.get(path) {
       None | Some(Ok(_)) => None
       Some(Err(e)) =>
-        if e.has_prefix("Prawn::Errors::") || e.has_prefix("PDF::Core::Errors::") {
+        if e.has_prefix("Prawn::Errors::") ||
+          e.has_prefix("PDF::Core::Errors::") {
           // pdf-core's errors are Prawn's too (its graphics state stack)
           let class = e.split(": ").next().unwrap().to_owned()
           Some(Ok(class.split("::").to_array().last().unwrap().to_owned()))
@@ -874,7 +913,7 @@ fn smaller_texts(text : String) -> Array[String] {
 /// shrunk.
 fn smaller_values(v : Json) -> Array[Json] {
   match v {
-    String(s) => smaller_texts(s).map(t => t.to_json())
+    String(s) => smaller_texts(s).map(t => Json(t))
     Object(map) => {
       let out = []
       for key, value in map {
@@ -1080,7 +1119,7 @@ async fn main {
   build()
   let ruby = find_ruby(ruby_flag)
   println("seed \{seed}, \{count} scripts, size \{size}")
-  let rs = @splitmix.new(seed~)
+  let rs = @splitmix.RandomState(seed~)
   let gen = script_gen(size)
   let scripts = Array::makei(count, k => ("fuzz\{k}", gen.run(size, rs)))
   let outcomes = run_all(ruby, "\{out}/run", scripts)
@@ -1113,7 +1152,11 @@ async fn main {
       (script, outcome)
     }
     let path = "\{out}/failures/\{seed}-\{name}.json"
-    @fs.write_file(path, small.stringify(indent=2), create_mode=CreateOrTruncate)
+    @fs.write_file(
+      path,
+      small.stringify(indent=2),
+      create_mode=CreateOrTruncate,
+    )
     println("\nFAIL \{path}")
     println(small.stringify())
     for d in describe(small_outcome).iter().take(4) {

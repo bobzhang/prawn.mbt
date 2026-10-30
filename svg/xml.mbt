@@ -16,7 +16,7 @@ pub struct Element {
   children : Array[XmlNode]
   priv mut parent : Element?
   /// unique within its document (shared by shallow copies)
-  priv uid : Int
+  priv uid : Int32
 }
 
 ///|
@@ -128,11 +128,11 @@ pub suberror XmlError {
 ///|
 priv struct XmlReader {
   text : String
-  mut pos : Int
+  mut pos : Int32
   entities : Map[String, String]
-  mut count : Int
+  mut count : Int32
   /// how many elements the one being read is inside
-  mut depth : Int
+  mut depth : Int32
 }
 
 ///|
@@ -140,16 +140,16 @@ priv struct XmlReader {
 /// 1). Reading, copying, drawing and lowering an SVG are all recursive
 /// over its tree; REXML itself has no limit, but prawn-svg's recursion
 /// runs out of Ruby stack long before the input does.
-let max_xml_depth : Int = 256
+let max_xml_depth : Int32 = 256
 
 ///|
 /// The most bytes the references of one text or attribute value may expand
 /// to (REXML's `Security.entity_expansion_text_limit`).
-let entity_expansion_text_limit : Int = 10240
+let entity_expansion_text_limit : Int32 = 10240
 
 ///|
 /// The number of bytes `s` takes in UTF-8.
-fn utf8_size(s : String) -> Int {
+fn utf8_size(s : String) -> Int32 {
   let mut n = 0
   for ch in s {
     let c = ch.to_int()
@@ -167,7 +167,7 @@ fn utf8_size(s : String) -> Int {
 }
 
 ///|
-fn XmlReader::peek(self : XmlReader, offset? : Int = 0) -> Int {
+fn XmlReader::peek(self : XmlReader, offset~ : Int32 = 0) -> Int32 {
   let i = self.pos + offset
   if i < self.text.length() {
     self.text[i].to_int()
@@ -208,7 +208,7 @@ fn XmlReader::skip_until(
 }
 
 ///|
-fn is_space(c : Int) -> Bool {
+fn is_space(c : Int32) -> Bool {
   c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
@@ -220,7 +220,7 @@ fn XmlReader::skip_space(self : XmlReader) -> Unit {
 }
 
 ///|
-fn is_name_char(c : Int) -> Bool {
+fn is_name_char(c : Int32) -> Bool {
   (c >= 'a' && c <= 'z') ||
   (c >= 'A' && c <= 'Z') ||
   (c >= '0' && c <= '9') ||
@@ -252,7 +252,7 @@ fn XmlReader::name(self : XmlReader) -> String raise XmlError {
 fn XmlReader::expand(
   self : XmlReader,
   raw : String,
-  depth? : Int = 0,
+  depth~ : Int32 = 0,
 ) -> String raise XmlError {
   guard raw.contains("&") else { return raw }
   let too_large = XmlError("entity expansion has grown too large")
@@ -269,7 +269,7 @@ fn XmlReader::expand(
       }
       if j < n && raw[j] == ';' {
         let name = raw.unsafe_substring(start=i + 1, end=j)
-        let character = fn(digits : String, base : Int) -> String? {
+        let character = fn(digits : String, base : Int32) -> String? {
           let code = @string.parse_int(digits, base~) catch { _ => -1 }
           code.to_char().map(ch => ch.to_string())
         }

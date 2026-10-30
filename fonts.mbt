@@ -1,5 +1,5 @@
 ///|
-pub fn rgb_hex(value : Int) -> Color {
+pub fn rgb_hex(value : Int32) -> Color {
   Color::rgb((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF)
 }
 
@@ -10,11 +10,11 @@ pub fn rgb_hex(value : Int) -> Color {
 pub(all) struct Face {
   metrics : @fonts.FaceMetrics
   /// OS/2 typo metrics (hhea when zero), 1/1000 em, truncated
-  ascender : Int
-  descender : Int
-  line_gap : Int
+  ascender : Int32
+  descender : Int32
+  line_gap : Int32
   /// `kern` table pairs, (left glyph << 16 | right glyph) → 1/1000 em
-  kern : Map[Int, Double]
+  kern : Map[Int32, Double]
   /// a PDF standard font (Prawn's AFM fonts): its text is WinAnsi (see
   /// `winansi_text`), and its glyphs are WinAnsi codes
   standard : Bool
@@ -23,7 +23,7 @@ pub(all) struct Face {
 ///|
 /// Prawn's glyph width in 1/1000 em (truncated), used to break lines as
 /// Prawn does.
-pub fn Face::prawn_width(self : Face, codepoint : Int) -> Double {
+pub fn Face::prawn_width(self : Face, codepoint : Int32) -> Double {
   (self.metrics.advance_pt(codepoint, 1000.0) + 1.0e-9).floor()
 }
 
@@ -31,13 +31,13 @@ pub fn Face::prawn_width(self : Face, codepoint : Int) -> Double {
 /// The width the PDF declares for the glyph (`/Widths`, truncated as Prawn
 /// writes it: `render_pdf` gets `truncate_widths`), used to place glyphs,
 /// so they sit where Prawn draws them and need no per-glyph displacement.
-fn Face::drawn_width(self : Face, codepoint : Int) -> Double {
+fn Face::drawn_width(self : Face, codepoint : Int32) -> Double {
   self.prawn_width(codepoint)
 }
 
 ///|
 /// Kerning between two codepoints, 1/1000 em (negative tightens).
-pub fn Face::kerning(self : Face, left : Int, right : Int) -> Double {
+pub fn Face::kerning(self : Face, left : Int32, right : Int32) -> Double {
   if self.kern.is_empty() {
     return 0.0
   }
@@ -69,12 +69,12 @@ pub fn Face::height_pt(self : Face, size : Double) -> Double {
 }
 
 ///|
-fn read_u16(data : Bytes, offset : Int) -> Int {
+fn read_u16(data : Bytes, offset : Int32) -> Int32 {
   (data[offset].to_int() << 8) | data[offset + 1].to_int()
 }
 
 ///|
-fn read_i16(data : Bytes, offset : Int) -> Int {
+fn read_i16(data : Bytes, offset : Int32) -> Int32 {
   let value = read_u16(data, offset)
   if value >= 0x8000 {
     value - 0x10000
@@ -85,7 +85,7 @@ fn read_i16(data : Bytes, offset : Int) -> Int {
 
 ///|
 /// Integer(x) in Ruby: truncation toward zero.
-fn truncate(x : Double) -> Int {
+fn truncate(x : Double) -> Int32 {
   if x < 0.0 {
     -(-x).floor().to_int()
   } else {
@@ -96,8 +96,8 @@ fn truncate(x : Double) -> Int {
 ///|
 /// Parse the first subtable of a `kern` table when it is format 0: ttfunk,
 /// and so Prawn, reads only that one.
-fn parse_kern(data : Bytes, scale : Double) -> Map[Int, Double] {
-  let pairs : Map[Int, Double] = Map([])
+fn parse_kern(data : Bytes, scale : Double) -> Map[Int32, Double] {
+  let pairs : Map[Int32, Double] = Map([])
   guard @pdflite.pdf_truetype_table(data, "kern") is Some(table) else {
     return pairs
   }
@@ -202,9 +202,9 @@ fn decode_unicode_escapes(value : String) -> String {
   let mut i = 0
   let digit = (c : Char) => {
     match c {
-      '0'..='9' => Some(c.to_int() - '0'.to_int())
-      'a'..='f' => Some(c.to_int() - 'a'.to_int() + 10)
-      'A'..='F' => Some(c.to_int() - 'A'.to_int() + 10)
+      '0'..<='9' => Some(c.to_int() - '0'.to_int())
+      'a'..<='f' => Some(c.to_int() - 'a'.to_int() + 10)
+      'A'..<='F' => Some(c.to_int() - 'A'.to_int() + 10)
       _ => None
     }
   }
@@ -300,9 +300,9 @@ pub fn default_icon_font_files() -> Array[(String, String, String)] {
 /// character the text's font lacks is looked for in (`fallbacks`).
 pub fn FontCatalog::load(
   files : Array[(String, Bool, Bool, Bytes)],
-  icon_sets? : Array[IconSet] = [],
-  legacy_icon_mapping? : String = "",
-  fallbacks? : Array[String] = [],
+  icon_sets~ : Array[IconSet] = [],
+  legacy_icon_mapping~ : String = "",
+  fallbacks~ : Array[String] = [],
 ) -> FontCatalog raise {
   let faces : Map[String, Face] = Map([])
   let registry = @fonts.FontRegistry::new()
@@ -382,7 +382,7 @@ fn TextContext::is_standard(self : TextContext, style : Style) -> Bool {
 ///|
 /// Whether the face has a glyph for the character (Prawn's
 /// `glyph_present?`).
-fn Face::has_glyph(self : Face, codepoint : Int) -> Bool {
+fn Face::has_glyph(self : Face, codepoint : Int32) -> Bool {
   match self.metrics.glyph_id(codepoint) {
     Some(gid) => gid != 0
     None => false

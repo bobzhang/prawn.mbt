@@ -1,6 +1,6 @@
 ///|
 /// The HTML colour names prawn-svg knows (its `HTML_COLORS`).
-let html_colors : Map[String, Int] = Map::from_array([
+let html_colors : Map[String, Int32] = Map::from_array([
   ("aliceblue", 0xf0f8ff),
   ("antiquewhite", 0xfaebd7),
   ("aqua", 0x00ffff),

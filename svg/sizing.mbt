@@ -193,7 +193,7 @@ pub fn Sizing::calculate(self : Sizing) -> Unit {
   match self.view_box {
     Some(view_box) => {
       let values = split_comma_wsp(strip(view_box)).map(ruby_to_f)
-      let value = fn(i : Int) { values.get(i).unwrap_or(0.0) }
+      let value = fn(i : Int32) { values.get(i).unwrap_or(0.0) }
       self.x_offset = value(0)
       self.y_offset = value(1)
       self.viewport_width = value(2)

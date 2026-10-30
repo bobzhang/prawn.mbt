@@ -28,7 +28,7 @@ priv struct PageState {
   /// items: Prawn writes a block's q on the page it starts on and its Q on
   /// the page current when it ends, so a q may stay open (`render` closes
   /// what is open at the end of the page) and a Q may restore nothing
-  marks : Array[(Int, ContentMark)]
+  marks : Array[(Int32, ContentMark)]
   /// the transformations the page's open q's saved, innermost last
   saved_ctms : Array[@pagelayout.Matrix]
 }
@@ -120,7 +120,7 @@ fn PageState::nested(self : PageState) -> Array[@pagelayout.PageItem] {
 ///|
 /// The page's items cut back to `length` (a dry run's), with the saves and
 /// restores among what is cut.
-fn PageState::truncate(self : PageState, length : Int) -> Unit {
+fn PageState::truncate(self : PageState, length : Int32) -> Unit {
   self.items.truncate(length)
   while self.marks.last() is Some((at, _)) && at > length {
     self.marks.pop() |> ignore
@@ -165,8 +165,8 @@ fn Document::make_page(
 /// first): its record starts with that page's graphics state.
 fn Document::page_made(
   self : Document,
-  from : Int,
-  to : Int,
+  from : Int32,
+  to : Int32,
   geometry : ((Double, Double), String),
 ) -> Unit {
   let source = if from >= 0 && from < self.pages.length() {

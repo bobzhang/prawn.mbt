@@ -2,7 +2,7 @@
 /// A JPEG's markers up to its frame, of four components: Adobe's marker
 /// when `adobe`, then a baseline frame of 16 by 16.
 fn cmyk_jpeg_for_test(adobe : Bool) -> Bytes {
-  let bytes : Array[Int] = [0xFF, 0xD8]
+  let bytes : Array[Int32] = [0xFF, 0xD8]
   if adobe {
     bytes.append([
       0xFF, 0xEE, 0x00, 0x0E, 0x41, 0x64, 0x6F, 0x62, 0x65, 0x00, 0x64, 0x00, 0x00,

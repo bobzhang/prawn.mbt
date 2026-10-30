@@ -28,7 +28,7 @@ let standard_families : Array[(String, Array[String])] = [
 ///|
 /// WinAnsi (`Encoding::WinAnsi::CHARACTERS`): the glyph name of each code
 /// from 0x20, and the character it stands for.
-let winansi_glyphs : Array[(String, Int)] = [
+let winansi_glyphs : Array[(String, Int32)] = [
   ("space", 0x20),
   ("exclam", 0x21),
   ("quotedbl", 0x22),
@@ -257,7 +257,7 @@ let winansi_glyphs : Array[(String, Int)] = [
 
 ///|
 /// The WinAnsi code of a character, when WinAnsi has it.
-fn winansi_code_of(codepoint : Int) -> Int? {
+fn winansi_code_of(codepoint : Int32) -> Int32? {
   for i, g in winansi_glyphs {
     if g.1 == codepoint && g.1 != 0 {
       return Some(0x20 + i)
@@ -306,14 +306,14 @@ fn load_standard_face(
   }
   let data = font.afm_data()
   // glyph name → width
-  let widths : Map[String, Int] = Map([])
+  let widths : Map[String, Int32] = Map([])
   for entry in data.char_name_widths {
     widths[ascii_text(entry.0)] = entry.1
   }
   let advances = Array::make(256, 0)
-  let cmap : Map[Int, Int] = Map([])
+  let cmap : Map[Int32, Int32] = Map([])
   // the code of each glyph name (the later one for a name WinAnsi repeats)
-  let code_of_name : Map[String, Int] = Map([])
+  let code_of_name : Map[String, Int32] = Map([])
   for i, glyph in winansi_glyphs {
     let code = 0x20 + i
     let (glyph_name, codepoint) = glyph
@@ -329,7 +329,7 @@ fn load_standard_face(
   }
   // every pair of the AFM, by glyph name: those of the glyphs it gives no
   // code (the accented letters) too, which WinAnsi encodes
-  let kern : Map[Int, Double] = Map([])
+  let kern : Map[Int32, Double] = Map([])
   for pair in font.kern_pairs_by_name() {
     let (left, right, amount) = pair
     match (code_of_name.get(left), code_of_name.get(right)) {
@@ -404,7 +404,7 @@ fn winansi_text(text : String) -> String {
 ///|
 /// An AFM header's integer, as Ruby's `String#to_i` reads it: the leading
 /// decimal integer after any whitespace, else 0.
-fn afm_int(s : String) -> Int {
+fn afm_int(s : String) -> Int32 {
   let mut i = 0
   while i < s.length() && (s[i] == ' ' || s[i] == '\t') {
     i += 1

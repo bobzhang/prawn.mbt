@@ -35,7 +35,7 @@ pub fn pdf_anchor_name(String) -> String
 
 pub fn rect_item(Double, Double, Double, Double, fill? : @pagelayout.Color, stroke? : @pagelayout.Color, stroke_width? : Double) -> @pagelayout.PageItem
 
-pub fn rgb_hex(Int) -> @pagelayout.Color
+pub fn rgb_hex(Int32) -> @pagelayout.Color
 
 pub fn ruby_number(Double) -> String
 
@@ -85,9 +85,9 @@ pub fn CodeBackground::equal(Self, Self) -> Bool
 pub fn CodeBackground::not_equal(Self, Self) -> Bool
 
 pub(all) struct Columns {
-  count : Int
+  count : Int32
   stride : Double
-  mut current : Int
+  mut current : Int32
 }
 
 pub struct Document {
@@ -101,7 +101,7 @@ pub fn Document::canvas(Self, () -> Unit raise) -> Unit raise
 pub fn Document::circle(Self, (Double, Double), Double) -> Unit
 pub fn Document::close_and_stroke(Self) -> Unit
 pub fn Document::close_path(Self) -> Unit
-pub fn Document::column_box(Self, (Double, Double), Double, height? : Double, columns? : Int, spacer? : Double, reflow_margins? : Bool, () -> Unit raise) -> Unit raise
+pub fn Document::column_box(Self, (Double, Double), Double, height? : Double, columns? : Int32, spacer? : Double, reflow_margins? : Bool, () -> Unit raise) -> Unit raise
 pub fn Document::cursor(Self) -> Double
 pub fn Document::curve(Self, (Double, Double), (Double, Double), ((Double, Double), (Double, Double))) -> Unit
 pub fn Document::curve_to(Self, (Double, Double), ((Double, Double), (Double, Double))) -> Unit
@@ -119,7 +119,7 @@ pub fn Document::font_families_update(Self, String, Array[(FontStyle, String)]) 
 pub fn Document::font_name(Self) -> String
 pub fn Document::font_size(Self) -> Double
 pub fn Document::formatted_text(Self, Array[TextFragment], size? : Double, style? : FontStyle, align? : Alignment, leading? : Double, draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError) -> Unit raise PrawnError
-pub fn Document::go_to_page(Self, Int) -> Unit
+pub fn Document::go_to_page(Self, Int32) -> Unit
 pub fn Document::height_of(Self, String, size? : Double, style? : FontStyle, width? : Double, leading? : Double) -> Double raise PrawnError
 pub fn Document::horizontal_line(Self, Double, Double, at? : Double) -> Unit
 pub fn Document::horizontal_rule(Self) -> Unit
@@ -136,8 +136,8 @@ pub fn Document::on_warning(Self, (String) -> Unit) -> Unit
 pub fn Document::pad(Self, Double, () -> Unit raise) -> Unit raise
 pub fn Document::pad_bottom(Self, Double, () -> Unit raise) -> Unit raise
 pub fn Document::pad_top(Self, Double, () -> Unit raise) -> Unit raise
-pub fn Document::page_count(Self) -> Int
-pub fn Document::page_number(Self) -> Int
+pub fn Document::page_count(Self) -> Int32
+pub fn Document::page_number(Self) -> Int32
 pub fn Document::polygon(Self, Array[(Double, Double)]) -> Unit
 pub fn Document::rectangle(Self, (Double, Double), Double, Double) -> Unit
 pub fn Document::render(Self) -> Bytes raise
@@ -170,18 +170,18 @@ pub fn Document::with_font_size(Self, Double, () -> Unit raise) -> Unit raise
 
 pub(all) struct Face {
   metrics : @fonts.FaceMetrics
-  ascender : Int
-  descender : Int
-  line_gap : Int
-  kern : Map[Int, Double]
+  ascender : Int32
+  descender : Int32
+  line_gap : Int32
+  kern : Map[Int32, Double]
   standard : Bool
 }
 pub fn Face::ascender_pt(Self, Double) -> Double
 pub fn Face::descender_pt(Self, Double) -> Double
 pub fn Face::height_pt(Self, Double) -> Double
-pub fn Face::kerning(Self, Int, Int) -> Double
+pub fn Face::kerning(Self, Int32, Int32) -> Double
 pub fn Face::line_gap_pt(Self, Double) -> Double
-pub fn Face::prawn_width(Self, Int) -> Double
+pub fn Face::prawn_width(Self, Int32) -> Double
 
 pub(all) struct Flow {
   catalog : FontCatalog
@@ -192,17 +192,17 @@ pub(all) struct Flow {
   page_top : Double
   mut top : Double
   mut bottom : Double
-  mut page : Int
+  mut page : Int32
   mut y : Double
   mut left : Double
   mut right : Double
   mut columns : Columns?
-  mut last_line : (Line, Int, Double)?
+  mut last_line : (Line, Int32, Double)?
   mut last_line_first : Bool
-  mut taring : Int
+  mut taring : Int32
   mut inked : Bool
   mut first_break_empty : Bool?
-  mut page_margins : ((Int) -> (Double, Double))?
+  mut page_margins : ((Int32) -> (Double, Double))?
   mut margin_left : Double
   mut margin_right : Double
   mut page_width_now : Double
@@ -211,12 +211,12 @@ pub(all) struct Flow {
 pub fn Flow::add_anchor(Self, String, Double, Double) -> Unit
 pub fn Flow::advance_page(Self) -> Unit
 pub fn Flow::at_page_top(Self) -> Bool
-pub fn Flow::column_box(Self, Int, Double, () -> Unit) -> Unit
+pub fn Flow::column_box(Self, Int32, Double, () -> Unit) -> Unit
 pub fn Flow::cursor(Self) -> Double
 pub fn Flow::dest_x(Self) -> Double
 pub fn Flow::fits(Self, Double, y? : Double) -> Bool
 pub fn Flow::font(Self, Style) -> Face
-pub fn Flow::go_to_page(Self, Int) -> Unit
+pub fn Flow::go_to_page(Self, Int32) -> Unit
 pub fn Flow::height_of(Self, Array[Fragment], LineMetrics, Style, normalize_line_height? : Bool, width? : Double) -> Double
 pub fn[T] Flow::indent(Self, Double, Double, () -> T) -> T
 pub fn Flow::ink_line(Self, Line, Double, Double) -> Unit
@@ -272,10 +272,10 @@ pub(all) struct FragmentCallback {
 pub(all) struct Hooks {
   base_family : String
   unknown_font : (String) -> Unit
-  image_size : (Int, Double, Double) -> (Double, Double, Bool)
-  image_items : (Flow, Int, Double, Double, Double, Double) -> Array[@pagelayout.PageItem]
-  anchor_inked : (String, Int) -> Unit
-  fragment_inked : (Int) -> Unit
+  image_size : (Int32, Double, Double) -> (Double, Double, Bool)
+  image_items : (Flow, Int32, Double, Double, Double, Double) -> Array[@pagelayout.PageItem]
+  anchor_inked : (String, Int32) -> Unit
+  fragment_inked : (Int32) -> Unit
 }
 pub fn Hooks::new(base_family? : String) -> Self
 
@@ -287,8 +287,8 @@ pub(all) struct IconSet {
 
 pub(all) struct ImageInfo {
   kind : String
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
 }
 
 pub(all) enum ImagePosition {
@@ -306,14 +306,14 @@ pub(all) enum ImageVPosition {
 }
 
 pub(all) struct Item {
-  unit : Int
-  fragment : Int
+  unit : Int32
+  fragment : Int32
   mut fit : Double
   draw : Double
   kern : Double
   hard_break : Bool
   anchor : String?
-  offset : Int
+  offset : Int32
 }
 
 pub(all) struct Line {
@@ -324,9 +324,9 @@ pub(all) struct Line {
   descender : Double
   height : Double
   empty_links : Array[(Double, Style, Face)]
-  images : Array[(Double, Int, Double, Double, Bool, Style, Face)]
+  images : Array[(Double, Int32, Double, Double, Bool, Style, Face)]
   marks : Array[(Double, Style, Face)]
-  held : Array[(Int, Double, Style, Face)]
+  held : Array[(Int32, Double, Style, Face)]
 }
 
 pub(all) struct LineMetrics {
@@ -336,7 +336,7 @@ pub(all) struct LineMetrics {
 }
 
 pub(all) struct LineRun {
-  fragment : Int
+  fragment : Int32
   text : String
   style : Style
   face : Face
@@ -346,9 +346,9 @@ pub(all) struct LineRun {
 }
 
 pub(all) struct Mark {
-  page : Int
+  page : Int32
   y : Double
-  item : Int
+  item : Int32
 }
 
 pub(all) enum Overflow {
@@ -391,13 +391,13 @@ pub(all) struct Style {
   color : @pagelayout.Color
   link : @pagelayout.LinkTarget?
   background : @pagelayout.Color?
-  script : Int
+  script : Int32
   border_offset : Double
   underline : Bool
   strike : Bool
   wj : Bool
-  image : Int
-  callback : Int
+  image : Int32
+  callback : Int32
   doc_bold : Bool
   doc_italic : Bool
   font_set : Bool

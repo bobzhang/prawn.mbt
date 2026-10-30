@@ -1,6 +1,6 @@
 ///|
 /// An environment with one font whose glyphs are all half an em wide.
-fn test_env(files? : Map[String, Bytes] = {}) -> @svg.Environment {
+fn test_env(files~ : Map[String, Bytes] = {}) -> @svg.Environment {
   {
     families: [("Noto Serif", ["normal", "bold"]), ("Helvetica", ["normal"])],
     load_font: (family, subfamily) => {
@@ -25,7 +25,7 @@ fn test_env(files? : Map[String, Bytes] = {}) -> @svg.Environment {
 ///|
 fn render(
   text : String,
-  bounds? : (Double, Double) = (400, 800),
+  bounds~ : (Double, Double) = (400, 800),
 ) -> Array[@pagelayout.GraphicOp] raise {
   let doc = @svg.SvgDocument::parse(text, bounds)
   doc.render(

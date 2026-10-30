@@ -8,11 +8,11 @@
 /// standing for a place its span covers (Cell::SpanDummy), in the order
 /// `make_cells` creates them.
 pub(all) struct WidthCell {
-  row : Int
-  column : Int
-  colspan : Int
+  row : Int32
+  column : Int32
+  colspan : Int32
   /// the master cell this dummy stands for (its index), or -1
-  master : Int
+  master : Int32
   /// width_ignoring_span, min_width_ignoring_span
   width : Double
   min : Double
@@ -34,8 +34,8 @@ fn aggregate_min_widths(
       c.min / c.colspan.to_double()
     }
   }
-  let values : Map[Int, Double] = Map([])
-  let put_max = fn(i : Int, v : Double) {
+  let values : Map[Int32, Double] = Map([])
+  let put_max = fn(i : Int32, v : Double) {
     match values.get(i) {
       Some(old) => values[i] = @cmp.maximum(old, v)
       None => values[i] = v
@@ -46,7 +46,7 @@ fn aggregate_min_widths(
       put_max(c.column, c.min)
     }
   }
-  let rows_with_dummy : Map[Int, Bool] = Map([])
+  let rows_with_dummy : Map[Int32, Bool] = Map([])
   for c in cells {
     if c.master >= 0 {
       rows_with_dummy[c.row] = true
@@ -122,11 +122,11 @@ fn aggregate_min_widths(
 /// prawn-table's `make_cells` creates them.
 pub fn column_widths(
   cells : Array[WidthCell],
-  num_cols : Int,
+  num_cols : Int32,
   bounds_width : Double,
   table_width? : Double,
 ) -> Array[Double] {
-  let rows_with_dummy : Map[Int, Bool] = Map([])
+  let rows_with_dummy : Map[Int32, Bool] = Map([])
   for c in cells {
     if c.master >= 0 {
       rows_with_dummy[c.row] = true
@@ -184,8 +184,8 @@ pub fn column_widths(
 /// tallest share of the cells in it, a cell's `height` shared evenly among
 /// the `rowspan` rows from `row` it spans.
 pub fn row_heights(
-  cells : Array[(Int, Int, Double)],
-  num_rows : Int,
+  cells : Array[(Int32, Int32, Double)],
+  num_rows : Int32,
 ) -> Array[Double] {
   let heights = Array::make(num_rows, 0.0)
   for cell in cells {

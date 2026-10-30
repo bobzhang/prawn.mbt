@@ -45,7 +45,7 @@ fn Document::set_box(
   height : Double,
   align : Alignment,
   leading : Double,
-  dry_run? : Bool = false,
+  dry_run~ : Bool = false,
 ) -> (Array[Fragment], Double, Double) raise PrawnError {
   // a dry run calls no callbacks
   let was_dry = self.dry_run
@@ -184,13 +184,13 @@ pub fn Document::text_box(
   height? : Double,
   size? : Double,
   style? : FontStyle,
-  align? : Alignment = Left,
-  valign? : VerticalAlignment = Top,
-  overflow? : Overflow = Truncate,
-  min_font_size? : Double = 5.0,
+  align~ : Alignment = Left,
+  valign~ : VerticalAlignment = Top,
+  overflow~ : Overflow = Truncate,
+  min_font_size~ : Double = 5.0,
   leading? : Double,
-  rotate? : Double = 0.0,
-  rotate_around? : String = "upper_left",
+  rotate~ : Double = 0.0,
+  rotate_around~ : String = "upper_left",
   draw_text_callback? : (String, (Double, Double), Bool) -> Unit raise PrawnError,
 ) -> String raise {
   // the current font in `style` while this is set (Prawn's `:style`, which
@@ -325,9 +325,9 @@ fn strip_leading_spaces(text : String) -> String {
 /// follows it.
 fn strip_leading_fragments(
   fragments : Array[Fragment],
-) -> (Array[Fragment], Array[(Int, Int)]) {
+) -> (Array[Fragment], Array[(Int32, Int32)]) {
   let out : Array[Fragment] = []
-  let origins : Array[(Int, Int)] = []
+  let origins : Array[(Int32, Int32)] = []
   let mut stripping = true
   for i, f in fragments {
     if stripping {
@@ -359,8 +359,8 @@ fn strip_leading_fragments(
 /// long text is then not wrapped (nor copied) in full for each line.
 fn line_window(
   text : Array[Fragment],
-  start : Int,
-  offset : Int,
+  start : Int32,
+  offset : Int32,
   doc : Document,
   width : Double,
 ) -> Array[Fragment] {

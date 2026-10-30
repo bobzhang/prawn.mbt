@@ -27,7 +27,7 @@ priv struct Compound {
 priv struct Rule {
   selector : Array[Compound]
   declarations : Array[(String, String)]
-  specificity : (Int, Int, Int, Int)
+  specificity : (Int32, Int32, Int32, Int32)
 }
 
 ///|
@@ -283,7 +283,10 @@ fn parse_selector(text : String) -> Array[Compound]? {
 }
 
 ///|
-fn specificity(selector : Array[Compound], order : Int) -> (Int, Int, Int, Int) {
+fn specificity(
+  selector : Array[Compound],
+  order : Int32,
+) -> (Int32, Int32, Int32, Int32) {
   let mut a = 0
   let mut b = 0
   let mut c = 0
@@ -476,7 +479,7 @@ fn compound_matches(compound : Compound, e : Element) -> Bool {
 /// The positions (1-based, `-1` for last) a compound's pseudo-classes
 /// require; a combinator of `adjacent` requires the first following
 /// sibling.
-fn compound_positions(compound : Compound) -> Array[Int] {
+fn compound_positions(compound : Compound) -> Array[Int32] {
   let out = []
   let pseudo = compound.pseudo.copy()
   if compound.combinator == "adjacent" && !pseudo.contains("first-child") {
@@ -503,7 +506,7 @@ fn compound_positions(compound : Compound) -> Array[Int] {
 }
 
 ///|
-fn at_positions(positions : Array[Int], index : Int, count : Int) -> Bool {
+fn at_positions(positions : Array[Int32], index : Int32, count : Int32) -> Bool {
   for p in positions {
     if p == -1 {
       if index != count {
@@ -522,7 +525,7 @@ fn at_positions(positions : Array[Int], index : Int, count : Int) -> Bool {
 fn select(
   root : Element,
   all : Array[Element],
-  order : Map[Int, Int],
+  order : Map[Int32, Int32],
   selector : Array[Compound],
 ) -> Array[Element] {
   // the context set, as marks by document order; before the first
@@ -531,7 +534,7 @@ fn select(
   for compound in selector {
     let positions = compound_positions(compound)
     let next : Array[Element] = []
-    let marked : Map[Int, Bool] = Map([])
+    let marked : Map[Int32, Bool] = Map([])
     let add = fn(e : Element) {
       let k = e.uid
       if !marked.contains(k) {
@@ -560,7 +563,7 @@ fn select(
     }
     match (current, compound.combinator) {
       (None, _) | (Some(_), "descendant") => {
-        let context : Map[Int, Bool] = Map([])
+        let context : Map[Int32, Bool] = Map([])
         match current {
           Some(set) =>
             for e in set {
@@ -627,13 +630,13 @@ fn select(
 fn element_styles(
   root : Element,
   all : Array[Element],
-) -> Map[Int, Array[(String, String)]] {
-  let styles : Map[Int, Array[(String, String)]] = Map([])
+) -> Map[Int32, Array[(String, String)]] {
+  let styles : Map[Int32, Array[(String, String)]] = Map([])
   let rules = load_rules(root)
   if rules.is_empty() {
     return styles
   }
-  let order : Map[Int, Int] = Map([])
+  let order : Map[Int32, Int32] = Map([])
   for i, e in all {
     order[e.uid] = i
   }

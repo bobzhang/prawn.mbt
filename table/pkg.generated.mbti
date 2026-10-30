@@ -2,18 +2,18 @@
 package "bobzhang/prawn/table"
 
 // Values
-pub fn column_widths(Array[WidthCell], Int, Double, table_width? : Double) -> Array[Double]
+pub fn column_widths(Array[WidthCell], Int32, Double, table_width? : Double) -> Array[Double]
 
-pub fn row_heights(Array[(Int, Int, Double)], Int) -> Array[Double]
+pub fn row_heights(Array[(Int32, Int32, Double)], Int32) -> Array[Double]
 
 // Errors
 
 // Types and methods
 pub(all) struct WidthCell {
-  row : Int
-  column : Int
-  colspan : Int
-  master : Int
+  row : Int32
+  column : Int32
+  colspan : Int32
+  master : Int32
   width : Double
   min : Double
 }

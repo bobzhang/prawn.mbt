@@ -255,11 +255,13 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       )
       // what Prawn returns, as the driver logs objects: its class
       Some({
-        "class": (if info.kind == "png" {
-          "Prawn::Images::PNG"
-        } else {
-          "Prawn::Images::JPG"
-        }).to_json(),
+        "class": Json(
+          if info.kind == "png" {
+            "Prawn::Images::PNG"
+          } else {
+            "Prawn::Images::JPG"
+          },
+        ),
       })
     }
     "move_up" => {
@@ -286,8 +288,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       // the value set, as Prawn returns it
       Some(args[0])
     }
-    "default_leading" if args.is_empty() =>
-      Some(doc.default_leading().to_json())
+    "default_leading" if args.is_empty() => Some(Json(doc.default_leading()))
     // the bounds' readers (Prawn's BoundingBox): relative to the bounds, or
     // on the page
     "bounds.left"
@@ -313,19 +314,19 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       let right = b.left + b.width
       let absolute_right = b.absolute_left + b.width
       let absolute_bottom = b.absolute_top - b.height
-      let pair = fn(x : Double, y : Double) { [x, y].to_json() }
+      let pair = fn(x : Double, y : Double) { Json([x, y]) }
       Some(
         match name["bounds.".length():].to_owned() {
-          "left" => left.to_json()
-          "right" => right.to_json()
-          "top" => b.height.to_json()
-          "bottom" => 0.0.to_json()
-          "width" => b.width.to_json()
-          "height" => b.height.to_json()
-          "absolute_left" => b.absolute_left.to_json()
-          "absolute_right" => absolute_right.to_json()
-          "absolute_top" => b.absolute_top.to_json()
-          "absolute_bottom" => absolute_bottom.to_json()
+          "left" => Json(left)
+          "right" => Json(right)
+          "top" => Json(b.height)
+          "bottom" => Json(0.0)
+          "width" => Json(b.width)
+          "height" => Json(b.height)
+          "absolute_left" => Json(b.absolute_left)
+          "absolute_right" => Json(absolute_right)
+          "absolute_top" => Json(b.absolute_top)
+          "absolute_bottom" => Json(absolute_bottom)
           "top_left" => pair(left, b.height)
           "top_right" => pair(right, b.height)
           "bottom_left" => pair(left, 0.0)
@@ -339,7 +340,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     }
     // Prawn's `font_size`: the size; given one (or `font_size=`), nil; with a block, the
     // size it put back
-    "font_size" if args.is_empty() => Some(doc.font_size().to_json())
+    "font_size" if args.is_empty() => Some(Json(doc.font_size()))
     "font_size" | "font_size=" if args.length() == 1 => {
       doc.set_font_size(number(args[0]))
       Some(Json::null())
@@ -347,7 +348,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     "font_size" if opts.is_empty() && block(args) is Some(ops) => {
       let before = doc.font_size()
       doc.with_font_size(number(args[0]), () => self.ops(ops))
-      Some(before.to_json())
+      Some(Json(before))
     }
     // a font, as the driver logs objects: its class
     "font_families.update" if args is [Object(families)] => {
@@ -380,7 +381,7 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
       doc.fallback_fonts(names.map(string))
       Some(Json::null())
     }
-    "font" if args.is_empty() => Some({ "class": doc.font_class().to_json() })
+    "font" if args.is_empty() => Some({ "class": Json(doc.font_class()) })
     "font" if only(opts, ["style", "size"]) && args[0] is String(_) => {
       let style = font_style(opts.get("style")).unwrap_or(Normal)
       let size = opts.get("size").map(number)
@@ -389,11 +390,13 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           doc.font(string(args[0]), style~, size?, body=() => self.ops(ops))
         None => doc.font(string(args[0]), style~, size?)
       }
-      Some({ "class": doc.font_class().to_json() })
+      Some({ "class": Json(doc.font_class()) })
     }
     "font.inspect" if args.is_empty() =>
       Some(
-        "\{doc.font_class()}< \{doc.font_name()}: \{@prawn.ruby_number(doc.font_size())} >".to_json(),
+        Json(
+          "\{doc.font_class()}< \{doc.font_name()}: \{@prawn.ruby_number(doc.font_size())} >",
+        ),
       )
     "start_new_page" if only(opts, ["layout", "size"]) => {
       doc.start_new_page(
@@ -407,26 +410,26 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     }
     "width_of" if only(opts, ["size", "kerning", "style"]) =>
       Some(
-        doc
-        .width_of(
-          string(args[0]),
-          size?=opts.get("size").map(number),
-          style?=font_style(opts.get("style")),
-          kerning=opts.get("kerning") is Some(True),
-        )
-        .to_json(),
+        Json(
+          doc.width_of(
+            string(args[0]),
+            size?=opts.get("size").map(number),
+            style?=font_style(opts.get("style")),
+            kerning=opts.get("kerning") is Some(True),
+          ),
+        ),
       )
     "height_of" if only(opts, ["size", "width", "leading", "style"]) =>
       Some(
-        doc
-        .height_of(
-          string(args[0]),
-          size?=opts.get("size").map(number),
-          style?=font_style(opts.get("style")),
-          width?=opts.get("width").map(number),
-          leading?=opts.get("leading").map(number),
-        )
-        .to_json(),
+        Json(
+          doc.height_of(
+            string(args[0]),
+            size?=opts.get("size").map(number),
+            style?=font_style(opts.get("style")),
+            width?=opts.get("width").map(number),
+            leading?=opts.get("leading").map(number),
+          ),
+        ),
       )
     "bounding_box" if only(opts, ["width", "height"]) &&
       block(args) is Some(ops) => {
@@ -478,12 +481,12 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
     "bounds" => {
       let b = doc.bounds()
       Some({
-        "left": b.left.to_json(),
-        "bottom": b.bottom.to_json(),
-        "width": b.width.to_json(),
-        "height": b.height.to_json(),
-        "absolute_left": b.absolute_left.to_json(),
-        "absolute_top": b.absolute_top.to_json(),
+        "left": Json(b.left),
+        "bottom": Json(b.bottom),
+        "width": Json(b.width),
+        "height": Json(b.height),
+        "absolute_left": Json(b.absolute_left),
+        "absolute_top": Json(b.absolute_top),
       })
     }
     "go_to_page" if args is [Number(_)] => {
@@ -524,11 +527,11 @@ fn Run::call(self : Run, name : String, args : Array[Json]) -> Json? raise {
           .unwrap_or("upper_left"),
         draw_text_callback?=self.trace_draw_text(opts),
       )
-      Some(rest.to_json())
+      Some(Json(rest))
     }
-    "cursor" => Some(doc.cursor().to_json())
-    "page_number" => Some(doc.page_number().to_json())
-    "page_count" => Some(doc.page_count().to_json())
+    "cursor" => Some(Json(doc.cursor()))
+    "page_number" => Some(Json(doc.page_number()))
+    "page_count" => Some(Json(doc.page_count()))
     _ => self.graphics(name, args, opts)
   }
 }
@@ -579,10 +582,7 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
       raise ScriptError("!raises needs an expected class and an op")
     }
     let raised = fn(error : @prawn.PrawnError) {
-      self.log.push({
-        "raises": expected,
-        "error": error.ruby_class().to_json(),
-      })
+      self.log.push({ "raises": expected, "error": Json(error.ruby_class()) })
     }
     self.op(inner) catch {
       @prawn.CannotFit => {
@@ -620,16 +620,16 @@ fn Run::op(self : Run, op : Json) -> Unit raise {
     let query = name[1:].to_owned()
     let shown = args.filter(a => !(a is Object(map) && map.contains("block")))
     let label : Json = if shown.is_empty() {
-      query.to_json()
+      Json(query)
     } else {
-      Json::array([query.to_json(), ..shown])
+      Json::array([Json(query), ..shown])
     }
     match self.supported(query, args) {
       Some(value) => self.log.push({ "query": label, "value": value })
-      None => self.log.push({ "unsupported": query.to_json() })
+      None => self.log.push({ "unsupported": Json(query) })
     }
   } else if self.supported(name, args) is None {
-    self.log.push({ "unsupported": name.to_json() })
+    self.log.push({ "unsupported": Json(name) })
   }
 }
 
@@ -696,7 +696,7 @@ async fn main {
     } else {
       message
     }
-    run.log.push({ "warning": message.to_json() })
+    run.log.push({ "warning": Json(message) })
   })
   guard script is Object(map) && map.get("ops") is Some(Array(ops)) else {
     fail("no ops")
@@ -967,7 +967,7 @@ fn Run::text_fragment(
     None => (None, None)
   }
   Some({
-    ..@prawn.TextFragment::new(string(map.get("text").unwrap_or("".to_json()))),
+    ..@prawn.TextFragment::new(string(map.get("text").unwrap_or(Json("")))),
     bold: styles.contains("bold"),
     italic: styles.contains("italic"),
     underline: styles.contains("underline"),
@@ -1012,14 +1012,14 @@ fn Run::trace_callback(
     fn(f : @prawn.PlacedFragment) raise @prawn.PrawnError {
       self.log.push({
         "trace": id,
-        "event": event.to_json(),
-        "text": f.text.to_json(),
-        "left": f.left.to_json(),
-        "baseline": f.baseline.to_json(),
-        "width": f.width.to_json(),
-        "height": f.height.to_json(),
-        "top": f.top.to_json(),
-        "bottom": f.bottom.to_json(),
+        "event": Json(event),
+        "text": Json(f.text),
+        "left": Json(f.left),
+        "baseline": Json(f.baseline),
+        "width": Json(f.width),
+        "height": Json(f.height),
+        "top": Json(f.top),
+        "bottom": Json(f.bottom),
       })
       self.draw_in_callback(draw)
     }
@@ -1053,9 +1053,9 @@ fn Run::trace_draw_text(
             self.log.push({
               "trace": id,
               "event": "draw_text",
-              "text": text.to_json(),
-              "at": [at.0, at.1].to_json(),
-              "kerning": kerning.to_json(),
+              "text": Json(text),
+              "at": Json([at.0, at.1]),
+              "kerning": Json(kerning),
             })
             self.draw_in_callback(
               match map.get("draw") {
@@ -1087,7 +1087,7 @@ fn Run::draw_in_callback(
     @prawn.BadFontFamily(s) => raise @prawn.BadFontFamily(s)
     @prawn.UnsupportedImageType(s) => raise @prawn.UnsupportedImageType(s)
     @prawn.EmptyGraphicStateStack => raise @prawn.EmptyGraphicStateStack
-    e => self.log.push({ "callback_error": e.to_string().to_json() })
+    e => self.log.push({ "callback_error": Json(e.to_string()) })
   }
 }
 

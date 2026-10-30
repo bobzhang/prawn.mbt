@@ -10,8 +10,8 @@
 pub(all) struct ImageInfo {
   /// "png" or "jpeg"
   kind : String
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
 }
 
 ///|
@@ -37,12 +37,12 @@ pub(all) enum ImageVPosition {
 }
 
 ///|
-fn be16(data : Bytes, at : Int) -> Int {
+fn be16(data : Bytes, at : Int32) -> Int32 {
   (data[at].to_int() << 8) | data[at + 1].to_int()
 }
 
 ///|
-fn be32(data : Bytes, at : Int) -> Int {
+fn be32(data : Bytes, at : Int32) -> Int32 {
   (be16(data, at) << 16) | be16(data, at + 2)
 }
 
@@ -193,7 +193,7 @@ pub fn Document::image(
   height? : Double,
   scale? : Double,
   fit? : (Double, Double),
-  position? : ImagePosition = ImageLeft,
+  position~ : ImagePosition = ImageLeft,
   vposition? : ImageVPosition,
 ) -> ImageInfo raise PrawnError {
   guard (self.assets)(file) is Some(data) else {

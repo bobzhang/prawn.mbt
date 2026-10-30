@@ -29,7 +29,7 @@ pub fn ruby_to_f(s : String) -> Double {
     digits.write_char('-')
   }
   let mut any = false
-  let is_digit = fn(k : Int) { k < n && s[k] >= '0' && s[k] <= '9' }
+  let is_digit = fn(k : Int32) { k < n && s[k] >= '0' && s[k] <= '9' }
   while is_digit(i) || (i < n && s[i] == '_' && any && is_digit(i + 1)) {
     if s[i] != '_' {
       digits.write_char(s[i].unsafe_to_char())
@@ -126,7 +126,7 @@ pub fn split_comma_wsp(s : StringView) -> Array[String] {
 pub fn to_pixels(
   value : String,
   axis_length : Double,
-  font_size? : Double = 16.0,
+  font_size~ : Double = 16.0,
 ) -> Double {
   let n = value.length()
   let unit_after_digit = fn(unit : String) {
@@ -157,7 +157,7 @@ pub fn to_pixels(
 
 ///|
 /// The index of `pattern` in `s` at or after `from`.
-fn find_from(s : String, pattern : String, from : Int) -> Int? {
+fn find_from(s : String, pattern : String, from : Int32) -> Int32? {
   if from > s.length() {
     return None
   }

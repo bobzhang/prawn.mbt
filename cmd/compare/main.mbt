@@ -28,7 +28,7 @@ async fn read(path : String) -> Bytes {
 fn self_test_one(
   name : String,
   bytes : Bytes,
-  applied : Map[String, Int],
+  applied : Map[String, Int32],
 ) -> Array[String] raise {
   let original = @inspect.inspect(bytes)
   let violations : Array[String] = []
@@ -94,7 +94,7 @@ async fn main {
         fail("no PDFs in \{dir}")
       }
       let violations : Array[String] = []
-      let applied : Map[String, Int] = Map([])
+      let applied : Map[String, Int32] = Map([])
       for file in files {
         violations.append(self_test_one(file, read("\{dir}/\{file}"), applied))
       }

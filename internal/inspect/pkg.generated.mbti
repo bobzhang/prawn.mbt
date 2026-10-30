@@ -29,7 +29,7 @@ pub(all) struct Glyph {
   matrix : Array[Double]
   x : Double
   y : Double
-  mode : Int
+  mode : Int32
   fill : Paint?
   stroke : Paint?
   pen : Array[Double]
@@ -37,7 +37,7 @@ pub(all) struct Glyph {
   clip : Rect?
   blend : String
   extent : Rect
-  order : Int
+  order : Int32
 }
 
 pub(all) struct Mark {
@@ -49,13 +49,13 @@ pub(all) struct Mark {
   clip : Rect?
   blend : String
   extent : Rect
-  order : Int
+  order : Int32
 }
 
 pub(all) struct PageView {
   width : Double
   height : Double
-  rotate : Int
+  rotate : Int32
   glyphs : Array[Glyph]
   marks : Array[Mark]
 }

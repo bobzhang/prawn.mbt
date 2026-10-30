@@ -9,7 +9,7 @@
 /// A paint; for a gradient, the pattern matrix Prawn gave it when it was
 /// set (from pattern space to the page's default space).
 priv struct SetPaint {
-  rgb : Int
+  rgb : Int32
   gradient : (GradientArgs, @pagelayout.Matrix)?
 }
 
@@ -62,7 +62,7 @@ fn lower(
   prawn : TransformationStack,
   anchor : (Double, Double),
   origin : @pagelayout.Matrix,
-  ctm? : @pagelayout.Matrix = @pagelayout.identity,
+  ctm~ : @pagelayout.Matrix = @pagelayout.identity,
 ) -> Unit {
   let black = SetPaint::{ rgb: 0, gradient: None, }
   let l = Lowering::{
@@ -206,7 +206,7 @@ fn Lowering::paint(self : Lowering, set : SetPaint) -> @pagelayout.Paint {
 /// device can, a hairline.
 fn Lowering::stroke_style(
   self : Lowering,
-  width? : Double = self.state.width,
+  width~ : Double = self.state.width,
 ) -> @pagelayout.StrokeStyle {
   {
     width: if width > 0.0 {
@@ -279,7 +279,7 @@ priv enum Epilogue {
 ///|
 priv struct Frame {
   calls : Array[Call]
-  mut next : Int
+  mut next : Int32
   epilogue : Epilogue
 }
 

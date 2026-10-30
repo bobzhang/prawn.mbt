@@ -20,7 +20,7 @@ pub(all) struct Style {
   background : Color?
   /// 1 for superscript, -1 for subscript (Prawn raises a superscript by 0.85
   /// of its ascender and drops a subscript by its descender)
-  script : Int
+  script : Int32
   /// padding around the text inside its background (mark, kbd): widens the
   /// fragment by twice this, as asciidoctor-pdf's `border_offset` does
   border_offset : Double
@@ -31,11 +31,11 @@ pub(all) struct Style {
   wj : Bool
   /// an inline image (the index of its `InlineImage` in the session), set
   /// as a placeholder as wide as the image; -1 for text
-  image : Int
+  image : Int32
   /// the document's callback for the fragment (Prawn's fragment `callback`):
   /// `Hooks::fragment_inked` learns when a run in this style is inked on a
   /// page outside dry runs; -1 for none
-  callback : Int
+  callback : Int32
   /// the style of the document font the text is set in (Prawn's current
   /// font, as `theme_font` sets it); `bold` and `italic` are the styles of
   /// the markup (and those inherited explicitly, as headings do)
