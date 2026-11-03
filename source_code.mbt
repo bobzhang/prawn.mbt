@@ -7,6 +7,7 @@
 ///|
 /// How far the background of a fragment of a highlighted source block
 /// reaches, when not just its glyph box.
+#derive(Eq)
 pub(all) enum CodeBackground {
   /// Rouge's BackgroundColorizer on an inline block: the glyph box grown by
   /// the line gap (`code_line_gap`, half above, half below), and to the
@@ -16,7 +17,7 @@ pub(all) enum CodeBackground {
   /// the height of the font's line centred on the glyph box, to the right
   /// edge of the bounds
   FullLine
-} derive(Eq)
+}
 
 ///|
 pub extend CodeBackground with Eq::{not_equal, equal}

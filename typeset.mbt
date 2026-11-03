@@ -18,12 +18,13 @@
 // moves a glyph.
 
 ///|
+#derive(Eq)
 pub(all) enum Alignment {
   Left
   Center
   Right
   Justify
-} derive(Eq)
+}
 
 ///|
 pub extend Alignment with Eq::{not_equal, equal}
