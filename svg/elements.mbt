@@ -6,6 +6,7 @@
 // between a save and a restore.
 
 ///|
+#derive(Eq)
 priv enum Kind {
   Root
   Container
@@ -25,7 +26,7 @@ priv enum Kind {
   GradientKind
   MarkerElement
   Ignored
-} derive(Eq)
+}
 
 ///|
 fn kind_of_tag(name : String) -> Kind? {

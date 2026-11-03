@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "bobzhang/prawn/internal/inspect"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
 pub fn compare(Array[PageView], Array[PageView], tol? : Tolerance) -> Array[String]
 
@@ -33,7 +37,7 @@ pub(all) struct Glyph {
   fill : Paint?
   stroke : Paint?
   pen : Array[Double]
-  style : Json
+  style : @json.Json
   clip : Rect?
   blend : String
   extent : Rect
@@ -45,7 +49,7 @@ pub(all) struct Mark {
   points : Array[Double]
   lengths : Array[Double]
   paints : Array[Paint]
-  exact : Json
+  exact : @json.Json
   clip : Rect?
   blend : String
   extent : Rect
@@ -59,7 +63,7 @@ pub(all) struct PageView {
   glyphs : Array[Glyph]
   marks : Array[Mark]
 }
-pub fn PageView::to_json(Self) -> Json
+pub fn PageView::to_json(Self) -> @json.Json
 
 pub(all) struct Paint {
   space : String

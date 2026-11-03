@@ -7,6 +7,7 @@ using @pagelayout {type Color}
 
 ///|
 /// Character formatting of a fragment.
+#derive(Eq)
 pub(all) struct Style {
   family : String
   size : Double
@@ -58,7 +59,7 @@ pub(all) struct Style {
   /// it ends loses its trailing blanks and mark as a wrapped line does in
   /// Prawn, not as one a line break of the text ends
   wrap_break : Bool
-} derive(Eq)
+}
 
 ///|
 /// The (bold, italic) face a fragment is set in, as Prawn's arranger picks
