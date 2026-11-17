@@ -270,7 +270,7 @@ fn XmlReader::expand(
       if j < n && raw[j] == ';' {
         let name = raw.unsafe_substring(start=i + 1, end=j)
         let character = fn(digits : String, base : Int32) -> String? {
-          let code = @string.parse_int(digits, base~) catch { _ => -1 }
+          let code = @string.parse_int(digits, radix=base) catch { _ => -1 }
           code.to_char().map(ch => ch.to_string())
         }
         let replacement : String? = if name.has_prefix("#x") ||
