@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/async",
   "bobzhang/prawn",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",

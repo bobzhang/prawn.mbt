@@ -48,7 +48,7 @@ fn self_test_one(
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   let args = @env.args()
   match args.get(1).unwrap_or("") {
     "diff" if args.length() == 4 => {
@@ -120,4 +120,9 @@ async fn main {
       fail("bad arguments")
     }
   }
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }
