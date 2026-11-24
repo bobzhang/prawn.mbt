@@ -658,7 +658,7 @@ fn margin(j : Json?) -> Array[Double] raise ScriptError {
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   let args = @env.args()
   guard args.length() == 4 else {
     @stdio.stderr.write("usage: oracle SCRIPT.json OUT.pdf OUT.jsonl\n")
@@ -1127,4 +1127,9 @@ fn prawn_paths(json : Json) -> Array[String] {
   }
   walk(json)
   out
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }

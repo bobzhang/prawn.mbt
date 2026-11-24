@@ -1,6 +1,6 @@
 import {
-  "bobzhang/prawn/internal/inspect",
   "moonbitlang/async",
+  "bobzhang/prawn/internal/inspect",
   "moonbitlang/async/fs",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
